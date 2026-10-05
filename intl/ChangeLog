@@ -1,4 +1,110 @@
+Mon Nov 25 22:57:51 1996  Ulrich Drepper  <drepper@cygnus.com>
+
+	* textdomain.c: Move definition of `memcpy` macro to right
+	position.
+
+Fri Nov 22 04:01:58 1996  Ulrich Drepper  <drepper@cygnus.com>
+
+	* finddomain.c [!HAVE_STRING_H && !_LIBC]: Define memcpy using
+ 	bcopy if not already defined.  Reported by Thomas Esken.
+	* bindtextdom.c: Likewise.
+	* l10nflist.c: Likewise.
+	* localealias.c: Likewise.
+	* textdomain.c: Likewise.
+
+Tue Oct 29 11:10:27 1996  Ulrich Drepper  <drepper@cygnus.com>
+
+	* Makefile.in (libdir): Change to use exec_prefix instead of
+ 	prefix.  Reported by Knut-HåvardAksnes <etokna@eto.ericsson.se>.
+
+Sat Aug 31 03:07:09 1996  Ulrich Drepper  <drepper@cygnus.com>
+
+	* l10nflist.c (_nl_normalize_codeset): We convert to lower case,
+	so don't prepend uppercase `ISO' for only numeric arg.
+
+Fri Jul 19 00:15:46 1996  Ulrich Drepper  <drepper@cygnus.com>
+
+	* l10nflist.c: Move inclusion of argz.h, ctype.h, stdlib.h after
+	definition of _GNU_SOURCE.  Patch by Roland McGrath.
+
+	* Makefile.in (uninstall): Fix another bug with `for' loop and
+	empty arguments.  Patch by Jim Meyering.  Correct name os
+	uninstalled files: no intl- prefix anymore.
+
+	* Makefile.in (install-data): Again work around shells which
+	cannot handle mpty for list.  Reported by Jim Meyering.
+
+Sat Jul 13 18:11:35 1996  Ulrich Drepper  <drepper@cygnus.com>
+
+	* Makefile.in (install): Split goal.  Now depend on install-exec
+        and install-data.
+	(install-exec, install-data): New goals.  Created from former
+	install goal.
+	Reported by Karl Berry.
+
+Sat Jun 22 04:58:14 1996  Ulrich Drepper  <drepper@cygnus.com>
+
+	* Makefile.in (MKINSTALLDIRS): New variable.  Path to
+        mkinstalldirs script.
+	(install): use MKINSTALLDIRS variable or if the script is not present
+	try to find it in the $top_scrdir).
+
+Wed Jun 19 02:56:56 1996  Ulrich Drepper  <drepper@cygnus.com>
+
+	* l10nflist.c: Linux libc *partly* includes the argz_* functions.
+	Grr.  Work around by renaming the static version and use macros
+	for renaming.
+
+Tue Jun 18 20:11:17 1996  Ulrich Drepper  <drepper@cygnus.com>
+
+	* l10nflist.c: Correct presence test macros of __argz_* functions.
+
+	* l10nflist.c: Include <argz.h> based on test of it instead when
+	__argz_* functions are available.
+	Reported by Andreas Schwab.
+
+Thu Jun 13 15:17:44 1996  Ulrich Drepper  <drepper@cygnus.com>
+
+	* explodename.c, l10nflist.c: Define NULL for dumb systems.
+
+Tue Jun 11 17:05:13 1996  Ulrich Drepper  <drepper@cygnus.com>
+
+	* intlh.inst.in, libgettext.h (dcgettext): Rename local variable
+	result to __result to prevent name clash.
+
+	* l10nflist.c, localealias.c, dcgettext.c: Define _GNU_SOURCE to
+        get prototype for stpcpy and strcasecmp.
+
+	* intlh.inst.in, libgettext.h: Move declaration of
+	`_nl_msg_cat_cntr' outside __extension__ block to prevent warning
+	from gcc's -Wnested-extern option.
+
+Fri Jun  7 01:58:00 1996  Ulrich Drepper  <drepper@cygnus.com>
+
+	* Makefile.in (install): Remove comment.
+
+Thu Jun  6 17:28:17 1996  Ulrich Drepper  <drepper@cygnus.com>
+
+	* Makefile.in (install): Work around for another Buglix stupidity.
+	Always use an `else' close for `if's.  Reported by Nelson Beebe.
+
+	* Makefile.in (intlh.inst): Correct typo in phony rule.
+	Reported by Nelson Beebe.
+
 Thu Jun  6 01:49:52 1996  Ulrich Drepper  <drepper@cygnus.com>
+
+	* dcgettext.c (read_alias_file): Rename variable alloca_list to
+	block_list as the macro calls assume.
+	Patch by Eric Backus.
+
+	* localealias.c [!HAVE_ALLOCA]: Define alloca as macro using
+        malloc.
+	(read_alias_file): Rename varriabe alloca_list to block_list as the
+	macro calls assume.
+	Patch by Eric Backus.
+
+	* l10nflist.c: Correct conditional for <argz.h> inclusion.
+	Reported by Roland McGrath.
 
 	* Makefile.in (all): Depend on all-@USE_INCLUDED_LIBINTL@, not
         all-@USE_NLS@.

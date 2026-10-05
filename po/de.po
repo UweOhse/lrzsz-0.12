@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 1996-12-18 23:37+0100\n"
+"POT-Creation-Date: 1997-01-01 22:45+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -68,7 +68,7 @@ msgstr "Stunde zu gross (0..23)"
 
 #: src/lrz.c:281 src/lsz.c:432
 msgid "unparsable stop time\n"
-msgstr "unparsbare Endzeit"
+msgstr "unparsbare Endzeit\n"
 
 #: src/lrz.c:285 src/lsz.c:436
 msgid "minute to large (0..59)"
@@ -278,7 +278,7 @@ msgstr "%s Version %s für %s %s\n"
 #: src/lsz.c:1312
 #, c-format
 msgid "Usage: %s [options] file ...\n"
-msgstr "Benutzung: %s [Optionen] Datei ..."
+msgstr "Benutzung: %s [Optionen] Datei ...\n"
 
 #: src/lsz.c:1314
 #, fuzzy, c-format
@@ -392,32 +392,32 @@ msgstr ""
 "\n"
 "Kurze Optionen benötigen dieselben Argumente wie Lange.\n"
 
-#: src/lsz.c:1536
+#: src/lsz.c:1538
 msgid "got ZRQINIT"
 msgstr "erhielt ZRQINIT"
 
-#: src/lrz.c:1461 src/lsz.c:1542
+#: src/lrz.c:1461 src/lsz.c:1544
 msgid "got ZCAN"
 msgstr "erhielt ZCAN"
 
 #. too bad
-#: src/lsz.c:1763
+#: src/lsz.c:1766
 #, fuzzy, c-format
 msgid "zsendfdata: bps rate %ld below min %ld"
 msgstr "rzfile: BPS-Rate %ld unter Minimum %ld"
 
 #. too bad
-#: src/lsz.c:1777
+#: src/lsz.c:1780
 #, fuzzy
 msgid "zsendfdata: reached stop time"
 msgstr "rzfile: Abbruchzeit erreicht"
 
-#: src/lsz.c:1786
+#: src/lsz.c:1789
 #, c-format
 msgid "Bytes Sent:%7ld/%7ld   BPS:%-8ld ETA %02d:%02d  "
 msgstr "Bytes gesendet:%7ld/%7ld   BPS:%-8ld ETA %02d:%02d  "
 
-#: src/lsz.c:2039
+#: src/lsz.c:2043
 #, c-format
 msgid "Falldown to %ld blklen"
 msgstr "Blockgröße auf %ld gesenkt"
@@ -632,7 +632,7 @@ msgstr ""
 
 #: src/lrz.c:935
 msgid "file exists, skipped\n"
-msgstr "Datei existiert, übersprungen"
+msgstr "Datei existiert, übersprungen\n"
 
 #: src/lrz.c:990
 #, c-format
@@ -642,7 +642,7 @@ msgstr "Zeitsynchronisation: hier %ld, dort %ld, Unterschied %d Sekunden\n"
 #: src/lrz.c:1000
 #, c-format
 msgid "TIMESYNC: cannot set time: %s\n"
-msgstr "Zeitsynchronisation: kann Zeit nicht setzen"
+msgstr "Zeitsynchronisation: kann Zeit nicht setzen\n"
 
 #: src/lrz.c:1020
 msgid "Topipe"

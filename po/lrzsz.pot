@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 1996-12-18 23:37+0100\n"
+"POT-Creation-Date: 1997-01-01 22:45+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -331,31 +331,31 @@ msgid ""
 "short options use the same arguments as the long ones\n"
 msgstr ""
 
-#: src/lsz.c:1536
+#: src/lsz.c:1538
 msgid "got ZRQINIT"
 msgstr ""
 
-#: src/lrz.c:1461 src/lsz.c:1542
+#: src/lrz.c:1461 src/lsz.c:1544
 msgid "got ZCAN"
 msgstr ""
 
 #. too bad
-#: src/lsz.c:1763
+#: src/lsz.c:1766
 #, c-format
 msgid "zsendfdata: bps rate %ld below min %ld"
 msgstr ""
 
 #. too bad
-#: src/lsz.c:1777
+#: src/lsz.c:1780
 msgid "zsendfdata: reached stop time"
 msgstr ""
 
-#: src/lsz.c:1786
+#: src/lsz.c:1789
 #, c-format
 msgid "Bytes Sent:%7ld/%7ld   BPS:%-8ld ETA %02d:%02d  "
 msgstr ""
 
-#: src/lsz.c:2039
+#: src/lsz.c:2043
 #, c-format
 msgid "Falldown to %ld blklen"
 msgstr ""

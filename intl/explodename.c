@@ -17,17 +17,25 @@ License along with the GNU C Library; see the file COPYING.LIB.  If
 not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
-#include <sys/types.h>
-#if defined STDC_HEADERS || defined _LIBC
-# include <stdlib.h>
-#endif
-#ifndef NULL
-# define NULL 0
+#ifdef HAVE_CONFIG_H
+# include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "loadinfo.h"
+
+/* On some strange systems still no definition of NULL is found.  Sigh!  */
+#ifndef NULL
+# if defined __STDC__ && __STDC__
+#  define NULL ((void *) 0)
+# else
+#  define NULL 0
+# endif
+#endif
+
+/* @@ end of prolog @@ */
 
 int
 _nl_explode_name (name, language, modifier, territory, codeset,
@@ -45,7 +53,7 @@ _nl_explode_name (name, language, modifier, territory, codeset,
   enum { undecided, xpg, cen } syntax;
   char *cp;
   int mask;
-  
+
   *modifier = NULL;
   *territory = NULL;
   *codeset = NULL;

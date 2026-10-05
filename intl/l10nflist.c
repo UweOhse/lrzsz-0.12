@@ -21,31 +21,40 @@ Boston, MA 02111-1307, USA.  */
 # include <config.h>
 #endif
 
-#if defined _LIBC && (defined __ARGZ_COUNT || defined __ARGZ_STRINGIFY)
+#if defined HAVE_STRING_H || defined _LIBC
+# ifndef _GNU_SOURCE
+#  define _GNU_SOURCE	1
+# endif
+# include <string.h>
+#else
+# include <strings.h>
+# ifndef strchr
+#  define strchr index
+# endif
+# ifndef memcpy
+#  define memcpy(Dst, Src, Num) bcopy (Src, Dst, Num)
+# endif
+#endif
+
+#if defined _LIBC || defined HAVE_ARGZ_H
 # include <argz.h>
 #endif
 #include <ctype.h>
 
-#include <sys/types.h> /* for size_t-less stdlib.h, or stdlib.h-less systems */
 #if defined STDC_HEADERS || defined _LIBC
 # include <stdlib.h>
 #endif
-#ifndef NULL
-# define NULL 0
-#endif
-
-#if defined HAVE_STRING_H || defined _LIBC
-# include <string.h>
-#else
-# include <strings.h>
-#endif
-#if !HAVE_STRCHR && !defined _LIBC
-# ifndef strchr
-#  define strchr index
-# endif
-#endif
 
 #include "loadinfo.h"
+
+/* On some strange systems still no definition of NULL is found.  Sigh!  */
+#ifndef NULL
+# if defined __STDC__ && __STDC__
+#  define NULL ((void *) 0)
+# else
+#  define NULL 0
+# endif
+#endif
 
 /* @@ end of prolog @@ */
 
@@ -62,12 +71,12 @@ static char *stpcpy PARAMS ((char *dest, const char *src));
 
 /* Define function which are usually not available.  */
 
-#if !defined _LIBC && !defined __ARGZ_COUNT
+#if !defined _LIBC && !defined HAVE___ARGZ_COUNT
 /* Returns the number of strings in ARGZ.  */
-static size_t __argz_count PARAMS ((const char *argz, size_t len));
+static size_t argz_count__ PARAMS ((const char *argz, size_t len));
 
 static size_t
-__argz_count (argz, len)
+argz_count__ (argz, len)
      const char *argz;
      size_t len;
 {
@@ -81,15 +90,17 @@ __argz_count (argz, len)
     }
   return count;
 }
-#endif	/* !_LIBC && !__ARGZ_COUNT */
+# undef __argz_count
+# define __argz_count(argz, len) argz_count__ (argz, len)
+#endif	/* !_LIBC && !HAVE___ARGZ_COUNT */
 
-#if !defined _LIBC && !defined __ARGZ_STRINGIFY
+#if !defined _LIBC && !defined HAVE___ARGZ_STRINGIFY
 /* Make '\0' separated arg vector ARGZ printable by converting all the '\0's
    except the last into the character SEP.  */
-static void __argz_stringify PARAMS ((char *argz, size_t len, int sep));
+static void argz_stringify__ PARAMS ((char *argz, size_t len, int sep));
 
 static void
-__argz_stringify (argz, len, sep)
+argz_stringify__ (argz, len, sep)
      char *argz;
      size_t len;
      int sep;
@@ -103,11 +114,16 @@ __argz_stringify (argz, len, sep)
 	*argz++ = sep;
     }
 }
-#endif	/* !_LIBC && !__ARGZ_COUNT */
+# undef __argz_stringify
+# define __argz_stringify(argz, len, sep) argz_stringify__ (argz, len, sep)
+#endif	/* !_LIBC && !HAVE___ARGZ_STRINGIFY */
 
-#if !defined _LIBC && !defined __ARGZ_NEXT
+#if !defined _LIBC && !defined HAVE___ARGZ_NEXT
+static char *argz_next__ PARAMS ((char *argz, size_t argz_len,
+				  const char *entry));
+
 static char *
-__argz_next (argz, argz_len, entry)
+argz_next__ (argz, argz_len, entry)
      char *argz;
      size_t argz_len;
      const char *entry;
@@ -125,7 +141,9 @@ __argz_next (argz, argz_len, entry)
     else
       return 0;
 }
-#endif
+# undef __argz_next
+# define __argz_next(argz, len, entry) argz_next__ (argz, len, entry)
+#endif	/* !_LIBC && !HAVE___ARGZ_NEXT */
 
 
 /* Return number of bits set in X.  */
@@ -349,7 +367,7 @@ _nl_normalize_codeset (codeset, name_len)
   if (retval != NULL)
     {
       if (only_digit)
-	wp = stpcpy (retval, "ISO");
+	wp = stpcpy (retval, "iso");
       else
 	wp = retval;
 

@@ -293,19 +293,23 @@ fi
 
 # resume -r 
 if test "$mode" = all -o "$mode" = sz-r ; then
-	mkdir $testdir/resume
+	mkdir $testdir/resume-s
 	echo "testing ZMODEM resume (sz -r)"
-	dd if=$SZ of=$testdir/resume/lsz.c bs=256 count=5 2>&5
+	dd if=$SZ of=$testdir/resume-s/lsz.c bs=256 count=5 2>&5
 	($SZ -rq $srcdir/src/lsz.c) <$testdir/pipe | \
-		(cd $testdir/resume ; $RZ $QUIET >>../pipe )
-	if cmp $srcdir/src/lsz.c $testdir/resume/lsz.c >&5 ; then
+		(cd $testdir/resume-s ; $RZ $QUIET >>../pipe )
+	echo "differences are normal:" >&5
+	if cmp $srcdir/src/lsz.c $testdir/resume-s/lsz.c >&5 ; then
 		echo "receiver did not resume, but file is ok"
 		any_failure="$any_failure ZMODEM-resume/sz"
 	else
-		dd if=$srcdir/src/lsz.c of=$testdir/resume/lsz.c1 bs=256 count=5 2>&5
-		dd if=$testdir/resume/lsz.c bs=256 skip=5 >>$testdir/resume/lsz.c1 2>&5
-		if cmp $srcdir/src/lsz.c $testdir/resume/lsz.c1 ; then
+		dd if=$srcdir/src/lsz.c of=$testdir/resume-s/lsz.c1 bs=256 count=5 2>&5
+		dd if=$testdir/resume-s/lsz.c bs=256 skip=5 >>$testdir/resume-s/lsz.c1 2>&5
+		if cmp $srcdir/src/lsz.c $testdir/resume-s/lsz.c1 ; then
 			:
+			rm -f $testdir/resume-s/lsz.c
+			rm -f $testdir/resume-s/lsz.c1
+			rmdir $testdir/resume-s 2>&5
 		else
 			echo "sender resumed, but files differ. This is really bad"
 			any_failure="$any_failure ZMODEM-resume/sz"
@@ -315,18 +319,22 @@ fi
 
 if test "$mode" = all -o "$mode" = rz-r ; then
     echo "testing ZMODEM resume (rz -r)"
-	mkdir $testdir/resume 2>&5
-	dd if=$SZ of=$testdir/resume/lsz.c bs=256 count=5 2>&5
+	mkdir $testdir/resume-r 2>&5
+	dd if=$SZ of=$testdir/resume-r/lsz.c bs=256 count=5 2>&5
 	($SZ $srcdir/src/lsz.c -q) <$testdir/pipe | \
-		(cd $testdir/resume ; $RZ -r $QUIET >>../pipe )
-	if cmp $srcdir/src/lsz.c $testdir/resume/lsz.c >&5 ; then
+		(cd $testdir/resume-r ; $RZ -r $QUIET >>../pipe )
+	echo "differences are normal:" >&5
+	if cmp $srcdir/src/lsz.c $testdir/resume-r/lsz.c >&5 ; then
 		echo "receiver did not resume, but file is ok"
 		any_failure="$any_failure ZMODEM-resume/rz"
 	else
-		dd if=$srcdir/src/lsz.c of=$testdir/resume/lsz.c1 bs=256 count=5 2>&5
-		dd if=$testdir/resume/lsz.c bs=256 skip=5 >>$testdir/resume/lsz.c1 2>&5
-		if cmp $srcdir/src/lsz.c $testdir/resume/lsz.c1 ; then
+		dd if=$srcdir/src/lsz.c of=$testdir/resume-r/lsz.c1 bs=256 count=5 2>&5
+		dd if=$testdir/resume-r/lsz.c bs=256 skip=5 >>$testdir/resume-r/lsz.c1 2>&5
+		if cmp $srcdir/src/lsz.c $testdir/resume-r/lsz.c1 ; then
 			:
+			rm -f $testdir/resume-r/lsz.c
+			rm -f $testdir/resume-r/lsz.c1
+			rmdir $testdir/resume-r 2>&5
 		else
 			echo "sender resumed, but files differ. This is really bad"
 			any_failure="$any_failure ZMODEM-resume/rz"

@@ -28,7 +28,7 @@ One advise in advance
    If you want to exploit the full power of internationalization, you
 should configure it using
 
-     ./configure --with-gnu-gettext
+     ./configure --with-included-gettext
 
 to force usage of internationalizing routines provided within this
 package, despite the existence of internationalizing capabilities in
@@ -58,7 +58,7 @@ the GNU `gettext' package is *not* required.  Installers may use
 special options at configuration time for changing the default
 behaviour.  The commands:
 
-     ./configure --with-gnu-gettext
+     ./configure --with-included-gettext
      ./configure --with-catgets
      ./configure --disable-nls
 
@@ -75,7 +75,7 @@ should use the more recent version of the GNU `gettext' library.  I.e.
 if the file `intl/VERSION' shows that the library which comes with this
 package is more recent, you should use
 
-     ./configure --with-gnu-gettext
+     ./configure --with-included-gettext
 
 to prevent auto-detection.
 
@@ -134,7 +134,7 @@ Each translation team has its own mailing list, courtesy of Linux
 International.  You may reach your translation team at the address
 `LL@li.org', replacing LL by the two-letter ISO 639 code for your
 language.  Language codes are *not* the same as the country codes given
-in ISO 3166.  The following translation teams exist, as of May 1996:
+in ISO 3166.  The following translation teams exist, as of October 1996:
 
      Arabic `ar', Chinese `zh', Czech `cs', Danish `da', Dutch `nl',
      English `en', Esperanto `eo', Finnish `fi', French `fr', German
@@ -172,44 +172,54 @@ Available Packages
 
    Languages are not equally supported in all GNU packages.  The
 following matrix shows the current state of GNU internationalization,
-as of May 1996.  The matrix shows, in regard of each package, for which
-languages PO files have been submitted to translation coordination.
+as of October 1996.  The matrix shows, in regard of each package, for
+which languages PO files have been submitted to translation
+coordination.
 
-                       cs de en es fi fr ja ko no pt sl sv
-                     .-------------------------------------.
-     bash            |                []                   |  1
-     bison           |                                     |  0
-     clisp           |    [] []       []                   |  3
-     cpio            |                []                   |  1
-     diffutils       |                []                [] |  2
-     enscript        |    []       [] []             []    |  4
-     fileutils       |    []          []                [] |  3
-     findutils       |    []          []                   |  2
-     flex            |                []                   |  1
-     gettext         |    []          []    [] []       [] |  6
-     glibc           |    []    []          []             |  3
-     grep            |          []    []    []       []    |  4
-     hello           |    []          []    []       []    |  4
-     m4              |    []          [] []             [] |  4
-     make            |                                     |  0
-     mkid            |    []          []                   |  2
-     music           |                []                   |  1
-     ptx             |    []          []                [] |  3
-     recode          |    []    []    []             [] [] |  5
-     sh-utils        |    []          []                   |  2
-     sharutils       |    []          []                [] |  3
-     tar             |    []          []    [] [] [] [] [] |  7
-     textutils       |    []          []    []             |  3
-     wdiff           | [] []          []                [] |  4
-                     `-------------------------------------'
-                       cs de en es fi fr ja ko no pt sl sv
-                        1 16  1  3  1 21  1  6  3  1  5  9
+                       cs de en es fi fr ja ko nl no pl pt sl sv
+                     .-------------------------------------------.
+     bash            |                []       []                |  2
+     bison           |    []          []       []                |  3
+     clisp           |    [] []       []                         |  3
+     cpio            |    []          []       []    []          |  4
+     diffutils       |          []    []             []       [] |  4
+     enscript        |    []       [] []       []          []    |  5
+     fileutils       |    []    []    []       []    [] [] [] [] |  8
+     findutils       |    []          []    [] []    []       [] |  6
+     flex            |                []                         |  1
+     gcal            |    []          []       []                |  3
+     gettext         |    []    []    []    [] [] [] [] [] [] [] | 11
+     grep            |          []    []    [] [] [] []    [] [] |  8
+     hello           |    []    []    []    [] [] [] [] [] [] [] | 10
+     id-utils        |    []          []                         |  2
+     indent          |                                           |  0
+     libc            |    []    []    []    [] []    []          |  6
+     m4              |    []          [] []    []             [] |  5
+     make            |    []    []          [] []    []          |  5
+     music           |                []                         |  1
+     ptx             |    []          []       [] [] [] []    [] |  7
+     recode          |    []    []    []       []    []    [] [] |  7
+     sh-utils        |    []          []       []       []    [] |  5
+     sharutils       |    []          []       []             [] |  4
+     tar             |    []          []    [] [] [] [] [] [] [] |  9
+     texinfo         |                                           |  0
+     textutils       |    []    []    []    [] []    []          |  6
+     wdiff           | [] []    []    []       [] [] []       [] |  8
+                     `-------------------------------------------'
+                       cs de en es fi fr ja ko nl no pl pt sl sv
+                        1 20  1 10  1 24  1  8 20  7 14  6  7 13  133
+
+   Some counters in the preceding matrix are higher than the number of
+visible blocks let us expect.  This is because a few extra PO files are
+used for implementing regional variants of languages, or language
+dialects.
 
    For a PO file in the matrix above to be effective, the package to
-which it applies should also have been internationalized and distributed
-as such by its maintainer.  There is often a lag between the mere
-existence a PO file and its wide availability in a GNU distribution.
+which it applies should also have been internationalized and
+distributed as such by its maintainer.  There might be an observable
+lag between the mere existence a PO file and its wide availability in a
+GNU distribution.
 
-   If May 1996 seems to be old, you may fetch a more recent copy of
+   If October 1996 seems to be old, you may fetch a more recent copy of
 this `ABOUT-NLS' file on most GNU archive sites.
 

@@ -1,3 +1,13 @@
+Wed Jan  1 17:18:34 1997 Uwe Ohse <uwe@tirka.gun.de>
+
+	* updated gettext to 0.10.26.
+
+	* took out purgeline() call in zsendfile (didn't help).
+
+	* check.lrzsz: splitted resume directory into two parts.
+
+	* configure.in: call AC_AIX, AC_MINIX.
+
 Wed Dec 18 22:44:55 1996  Uwe Ohse	<uwe@tirka.gun.de>
 
 	* src/lsz.c: start_blklen changed to 0.

@@ -608,23 +608,23 @@ main(int argc, char **argv)
 			 * might be useful if the receiver has already died or
 			 * if there is dirt left if the line 
 			 */
+			struct timeval t;
+			fd_set f;
+			unsigned char throwaway;
+
 			purgeline(io_mode_fd);
-			{
-				struct timeval t;
-				fd_set f;
-				unsigned char throwaway;
 				
-				t.tv_sec = 0;
-				t.tv_usec = 0;
+			t.tv_sec = 0;
+			t.tv_usec = 0;
 				
-				FD_ZERO(&f);
-				FD_SET(io_mode_fd,&f);
+			FD_ZERO(&f);
+			FD_SET(io_mode_fd,&f);
 				
-				while (select(1,&f,NULL,NULL,&t)) {
-					if (0==read(io_mode_fd,&throwaway,1)) /* EOF ... */
-						break;
-				}
+			while (select(1,&f,NULL,NULL,&t)) {
+				if (0==read(io_mode_fd,&throwaway,1)) /* EOF ... */
+					break;
 			}
+
 			purgeline(io_mode_fd);
 			stohdr(0L);
 			if (command_mode)
@@ -1509,7 +1509,9 @@ zsendfile(struct zm_fileinfo *zi, const char *buf, int blen)
 	/* we are going to send a ZFILE. There cannot be much useful
 	 * stuff in the line right now (*except* ZCAN?). 
 	 */
+#if 0
 	purgeline(io_mode_fd); /* might possibly fix stefan glasers problems */
+#endif
 
 	for (;;) {
 		Txhdr[ZF0] = Lzconv;	/* file conversion request */
@@ -1612,15 +1614,14 @@ again:
 static int
 zsendfdata (struct zm_fileinfo *zi)
 {
-	register c, e, n;
+	static int c;
 	register newcnt;
-	register long tcount = 0;
-	int junkcount;				/* Counts garbage chars received by TX */
-	long last_txpos = 0;
-	long last_bps = 0;
-	long not_printed = 0;
+	static int junkcount;				/* Counts garbage chars received by TX */
+	static long last_txpos = 0;
+	static long last_bps = 0;
+	static long not_printed = 0;
 	static long total_sent = 0;
-	time_t low_bps=0;
+	static time_t low_bps=0;
 
 #ifdef HAVE_MMAP
 	if (use_mmap)
@@ -1713,6 +1714,8 @@ zsendfdata (struct zm_fileinfo *zi)
 	zsbhdr (ZDATA, Txhdr);
 
 	do {
+		int n;
+		int e;
 #ifdef NEW_ERROR
 		int old = blklen;
 		blklen = calc_blklen (total_sent);
@@ -1832,6 +1835,7 @@ zsendfdata (struct zm_fileinfo *zi)
 		}
 #endif							/* READCHECK */
 		if (Txwindow) {
+			long tcount = 0;
 			while ((tcount = zi->bytes_sent - Lrxpos) >= Txwindow) {
 				vfile ("%ld window >= %u", tcount, Txwindow);
 				if (e != ZCRCQ)
