@@ -1,3 +1,8 @@
+Version 0.12.5 - August 1996, Uwe Ohse
+
+* some portability enhancements (getopt.c)
+* install creates symlinks from l[rs]z to l[rs][bx]
+
 Version 0.12.4 - June 1996, Uwe Ohse
 
 * some bug fixes

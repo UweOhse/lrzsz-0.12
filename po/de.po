@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 1996-06-15 08:14+0200\n"
+"POT-Creation-Date: 1996-07-24 13:03+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -326,8 +326,7 @@ msgstr ""
 "  -w, --windowsize N          Fenstergröße auf N Bytes setzen (Z)\n"
 "  -X  --xmodem                XMODEM-Protokoll benutzen\n"
 "  -y, --overwrite             existierende Dateien überschreiben\n"
-"  -Y, --overwrite-or-skip     wie `y', aber nicht existierende "
-"überspringen\n"
+"  -Y, --overwrite-or-skip     wie `y', aber nicht existierende überspringen\n"
 "      --ymodem                YMODEM-Protokoll benutzen\n"
 "  -Z, --zmodem                ZMODEM-Protokoll benutzen\n"
 "\n"
@@ -383,7 +382,7 @@ msgstr "Maximale Wiederholungsanzahl überschritten"
 msgid "Got %s"
 msgstr "Erhielt %s"
 
-#: src/zperr.c:12
+#: src/zperr.c:13
 #, c-format
 msgid "Retry %d: "
 msgstr "Wiederholungsversuch %d: "

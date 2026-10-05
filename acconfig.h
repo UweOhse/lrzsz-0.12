@@ -52,4 +52,7 @@
 /* Define to 1 if you want support for the timesync protocol */
 #undef ENABLE_TIMESYNC
 
+/* define to 1. we have a replacement function for it. */
+#undef HAVE_STRERROR
+
 

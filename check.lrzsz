@@ -5,10 +5,14 @@ srcdir="$1"
 if test $srcdir = . ; then
 	srcdir=`pwd`
 fi
+if test $srcdir = .. ; then
+	srcdir=`pwd`/..
+fi
 objdir="$2"
 if test $objdir = . ; then
 	objdir=`pwd`
 fi
+echo checking with srcdir = $1 and objdir = $2
 
 # z_test_files: files to test zmodem with.
 # z8_test_files: files to test zmodem-8k with. Optional.
@@ -136,6 +140,7 @@ if test $failed = 1 ; then
 	echo "XMODEM test failed"
 	any_failure="$any_failure XMODEM"
 fi
+
 # resume -r 
 mkdir $testdir/resume
 echo "testing ZMODEM resume (sz -r)"
@@ -151,7 +156,7 @@ else
 		:
 	else
 		echo "sender resumed, but files differ. This is really bad"
-		any_failure="$any_failure ZMODEM-resume"
+		any_failure="$any_failure ZMODEM-resumei/su"
 	fi
 fi
 
@@ -168,7 +173,7 @@ else
 		:
 	else
 		echo "sender resumed, but files differ. This is really bad"
-		any_failure="$any_failure ZMODEM-resume"
+		any_failure="$any_failure ZMODEM-resume/rz"
 	fi
 fi
 

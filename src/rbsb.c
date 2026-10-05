@@ -153,10 +153,10 @@ int rdchk(int fd)
 {
 	int lf, savestat;
 
-	savestat = fcntl(f, F_GETFL) ;
-	fcntl(f, F_SETFL, savestat | O_NDELAY) ;
-	lf = read(f, &checked, 1) ;
-	fcntl(f, F_SETFL, savestat) ;
+	savestat = fcntl(fd, F_GETFL) ;
+	fcntl(fd, F_SETFL, savestat | O_NDELAY) ;
+	lf = read(fd, &checked, 1) ;
+	fcntl(fd, F_SETFL, savestat) ;
 	return(lf) ;
 }
 #endif

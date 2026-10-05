@@ -11,3 +11,19 @@ EXTRA_DIST = ansi2knr.1 ansi2knr.c
 INCLUDES = -I.. -I$(srcdir) -I$(top_srcdir)/src -I../intl -I$(top_srcdir)/lib
 DEFS = -DLOCALEDIR=\"$(localedir)\" -DOS=\"@host_os@\" -DCPU=\"@host_cpu@\" \
 	-DNFGVMIN @DEFS@
+
+install-exec-local:
+	ln -sf $(bindir)/`echo lsz |sed -e '$(transform)'` \
+		$(bindir)/`echo lsb |sed -e '$(transform)'` 
+	ln -sf $(bindir)/`echo lsz |sed -e '$(transform)'` \
+		$(bindir)/`echo lsx |sed -e '$(transform)'` 
+	ln -sf $(bindir)/`echo lrz |sed -e '$(transform)'` \
+		$(bindir)/`echo lrb |sed -e '$(transform)'` 
+	ln -sf $(bindir)/`echo lrz |sed -e '$(transform)'` \
+		$(bindir)/`echo lrx |sed -e '$(transform)'` 
+
+uninstall-local:
+	rm -f $(bindir)/`echo lsb |sed -e '$(transform)'` 
+	rm -f $(bindir)/`echo lsx |sed -e '$(transform)'` 
+	rm -f $(bindir)/`echo lrb |sed -e '$(transform)'` 
+	rm -f $(bindir)/`echo lrx |sed -e '$(transform)'` 
