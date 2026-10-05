@@ -8,7 +8,8 @@ noinst_LIBRARIES = zmodem
 
 EXTRA_DIST = alloca.c ansi2knr.1 ansi2knr.c \
 	getopt.c getopt1.c mkdir.c mktime.c \
-	strdup.c strerror.c strstr.c strpbrk.c strtol.c strtoul.c stpcpy.c
+	strdup.c strerror.c strstr.c strpbrk.c strtol.c strtoul.c stpcpy.c \
+	strftime.c 
 
 zmodem_SOURCES = long-options.c xstrtol.c xstrtoul.c error.c
 

@@ -608,12 +608,15 @@ main(int argc, char **argv)
 			 * might be useful if the receiver has already died or
 			 * if there is dirt left if the line 
 			 */
+#ifdef HAVE_SELECT
 			struct timeval t;
-			fd_set f;
 			unsigned char throwaway;
+			fd_set f;
+#endif
 
 			purgeline(io_mode_fd);
 				
+#ifdef HAVE_SELECT
 			t.tv_sec = 0;
 			t.tv_usec = 0;
 				
@@ -624,6 +627,7 @@ main(int argc, char **argv)
 				if (0==read(io_mode_fd,&throwaway,1)) /* EOF ... */
 					break;
 			}
+#endif
 
 			purgeline(io_mode_fd);
 			stohdr(0L);
@@ -716,11 +720,9 @@ wcsend (int argc, char *argp[])
 			char buf[30];
 			time_t t = time (NULL);
 			struct tm *tm = localtime (&t);		/* sets timezone */
-#ifdef HAVE_STRFTIME
 			strftime (buf, sizeof (buf) - 1, "%H:%M:%S", tm);
 			if (Verbose)
 				fprintf (stderr, " %s %s", _ ("at"), buf);
-#endif
 #if defined(HAVE_TIMEZONE_VAR)
 			fprintf (f, "%ld\r\n", timezone / 60);
 			if (Verbose)
@@ -840,7 +842,7 @@ wcs(const char *oname)
 		if (p) {
 			strcpy(name, p);
 		} else {
-			sprintf(name, "s%d.lsz", getpid());
+			sprintf(name, "s%lu.lsz", (unsigned long) getpid());
 		}
 		input_f=stdin;
 #ifdef HAVE_MMAP
@@ -1699,9 +1701,7 @@ zsendfdata (struct zm_fileinfo *zi)
 				c = getinsync (zi, 1);
 				goto gotack;
 			case XOFF:			/* Wait a while for an XON */
-#ifndef linux
 			case XOFF | 0200:
-#endif
 				readline (100);
 			}
 		}
@@ -1825,9 +1825,7 @@ zsendfdata (struct zm_fileinfo *zi)
 				zsdata (txbuf, 0, ZCRCE);
 				goto gotack;
 			case XOFF:			/* Wait a while for an XON */
-#ifndef linux
 			case XOFF | 0200:
-#endif
 				readline (100);
 			default:
 				++junkcount;

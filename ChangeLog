@@ -1,4 +1,80 @@
+Tue Jan  7 07:33:55 MET 1997 Uwe Ohse <uwe@tirka.gun.de>
+
+	* configure.in: change version to 0.12.14
+
+	* src/lrz.c (procheader): Overwrite "waiting to receive"
+	  with spaces.
+	  "file exists, skipped" -> "file exists, skipped: filename",
+	  print it if: "Verbose > 2" -> "Verbose".
+	  (Glenn Burkhardt <glenn@aoi.ultranet.com>)
+
+Sat Jan  4 10:12:56 1997 Uwe Ohse <uwe@tirka.gun.de>
+
+	* configure.in: check for libsocket (contains syslog() under
+	  SCO).
+	  don't use AC_FUNC_STRFTIME (sets "LIBS=-lintl $libs", and
+	  this doesn't interact well with the intl/libintl.a and
+	  the ud_GNU_GETTEXT), do AC_REPLACE_FUNC(strftime).
+
+	* lib/strftime.c: new file (taken from fileutils-3.14). 
+	  I did *not* include multibyte character support (== including
+	  wchar.h == AC_CHECK_HEADER(wchar.h)), as timesync doesn't
+	  need multibyte characters.
+
+	* src/timing.c (timing): throw out "goto doit". Forgot it
+	  a long time ago.
+
+	* src/zglobal.h: include sys/select.h after including
+	  sys/time.h (sys/select.h needs struct timeval).
+	  make "char checked;" an unsigned char.
+	  remove extern int readline_readnum; not needed.
+
+	* src/rbsb.c: make "char checked;" an unsigned char.
+	  (to get rid of warnings on systems where
+	  readcheck reads).
+
+	* src/lsz.c (zsendfdata): remove #ifndef linux 
+	  around "XOFF | 0200".
+	  (wcs): cast pid_t to unsigned long before using
+	  it in printf. (HPUX).
+	  (wcsend): remove #ifdef HAVE_STRFTIME - we know
+	  that we have strftime.
+
+	* src/lrz.c (procheader): oops, alloca(strlen(name+5))
+	  should have been alloca(strlen(name)+5);
+	  -> crash on HP9000/712, HPUX 9.07, PA-Risc.
+
+	* removed forgotten strace from check.lrzsz (did you ever
+	  wonder why zmodem8k was slower in `make check'?)
+
+	* src/zm.c:
+	  zsbh32,zsda32,zrdat32,zrbhdr32,zrhhdr,zputhex,zgethex,
+	  zgeth1: had static prototype, but were not defined
+	  as static. Now prototype and function are static.
+
+
+Thu Jan  2 22:59:44 1997 Uwe Ohse <uwe@tirka.gun.de>
+
+	* configure.in:
+	  + AC_C_INLINE (cleanup, was called from aclocal.m4)
+	  + AC_TYPE_OFF_T (cleanup, was called from aclocal.m4)
+	  - AC_FUNC_UTIME_NULL (not really needed)
+	  + check for strings.h (was done before in aclocal.m4)
+	  + call AC_FUNC_STRFTIME
+	  + check for vprintf (not done before, used in error.c)
+
+	* src/lsz.c: #ifdef HAVE_SELECT around call to select().
+
+	* src/timing.c: don't include limits.h,unistd.h: already
+	  done from zglobal.h.
+
+	* src/zm.c:
+	* src/zreadline.c: 
+	  don't include unistd.h, already done from zglobal.h.
+
 Wed Jan  1 17:18:34 1997 Uwe Ohse <uwe@tirka.gun.de>
+
+	* Release 0.12.13
 
 	* updated gettext to 0.10.26.
 

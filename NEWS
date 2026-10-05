@@ -1,3 +1,10 @@
+Version 0.12.14 - Januar 1996, Uwe Ohse
+
+* compiles cleaner on SCO, HPUX (even with the native compiler).
+
+* improved error reporting (i think there are still possibilities for
+  further improvements, if anybody case spare time :-)).
+
 Version 0.12.13 - Januar 1996, Uwe Ohse
 
 * no user visible changes

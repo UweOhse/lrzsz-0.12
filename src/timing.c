@@ -4,17 +4,10 @@
 
 #include "zglobal.h"
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #include "timing.h"
 
 #if HAVE_SYS_PARAM_H
 #include <sys/param.h>
-#endif
-
-#if HAVE_LIMITS_H
-#include <limits.h>
 #endif
 
 #if !defined(TIME_WITH_SYS_TIME) && !defined(HAVE_SYS_TIME_H)
@@ -105,7 +98,6 @@ timing (int reset, time_t *nowp)
 		{
 			yet = stime.millitm / 1000.0  + stime.time;
 			slast = stime;
-			goto doit;
 		}
 	}
 	if (fbad)

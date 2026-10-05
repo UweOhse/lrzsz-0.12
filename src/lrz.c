@@ -16,7 +16,6 @@
 #include <signal.h>
 #include <ctype.h>
 #include <errno.h>
-#include <limits.h>
 #include <getopt.h>
 
 #ifdef HAVE_UTIME_H
@@ -931,12 +930,12 @@ procheader(char *name, struct zm_fileinfo *zi)
 		int i;
 		fclose(fout);
 		if ((zmanag & ZF1_ZMMASK)!=ZF1_ZMCHNG) {
-			if (Verbose>2)
-				fprintf(stderr,_("file exists, skipped\n"));
+			if (Verbose)
+				fprintf(stderr,_("file exists, skipped: %s\n"),name);
 			return ERROR;
 		}
 		/* try to rename */
-		tmpname=alloca(strlen(name+5));
+		tmpname=alloca(strlen(name)+5);
 		ptr=stpcpy(tmpname,name);
 		*ptr++='.';
 		i=0;
@@ -1033,7 +1032,9 @@ procheader(char *name, struct zm_fileinfo *zi)
 			error(1,0,_("out of memory"));
 		strcpy(Pathname, name_static);
 		if (Verbose) {
-			putc('\r',stderr);
+			/* overwrite the "waiting to receive" line */
+			fputs("\r                                                                     \r",
+				stderr);
 			fprintf(stderr, _("Receiving: %s\n"), name_static);
 		}
 		checkpath(name_static);

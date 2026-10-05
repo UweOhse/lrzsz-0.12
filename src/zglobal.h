@@ -3,10 +3,6 @@
 
 #include "config.h"
 #include <sys/types.h>
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-#include <limits.h>
 
 #ifdef __GNUC__
 # define alloca __builtin_alloca
@@ -36,6 +32,10 @@
 #  else
 #    include <time.h>
 #  endif
+#endif
+
+#ifdef HAVE_SYS_SELECT_H
+#  include <sys/select.h>
 #endif
 
 #if STDC_HEADERS
@@ -246,7 +246,6 @@ RETSIGTYPE bibi(int n);
 /* zreadline.c */
 extern char *readline_ptr; /* pointer for removing chars from linbuf */
 extern int readline_left; /* number of buffered chars left to read */
-extern int readline_readnum; /* number of chars to read with one read() */
 #define READLINE_PF(timeout) \
     (--readline_left >= 0? (*readline_ptr++ & 0377) : readline(timeout))
 
@@ -259,7 +258,7 @@ void readline_setup(int fd, int readnum, int buffer_size);
 extern int Fromcu;
 extern int Twostop;
 #ifdef READCHECK_READS
-extern char checked;
+extern unsigned char checked;
 #endif
 extern int iofd;
 extern unsigned Baudrate;

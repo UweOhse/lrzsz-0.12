@@ -2,7 +2,7 @@
 - look into VMIN code: how to determine if it's usable (it isn't unter
   FreeBSD and NetBSD (might have changed) and possibly many other 
   system), and what is the max value?
-  Anyway - we don't *need* it. It just reduced system load (but that's
+  Anyway - we don't *need* it. It just reduces system load (but that's
   not a real problem - zmodem over a ISDN/modem link is not much load).
 - an option to stop transmission if it will not be completed at a 
   certain time (calc. with BPS rate).
@@ -10,3 +10,6 @@
   a) think that lrzsz is to slow for their serial lines, or b) think
   that their transmission lines are safe. Oh well, some people don't
   learn without having pain).
+- improve error reporting.
+- clean up Output in verbose mode. (document what's printed if
+  verbose is `n')

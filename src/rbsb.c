@@ -124,7 +124,7 @@ int rdchk(int fd)
 #endif
 
 #ifdef READCHECK_GETFL
-char checked = '\0' ;
+unsigned char checked = '\0' ;
 /*
  * Nonblocking I/O is a bit different in System V, Release 2
  */

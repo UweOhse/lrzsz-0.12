@@ -99,8 +99,7 @@ if test "$mode" = all -o "$mode" = z8 ; then
 		echo "testing ZMODEM8K"
 		mkdir $testdir/zmodem8k
 		failed=0
-#		$SZ -q8OT $BUFSIZE $z8_test_files <$testdir/pipe | \
-		strace -v -o out.xxx -T -tt $SZ -q8OT $z8_test_files <$testdir/pipe | \
+		$SZ -q8OT $BUFSIZE $z8_test_files <$testdir/pipe | \
 			(cd $testdir/zmodem8k ; $RZ -O $QUIET >>../pipe )
 		for i in $z8_test_files ; do 
 			bn=`basename $i`
@@ -254,7 +253,7 @@ if test "$mode" = all -o "$mode" = manage ; then
 	rmdir $testdir/manag.append 2>&5
 	if test $failed = 1 ; then 
 		echo "management/append test failed"
-		any_failure="$any_failure XMODEM"
+		any_failure="$any_failure manag.append"
 	fi
 
 	echo "testing file management, renaming"
@@ -286,7 +285,7 @@ if test "$mode" = all -o "$mode" = manage ; then
 	rmdir $testdir/manag.rename 2>&5
 	if test $failed = 1 ; then 
 		echo "management/rename test failed"
-		any_failure="$any_failure XMODEM"
+		any_failure="$any_failure manag.rename"
 	fi
 fi
 

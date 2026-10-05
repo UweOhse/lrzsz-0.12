@@ -17,7 +17,6 @@
 #include "zglobal.h"
 
 #include <stdio.h>
-#include <unistd.h>
 
 int Rxtimeout = 100;		/* Tenths of seconds to wait for something */
 
@@ -266,7 +265,7 @@ zsbhdr(int type, char *hdr)
 
 
 /* Send ZMODEM binary header hdr of type type */
-void
+static void
 zsbh32(char *hdr, int type)
 {
 	register int n;
@@ -357,7 +356,7 @@ zsdata(const char *buf, int length, int frameend)
 	}
 }
 
-void
+static void
 zsda32(const char *buf, int length, int frameend)
 {
 	register int c;
@@ -504,7 +503,7 @@ crcfoo:
 	return ERROR;
 }
 
-int
+static int
 zrdat32(char *buf, int length)
 {
 	register int c;
@@ -691,7 +690,7 @@ fifi:
 }
 
 /* Receive a binary style header (type and position) */
-int 
+static int 
 zrbhdr(char *hdr)
 {
 	register int c, n;
@@ -724,7 +723,7 @@ zrbhdr(char *hdr)
 }
 
 /* Receive a binary style header (type and position) with 32 bit FCS */
-int
+static int
 zrbhdr32(char *hdr)
 {
 	register int c, n;
@@ -766,7 +765,7 @@ zrbhdr32(char *hdr)
 
 
 /* Receive a hex style header (type and position) */
-int 
+static int 
 zrhhdr(char *hdr)
 {
 	register int c;
@@ -810,7 +809,7 @@ zrhhdr(char *hdr)
 }
 
 /* Write a byte as two hex digits */
-void 
+static void 
 zputhex(int c, char *pos)
 {
 	static char	digits[]	= "0123456789abcdef";
@@ -864,7 +863,7 @@ zsendline_init(char *tab)
 	}
 }
 
-int inline
+static inline int
 zgeth1(void)
 {
 	register int c, n;
@@ -888,7 +887,7 @@ zgeth1(void)
 }
 
 /* Decode two lower case hex digits into an 8 bit byte value */
-int
+static int
 zgethex(void)
 {
 	register int c;
