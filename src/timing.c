@@ -19,8 +19,10 @@
 #if defined(HAVE_GETTIMEOFDAY)
 #  undef HAVE_FTIME
 #  undef HAVE_TIMES
-#elif defined(HAVE_FTIME)
-#  undef HAVE_TIMES
+#else
+#  if defined(HAVE_FTIME)
+#    undef HAVE_TIMES
+#  endif
 #endif
 
 #ifdef HAVE_FTIME

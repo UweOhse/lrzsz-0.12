@@ -93,30 +93,31 @@ char secbuf[MAX_BLOCK + 1];
 int timesync_flag=0;
 int in_timesync=0;
 #endif
-static int rzfiles(struct zm_fileinfo *);
-static int tryz(void);
-static void checkpath(const char *name);
-static void chkinvok(const char *s);
-static void canit(void);
-static void report(int sct);
-static void uncaps(char *s);
-static int IsAnyLower(const char *s);
-static int putsec(struct zm_fileinfo *zi, char *buf, int n);
-static int make_dirs(char *pathname);
-static int procheader(char *name, struct zm_fileinfo *);
-static int wcgetsec(int *Blklen, char *rxbuf, int maxtime);
-static int wcrx(struct zm_fileinfo *);
-static int wcrxpn(struct zm_fileinfo *, char *rpn);
-static int wcreceive(int argc, char **argp);
-static int rzfile(struct zm_fileinfo *);
-static void usage(int exitcode, const char *what);
-static void usage1(int exitcode);
-static void exec2(const char *s);
-static int closeit(struct zm_fileinfo *);
-static void ackbibi(void);
-static int sys2(const char *s);
-static void zmputs(const char *s);
-static long getfree(void);
+static int o_sync = 0;
+static int rzfiles __P ((struct zm_fileinfo *));
+static int tryz __P ((void));
+static void checkpath __P ((const char *name));
+static void chkinvok __P ((const char *s));
+static void canit __P ((void));
+static void report __P ((int sct));
+static void uncaps __P ((char *s));
+static int IsAnyLower __P ((const char *s));
+static int putsec __P ((struct zm_fileinfo *zi, char *buf, int n));
+static int make_dirs __P ((char *pathname));
+static int procheader __P ((char *name, struct zm_fileinfo *));
+static int wcgetsec __P ((int *Blklen, char *rxbuf, int maxtime));
+static int wcrx __P ((struct zm_fileinfo *));
+static int wcrxpn __P ((struct zm_fileinfo *, char *rpn));
+static int wcreceive __P ((int argc, char **argp));
+static int rzfile __P ((struct zm_fileinfo *));
+static void usage __P ((int exitcode, const char *what));
+static void usage1 __P ((int exitcode));
+static void exec2 __P ((const char *s));
+static int closeit __P ((struct zm_fileinfo *));
+static void ackbibi __P ((void));
+static int sys2 __P ((const char *s));
+static void zmputs __P ((const char *s));
+static long getfree __P ((void));
 
 static long buffersize=32768;
 static long min_bps=0;
@@ -186,6 +187,8 @@ static struct option const long_options[] =
 	{"null", no_argument, NULL, 'D'},
 	{"syslog", optional_argument, NULL , 2},
 	{"delay-startup", required_argument, NULL, 4},
+	{"o-sync", no_argument, NULL, 5},
+	{"o_sync", no_argument, NULL, 5},
 	{NULL,0,NULL,0}
 };
 
@@ -377,6 +380,9 @@ main(int argc, char *argv[])
 			if (s_err != LONGINT_OK)
 				STRTOL_FATAL_ERROR (optarg, _("startup delay"), s_err);
 			break;
+		case 5:
+			o_sync=1;
+			break;
 		default:
 			usage(2,NULL);
 		}
@@ -474,6 +480,7 @@ usage(int exitcode, const char *what)
 "  -m, --min-bps N             stop transmission if BPS below N\n"
 "  -M, --min-bps-time N          for at least N seconds (default: 120)\n"
 "  -O, --disable-timeouts      disable timeout code, wait forever for data\n"
+"      --o-sync                open output file(s) in synchronous write mode\n"
 "  -p, --protect               protect existing files\n"
 "  -q, --quiet                 quiet, no progress reports\n"
 "  -r, --resume                try to resume interrupted file transfer (Z)\n"
@@ -586,7 +593,9 @@ wcreceive(int argc, char **argp)
 			}
 		}
 	} else {
-		char dummy[128]="";
+		char dummy[128];
+		dummy[0]='\0'; /* pre-ANSI HPUX cc demands this */
+		dummy[1]='\0'; /* procheader uses name + 1 + strlen(name) */
 		zi.bytes_total = DEFBYTL;
 
 		if (Verbose > 1
@@ -735,7 +744,8 @@ wcrx(struct zm_fileinfo *zi)
 		report(sectcurr);
 		if (sectcurr==((sectnum+1) &0377)) {
 			sectnum++;
-			if (R_BYTESLEFT(zi) < Blklen)
+			/* if using xmodem we don't know how long a file is */
+			if (zi->bytes_total && R_BYTESLEFT(zi) < Blklen)
 				Blklen=R_BYTESLEFT(zi);
 			zi->bytes_received+=Blklen;
 			if (putsec(zi, secbuf, Blklen)==ERROR)
@@ -1095,6 +1105,17 @@ buffer_it:
 	if (Topipe == 0) {
 		static char *s=NULL;
 		static size_t last_length=0;
+#if defined(F_GETFD) && defined(F_SETFD)
+		if (o_sync) {
+			int oldflags;
+			oldflags = fcntl (fileno(fout), F_GETFD, 0);
+			if (oldflags>=0 && !(oldflags & O_SYNC)) {
+				oldflags|=O_SYNC;
+				fcntl (fileno(fout), F_SETFD, oldflags); /* errors don't matter */
+			}
+		}
+#endif
+
 		if (buffersize==-1 && s) {
 			if (zi->bytes_total>last_length) {
 				free(s);

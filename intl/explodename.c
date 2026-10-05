@@ -21,6 +21,7 @@ Boston, MA 02111-1307, USA.  */
 # include <config.h>
 #endif
 
+#include <sys/types.h> /* for size_t-less stdlib.h */
 #include <stdlib.h>
 #include <string.h>
 

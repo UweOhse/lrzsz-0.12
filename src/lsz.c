@@ -57,29 +57,29 @@ extern int turbo_escape;
 
 int Canseek=1; /* 1: can; 0: only rewind, -1: neither */
 
-static int zsendfile(struct zm_fileinfo *zi, const char *buf, int blen);
-static int getnak(void);
-static int wctxpn(struct zm_fileinfo *);
-static int wcs(const char *oname);
-static int zfilbuf(struct zm_fileinfo *zi);
-static int filbuf(char *buf, int count);
-static int getzrxinit(void);
+static int zsendfile __P ((struct zm_fileinfo *zi, const char *buf, int blen));
+static int getnak __P ((void));
+static int wctxpn __P ((struct zm_fileinfo *));
+static int wcs __P ((const char *oname));
+static int zfilbuf __P ((struct zm_fileinfo *zi));
+static int filbuf __P ((char *buf, int count));
+static int getzrxinit __P ((void));
 #ifdef NEW_ERROR
-static int calc_blklen(long total_sent);
+static int calc_blklen __P ((long total_sent));
 #endif
-static int sendzsinit(void);
-static int wctx(struct zm_fileinfo *);
-static int zsendfdata(struct zm_fileinfo *);
-static void canit(void);
-static int getinsync(struct zm_fileinfo *, int flag);
-static void countem(int argc, char **argv);
-static void chkinvok(const char *s);
-static void usage(int exitcode, const char *what);
-static int zsendcmd(const char *buf, int blen);
-static void saybibi(void);
-static int wcsend(int argc, char *argp[]);
-static int wcputsec(char *buf, int sectnum, int cseclen);
-static void usage1(int exitcode);
+static int sendzsinit __P ((void));
+static int wctx __P ((struct zm_fileinfo *));
+static int zsendfdata __P ((struct zm_fileinfo *));
+static void canit __P ((void));
+static int getinsync __P ((struct zm_fileinfo *, int flag));
+static void countem __P ((int argc, char **argv));
+static void chkinvok __P ((const char *s));
+static void usage __P ((int exitcode, const char *what));
+static int zsendcmd __P ((const char *buf, int blen));
+static void saybibi __P ((void));
+static int wcsend __P ((int argc, char *argp[]));
+static int wcputsec __P ((char *buf, int sectnum, int cseclen));
+static void usage1 __P ((int exitcode));
 
 #ifdef ENABLE_SYSLOG
 #define DO_SYSLOG(message) do { \

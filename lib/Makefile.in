@@ -40,7 +40,7 @@ transform = @program_transform_name@
 
 noinst_LIBRARIES=zmodem
 zmodem_LIBADD=@LIBOBJS@ @ALLOCA@
-AUTOMAKE_OPTIONS=ansi2knr
+#AUTOMAKE_OPTIONS=ansi2knr
 CFLAGS=@CFLAGS@
 
 noinst_LIBRARIES = zmodem
@@ -72,10 +72,7 @@ LIBS = @LIBS@
 
 COMPILE = $(CC) -c $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
 LINK = $(CC) $(LDFLAGS) -o $@
-
-ANSI2KNR = @ANSI2KNR@
-o = .@U@o
-zmodem_OBJECTS = long-options$o xstrtol$o xstrtoul$o error$o
+zmodem_OBJECTS = long-options.o xstrtol.o xstrtoul.o error.o
 EXTRA_zmodem_SOURCES =
 LIBFILES =  libzmodem.a
 AR = ar
@@ -127,36 +124,6 @@ distclean-compile:
 	rm -f *.tab.c
 
 maintainer-clean-compile:
-
-.c._c:
-	$(ANSI2KNR) $< > $*.tmp && mv $*.tmp $@
-
-._c._o:
-	@echo $(COMPILE) $<
-	@rm -f _$*.c
-	@ln $< _$*.c && $(COMPILE) _$*.c && mv _$*.o $@ && rm _$*.c
-
-.c._o:
-	$(ANSI2KNR) $< > $*.tmp && mv $*.tmp $*._c
-	@echo $(COMPILE) $*._c
-	@rm -f _$*.c
-	@ln $*._c _$*.c && $(COMPILE) _$*.c && mv _$*.o $@ && rm _$*.c
-
-ansi2knr: ansi2knr.o
-	$(LINK) ansi2knr.o $(LIBS)
-
-$(OBJECTS): $(ANSI2KNR)
-ansi2knr.o: $(CONFIG_HEADER)
-
-mostlyclean-kr:
-	rm -f *._o *._c _*.c _*.o
-
-clean-kr:
-
-distclean-kr:
-	rm -f ansi2knr
-
-maintainer-clean-kr:
 $(zmodem_OBJECTS): ../config.h
 
 libzmodem.a: $(zmodem_OBJECTS) $(zmodem_LIBADD)
@@ -245,34 +212,32 @@ maintainer-clean-generic:
 	test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
 	test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 mostlyclean:  mostlyclean-noinstLIBRARIES mostlyclean-compile \
-		mostlyclean-kr mostlyclean-tags mostlyclean-generic
+		mostlyclean-tags mostlyclean-generic
 
-clean:  clean-noinstLIBRARIES clean-compile clean-kr clean-tags \
-		clean-generic mostlyclean 
+clean:  clean-noinstLIBRARIES clean-compile clean-tags clean-generic \
+		mostlyclean 
 
-distclean:  distclean-noinstLIBRARIES distclean-compile distclean-kr \
-		distclean-tags distclean-generic clean 
+distclean:  distclean-noinstLIBRARIES distclean-compile distclean-tags \
+		distclean-generic clean 
 	rm -f config.status
 
 maintainer-clean:  maintainer-clean-noinstLIBRARIES \
-		maintainer-clean-compile maintainer-clean-kr \
-		maintainer-clean-tags maintainer-clean-generic \
-		distclean 
+		maintainer-clean-compile maintainer-clean-tags \
+		maintainer-clean-generic distclean 
 	@echo "This command is intended for maintainers to use;"
 	@echo "it deletes files that may require special tools to rebuild."
 
 .PHONY: default mostlyclean-noinstLIBRARIES distclean-noinstLIBRARIES \
 clean-noinstLIBRARIES maintainer-clean-noinstLIBRARIES \
 mostlyclean-compile distclean-compile clean-compile \
-maintainer-clean-compile mostlyclean-kr distclean-kr clean-kr \
-maintainer-clean-kr tags mostlyclean-tags distclean-tags clean-tags \
-maintainer-clean-tags distdir info dvi check installcheck install-exec \
-install-data install uninstall all installdirs mostlyclean-generic \
-distclean-generic clean-generic maintainer-clean-generic clean \
-mostlyclean distclean maintainer-clean
+maintainer-clean-compile tags mostlyclean-tags distclean-tags \
+clean-tags maintainer-clean-tags distdir info dvi check installcheck \
+install-exec install-data install uninstall all installdirs \
+mostlyclean-generic distclean-generic clean-generic \
+maintainer-clean-generic clean mostlyclean distclean maintainer-clean
 
 .SUFFIXES:
-.SUFFIXES: .c .o ._c ._o
+.SUFFIXES: .c .o
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

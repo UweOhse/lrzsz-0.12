@@ -76,7 +76,8 @@ typedef char *pointer;
 extern pointer xmalloc ();
 #else
 static void *
-xmalloc(unsigned long s)
+xmalloc(s)
+	unsigned long s;
 {
    void *p=(void *)malloc(s);
    if (!p) {

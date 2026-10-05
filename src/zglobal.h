@@ -21,7 +21,19 @@
 # endif
 #endif
 
+#ifndef __P
+#if defined (__GNUC__) || (defined (__STDC__) && __STDC__)
+#define __P(args) args
+#else
+#define __P(args) ()
+#endif  /* GCC.  */
+#endif  /* Not __P.  */
+
+#ifdef __STDC__
 #include <stdarg.h>
+#else
+#include <varargs.h>
+#endif
 
 #ifdef TIME_WITH_SYS_TIME
 #  include <sys/time.h>
@@ -79,27 +91,40 @@ char *strchr (), *strrchr ();
 #  endif
 #endif
 
+#include <termios.h>
+#define USE_TERMIOS
+
+/* used to use #elif, but native braindead hpux 9.00 c compiler didn't 
+ * understand it */
 #ifdef HAVE_TERMIOS_H
-#  include <termios.h>
-#  define USE_TERMIOS
-#elif defined(HAVE_SYS_TERMIOS_H)
+# include <termios.h>
+# define USE_TERMIOS
+#else
+# if defined(HAVE_SYS_TERMIOS_H)
 #  include <sys/termios.h>
 #  define USE_TERMIOS
-#elif defined(HAVE_TERMIO_H)
-#  include <termio.h>
-#  define USE_TERMIO
-#elif defined(HAVE_SYS_TERMIO_H)
-#  include <sys/termio.h>
-#  define USE_TERMIO
-#elif defined(HAVE_SGTTY_H)
-#  include <sgtty.h>
-#  define USE_SGTTY
-#  ifdef LLITOUT
-extern long Locmode;		/* Saved "local mode" for 4.x BSD "new driver" */
-extern long Locbit;	/* Bit SUPPOSED to disable output translations */
+# else
+#  if defined(HAVE_TERMIO_H)
+#   include <termio.h>
+#   define USE_TERMIO
+#  else
+#   if defined(HAVE_SYS_TERMIO_H)
+#    include <sys/termio.h>
+#    define USE_TERMIO
+#   else
+#    if defined(HAVE_SGTTY_H)
+#     include <sgtty.h>
+#     define USE_SGTTY
+#     ifdef LLITOUT
+       extern long Locmode;		/* Saved "local mode" for 4.x BSD "new driver" */
+       extern long Locbit;	/* Bit SUPPOSED to disable output translations */
+#     endif
+#    else
+#     error neither termio.h nor sgtty.h found. Cannot continue. */
+#    endif
+#   endif
 #  endif
-#else
-#  error neither termio.h nor sgtty.h found. Cannot continue.
+# endif
 #endif
 
 #ifdef USE_SGTTY
@@ -135,10 +160,12 @@ extern long Locbit;	/* Bit SUPPOSED to disable output translations */
 #else
 #  ifdef HAVE_SYSLOG_H
 #    include <syslog.h>
-#  elif defined(HAVE_SYS_SYSLOG_H)
-#    include <sys/syslog.h>
 #  else
-#    undef HAVE_SYSLOG
+#    if defined(HAVE_SYS_SYSLOG_H)
+#      include <sys/syslog.h>
+#    else
+#      undef HAVE_SYSLOG
+#    endif
 #  endif
 #endif
 #ifndef ENABLE_SYSLOG
@@ -175,6 +202,10 @@ extern int enable_syslog;
 
 #if !defined(PATH_MAX) && defined(MAXPATHLEN)
 # define PATH_MAX MAXPATHLEN
+#endif
+
+#if !defined(LONG_MAX) && defined(HAVE_LIMITS_H)
+# include <limits.h>
 #endif
 
 #ifndef PATH_MAX
@@ -238,7 +269,7 @@ extern int no_timeout;
 extern int Zctlesc;    /* Encode control characters */
 extern int under_rsh;
 
-RETSIGTYPE bibi(int n);
+RETSIGTYPE bibi __P ((int n));
 
 #define sendline(c) putchar((c) & 0377)
 #define xsendline(c) putchar(c)
@@ -249,9 +280,9 @@ extern int readline_left; /* number of buffered chars left to read */
 #define READLINE_PF(timeout) \
     (--readline_left >= 0? (*readline_ptr++ & 0377) : readline(timeout))
 
-int readline(int timeout);
-void readline_purge(void);
-void readline_setup(int fd, int readnum, int buffer_size);
+int readline __P ((int timeout));
+void readline_purge __P ((void));
+void readline_setup __P ((int fd, int readnum, int buffer_size));
 
 
 /* rbsb.c */
@@ -263,18 +294,18 @@ extern unsigned char checked;
 extern int iofd;
 extern unsigned Baudrate;
 
-void zperr(const char *fmt, ...);
-void zpfatal(const char *fmt, ...);
-void vfile(const char *format, ...);
+void zperr __P ((const char *fmt, ...));
+void zpfatal __P ((const char *fmt, ...));
+void vfile __P ((const char *format, ...));
 
 /* rbsb.c */
-int from_cu(void);
-void cucheck(void);
-int rdchk(int fd);
-int io_mode(int fd, int n);
-void sendbrk(int fd);
+int from_cu __P ((void));
+void cucheck __P ((void));
+int rdchk __P ((int fd));
+int io_mode __P ((int fd, int n));
+void sendbrk __P ((int fd));
 #define flushmo() fflush(stdout)
-void purgeline(int fd);
+void purgeline __P ((int fd));
 
 
 /* crctab.c */
@@ -302,15 +333,15 @@ extern int Crc32;      /* Display flag indicating 32 bit CRC being received */
 extern int Znulls;     /* Number of nulls to send at beginning of ZDATA hdr */
 extern char Attn[ZATTNLEN+1];  /* Attention string rx sends to tx on err */
 
-extern void zsendline(int c);
-void zsbhdr(int type, char *hdr);
-void zshhdr(int type, char *hdr);
-void zsdata(const char *buf, int length, int frameend);
-int zrdata(char *buf, int length);
-int zgethdr(char *hdr, int eflag);
-void stohdr(long pos);
-long rclhdr(char *hdr);
+extern void zsendline __P ((int c));
+void zsbhdr __P ((int type, char *hdr));
+void zshhdr __P ((int type, char *hdr));
+void zsdata __P ((const char *buf, int length, int frameend));
+int zrdata __P ((char *buf, int length));
+int zgethdr __P ((char *hdr, int eflag));
+void stohdr __P ((long pos));
+long rclhdr __P ((char *hdr));
 
-const char * protname(void);
+const char * protname __P ((void));
 
 #endif

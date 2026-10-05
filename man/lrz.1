@@ -231,6 +231,14 @@ calls by about 50 percent).
 
 Use this option with care.
 .TP
+.B "--o-sync"
+Open output files in synchronous write mode. This may be useful if you
+experience errors due to lost interrupts if update (or bdflush or
+whoever this daemon is called on your system) writes the buffers to the
+disk.
+
+This option is silently ignored if your systems doesn't support O_SYNC.
+.TP
 .B "-p, --protect"
 (ZMODEM) Protect: skip file if destination file exists.
 .TP

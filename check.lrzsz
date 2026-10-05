@@ -20,9 +20,12 @@ else
 fi
 
 BUFSIZE="-B 524288"
+#export LD_PRELOAD=/lib/libc-2.0.so
 
-SZ=$objdir/src/lsz
-RZ=$objdir/src/lrz
+SZ="env LD_PRELOAD=/lib/libc-2.0.so $objdir/src/lsz"
+RZ="env LD_PRELOAD=/lib/libc-2.0.so $objdir/src/lrz"
+SZ="$objdir/src/lsz"
+RZ="$objdir/src/lrz"
 #SZ=/usr/bin/lsz
 #RZ=/usr/bin/lrz
 
@@ -294,7 +297,7 @@ fi
 if test "$mode" = all -o "$mode" = sz-r ; then
 	mkdir $testdir/resume-s
 	echo "testing ZMODEM resume (sz -r)"
-	dd if=$SZ of=$testdir/resume-s/lsz.c bs=256 count=5 2>&5
+	dd if=$srcdir/src/Makefile.in of=$testdir/resume-s/lsz.c bs=256 count=5 2>&5
 	($SZ -rq $srcdir/src/lsz.c) <$testdir/pipe | \
 		(cd $testdir/resume-s ; $RZ $QUIET >>../pipe )
 	echo "differences are normal:" >&5
@@ -319,7 +322,7 @@ fi
 if test "$mode" = all -o "$mode" = rz-r ; then
     echo "testing ZMODEM resume (rz -r)"
 	mkdir $testdir/resume-r 2>&5
-	dd if=$SZ of=$testdir/resume-r/lsz.c bs=256 count=5 2>&5
+	dd if=$srcdir/src/Makefile.in of=$testdir/resume-r/lsz.c bs=256 count=5 2>&5
 	($SZ $srcdir/src/lsz.c -q) <$testdir/pipe | \
 		(cd $testdir/resume-r ; $RZ -r $QUIET >>../pipe )
 	echo "differences are normal:" >&5

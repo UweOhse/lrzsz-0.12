@@ -1,3 +1,62 @@
+Sun Feb  2 12:52:01 MET 1997 Uwe Ohse <uwe@tirka.gun.de>
+
+	* Release 0.12.15
+
+	* src/lrz.c (procheader): xmodem didn't work on m68k-hp-hpux9.00,
+	  compiled with gcc. procheader got "" as filename if using 
+	  xmodem, and does this:
+	    char *p=name+1+strlen(name).
+	  certainly not ok :-)
+
+Sat Feb  1 19:55:08 MET 1997 Uwe Ohse <uwe@tirka.gun.de>
+
+	* src/lrz.c (procheader): change mode of received file
+	  to O_SYNC if o_sync is set.
+	  (main): set o_sync if --o-sync (or --o_sync) is given.
+	  (global): new variable static int o_sync.
+	  (usage): new option --o-sync.
+
+	* src/rbsb.c:
+	* src/timing.c:
+	* src/zglobal.h: don't use #elif anymore (didn't know 
+	  that pre ansi systems don't understand it).
+
+	* src/timing.h:
+	* src/lrz.c:
+	* src/lsz.c:
+	* src/zm.c:
+	* src/zglobal.h: use __P in prototypes.
+
+	* src/zglobal.h:
+	  include varargs.h instead of stdarg.h ifndef __STDC__
+
+	* src/zperr.c: 
+	  #define VA_START(x,y) to va_start(x,y) (__STDC__) or 
+	  va_start(x) (!__STDC__).
+
+	* src/rbsb.c: made it compile with hpux bundled compiler.
+	  purgeline(fd) -> purgeline (int fd).
+	  int rdchk(int fd) ->
+	    int 
+	    rdcheck(int fd)
+
+Fri Jan 31 01:01:47 MET 1997 Uwe Ohse <uwe@tirka.gun.de>
+
+	* lib/alloca.c (xmalloc): de-ANSI-fy.
+
+	* lib/Makefile.am: turn off ansi2knr
+
+	* src/ansi2knr.c: include newer version from fileutils-3.16
+
+Sun Jan 19 09:03:54 1997  Philippe De Muyter  <phdm@mac_tst>
+
+	* src/zglobal.h (LONG_MAX): If everything else failed,
+	  include limits.h.
+
+	* intl/l10nflist.c:
+	* intl/explodename.c
+	  include <sys/types.h>
+
 Tue Jan  7 07:33:55 MET 1997 Uwe Ohse <uwe@tirka.gun.de>
 
 	* configure.in: change version to 0.12.14

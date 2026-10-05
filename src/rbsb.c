@@ -114,7 +114,8 @@ int Twostop;		/* Use two stop bits */
 /*
  *  Return non 0 if something to read from io descriptor f
  */
-int rdchk(int fd)
+int 
+rdchk(int fd)
 {
 	static long lf;
 
@@ -128,7 +129,8 @@ unsigned char checked = '\0' ;
 /*
  * Nonblocking I/O is a bit different in System V, Release 2
  */
-int rdchk(int fd)
+int 
+rdchk(int fd)
 {
 	int lf, savestat;
 
@@ -156,11 +158,13 @@ getspeed(int code)
 
 #ifdef USE_TERMIOS
 struct termios oldtty, tty;
-#elif defined(USE_TERMIO)
-struct termio oldtty, tty;
 #else
+#  if defined(USE_TERMIO)
+struct termio oldtty, tty;
+#  else
 struct sgttyb oldtty, tty;
 struct tchars oldtch, tch;
+#  endif
 #endif
 
 
@@ -418,7 +422,7 @@ sendbrk(int fd)
 }
 
 void
-purgeline(fd)
+purgeline(int fd)
 {
 	readline_purge();
 #ifdef TCFLSH

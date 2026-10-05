@@ -151,6 +151,7 @@ short options use the same arguments as the long ones\n", 64},
   -m, --min-bps N             stop transmission if BPS below N\n\
   -M, --min-bps-time N          for at least N seconds (default: 120)\n\
   -O, --disable-timeouts      disable timeout code, wait forever for data\n\
+      --o-sync                open output file(s) in synchronous write mode\n\
   -p, --protect               protect existing files\n\
   -q, --quiet                 quiet, no progress reports\n\
   -r, --resume                try to resume interrupted file transfer (Z)\n\
@@ -204,4 +205,3 @@ short options use the same arguments as the long ones\n", 85},
   {"file close error", 116},
 };
 
-int _msg_tbl_length = 116;

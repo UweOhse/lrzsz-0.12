@@ -1,6 +1,6 @@
 noinst_LIBRARIES=zmodem
 zmodem_LIBADD=@LIBOBJS@ @ALLOCA@
-AUTOMAKE_OPTIONS=ansi2knr
+#AUTOMAKE_OPTIONS=ansi2knr
 CFLAGS=@CFLAGS@
 
 ## Process this file with automake to produce Makefile.in

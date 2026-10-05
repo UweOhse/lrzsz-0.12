@@ -607,7 +607,7 @@ test "$program_transform_name" = "" && program_transform_name="s,x,x,"
 
 
 PACKAGE=lrzsz
-VERSION=0.12.14
+VERSION=0.12.15
 
 PACKAGE_VERSION="$PACKAGE-$VERSION"
 cat >> confdefs.h <<EOF
