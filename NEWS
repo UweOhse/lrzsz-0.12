@@ -1,13 +1,40 @@
+Version 0.12.11 - October 1996, Uwe Ohse
+
+* lrzsz now has a home page, http://www.csl-gmbh.net/~uwe/lrzsz.html.
+  it still needs some work (oh well, it's "under construction" :-).
+
+* lsz/lrz recognize "rshell" as another name for the restricted
+  shell.
+
+* new option --stop-at HH:MM (stop transmission at HH:MM), and
+  --stop-at +N (stop in N seconds).
+
+* don't hang on BSD machines after getting a timeout (SIGALRM).
+  Stupid BSD people ...
+
+* rb (Y-Modem receive): read at max 1000 bytes after getting a
+  bad header, before giving up.
+
+* new option --delay-startup N: wait N seconds before doing 
+  anything (debugging aid).
+
+* Interrupt signal handling turned on under linux (i still don't 
+  know why it was turned off).
+
+* better handling of "sz -", by Philippe De Muyter.
+
+
 Version 0.12.10 - September 1996, Uwe Ohse
 
 * lsz resends init string if it doesn't receive rz's init.
 
-* improved "make check". (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+* improved "make check". (Philippe De Muyter <phdm@info.ucl.ac.be>)
 
 * `sz -' should work again (but i cannot test it). Anyway, this will not
   work if sz cannot read from stdout.
 
-* portability enhancements by (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+* portability enhancements by (Philippe De Muyter <phdm@info.ucl.ac.be>)
+
 
 Version 0.12.9 - September 1996, Uwe Ohse
 
@@ -17,6 +44,7 @@ Version 0.12.9 - September 1996, Uwe Ohse
 * added some missing error messages.
 
 * updated manual pages.
+
 
 Version 0.12.8 - August 1996, Uwe Ohse
 
@@ -34,9 +62,11 @@ Version 0.12.8 - August 1996, Uwe Ohse
 
 * -+, --append option fixed.
 
+
 Version 0.12.7 - August 1996, Uwe Ohse
 
 * portability enhancements. compiles and runs under hurd.
+
 
 Version 0.12.6 - August 1996, Uwe Ohse
 
@@ -46,10 +76,12 @@ Version 0.12.6 - August 1996, Uwe Ohse
   the whole file. Use it if you get crc errors while accessing
   the disk.
 
+
 Version 0.12.5 - August 1996, Uwe Ohse
 
 * some portability enhancements (getopt.c)
 * install creates symlinks from l[rs]z to l[rs][bx]
+
 
 Version 0.12.4 - June 1996, Uwe Ohse
 
@@ -59,9 +91,11 @@ Version 0.12.4 - June 1996, Uwe Ohse
 
 * `make check' and `make vcheck' now try to check crash recovery
 
+
 Version 0.12.3 - June 1996, Uwe Ohse
 
 * just a few bugfixes.
+
 
 Version 0.12.2 - June 1996, by Uwe Ohse
 

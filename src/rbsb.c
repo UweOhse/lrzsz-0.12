@@ -201,7 +201,7 @@ io_mode(int fd, int n)
 		tty.c_lflag = protocol==ZM_ZMODEM ? 0 : ISIG;
 		tty.c_cc[VINTR] = protocol==ZM_ZMODEM ? -1 : 030;	/* Interrupt char */
 #else
-		tty.c_lflag = ISIG;
+		tty.c_lflag = 0;
 		tty.c_cc[VINTR] = protocol==ZM_ZMODEM ? 03 : 030;	/* Interrupt char */
 #endif
 		tty.c_cc[VQUIT] = -1;			/* Quit char */
@@ -229,7 +229,6 @@ io_mode(int fd, int n)
 
 		 /* No echo, crlf mapping, INTR, QUIT, delays, no erase/kill */
 		tty.c_lflag &= ~(ECHO | ICANON | ISIG);
-
 		tty.c_oflag = 0;	/* Transparent output */
 
 		tty.c_cflag &= ~(PARENB);	/* Same baud rate, disable parity */
@@ -278,7 +277,7 @@ io_mode(int fd, int n)
 		tty.c_lflag = protocol==ZM_ZMODEM ? 0 : ISIG;
 		tty.c_cc[VINTR] = protocol==ZM_ZMODEM ? -1 : 030;	/* Interrupt char */
 #else
-		tty.c_lflag = ISIG;
+		tty.c_lflag = 0;
 		tty.c_cc[VINTR] = protocol==ZM_ZMODEM ? 03 : 030;	/* Interrupt char */
 #endif
 		tty.c_cc[VQUIT] = -1;			/* Quit char */
@@ -300,7 +299,7 @@ io_mode(int fd, int n)
 
 		tty.c_iflag = n==3 ? (IGNBRK|IXOFF) : IGNBRK;
 
-		 /* No echo, crlf mapping, INTR, QUIT, delays, no erase/kill */
+		 /* No echo, crlf mapping, delays, no erase/kill */
 		tty.c_lflag &= ~(ECHO | ICANON | ISIG);
 
 		tty.c_oflag = 0;	/* Transparent output */

@@ -67,7 +67,7 @@
 #endif
 
 double 
-timing (int reset)
+timing (int reset, time_t *nowp)
 {
   static double elaptime, starttime, stoptime;
   double yet;
@@ -145,6 +145,8 @@ timing (int reset)
 #ifdef NEED_TIME
 	yet=(double) time(NULL);
 #endif
+  if (nowp)
+    *nowp=(time_t) yet;
   if (reset) {
     starttime = yet;
     return starttime;

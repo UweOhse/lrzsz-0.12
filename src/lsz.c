@@ -40,6 +40,7 @@ void *mm_addr=NULL;
 extern time_t time();
 extern char *strerror();
 extern char *strstr();
+extern char *stpcpy();
 #endif
 
 extern int errno;
@@ -167,6 +168,8 @@ int no_timeout=FALSE;
 int max_blklen=1024;
 int start_blklen=1024;
 int zmodem_requested;
+time_t stop_time=0;
+
 #ifdef NEW_ERROR
 int error_count;
 #define OVERHEAD 18
@@ -189,6 +192,7 @@ static long min_bps_time;
 
 static int io_mode_fd=0;
 static int zrqinits_sent=0;
+static int play_with_sigint=0;
 
 /* called by signal interrupt or terminate to clean things up */
 RETSIGTYPE
@@ -206,15 +210,13 @@ bibi (int n)
 	exit (128 + n);
 }
 
-/* Called when ZMODEM gets an interrupt (^X) */
-#ifndef linux
+/* Called when ZMODEM gets an interrupt (^C) */
 static RETSIGTYPE
 onintr(int n)
 {
 	signal(SIGINT, SIG_IGN);
 	longjmp(intrjmp, -1);
 }
-#endif
 
 int Zctlesc;	/* Encode control characters */
 const char *program_name = "sz";
@@ -251,6 +253,7 @@ static struct option const long_options[] =
   {"resume", no_argument, NULL, 'r'},
   {"restricted", no_argument, NULL, 'R'},
   {"quiet", no_argument, NULL, 'q'},
+  {"stop-at", required_argument, NULL, 's'},
   {"syslog", optional_argument, NULL , 2},
   {"timesync", no_argument, NULL, 'S'},
   {"timeout", required_argument, NULL, 't'},
@@ -264,6 +267,8 @@ static struct option const long_options[] =
   {"zmodem", no_argument, NULL, 'Z'},
   {"overwrite", no_argument, NULL, 'y'},
   {"overwrite-or-skip", no_argument, NULL, 'Y'},
+
+  {"delay-startup", required_argument, NULL, 4},
   {NULL, 0, NULL, 0}
 };
 
@@ -278,11 +283,12 @@ main(int argc, char **argv)
 	char **patts;
 	int c;
 	const char *Cmdstr=NULL;		/* Pointer to the command string */
+	int startup_delay=0;
 
 	if ((cp = getenv("ZNULLS")) && *cp)
 		Znulls = atoi(cp);
 	if ((cp=getenv("SHELL")) && (strstr(cp, "rsh") || strstr(cp, "rksh")
-		|| strstr(cp, "rbash")))
+		|| strstr(cp, "rbash") || strstr(cp,"rshell")))
 	{
 		under_rsh=TRUE;
 		Restricted=1;
@@ -305,7 +311,7 @@ main(int argc, char **argv)
 	Rxtimeout = 600;
 
 	while ((c = getopt_long (argc, argv, 
-		"2+8abB:C:c:dfeEghi:kL:l:m:M:NnOopRrqSt:TUuvw:XYy",
+		"2+8abB:C:c:dfeEghi:kL:l:m:M:NnOopRrqsSt:TUuvw:XYy",
 		long_options, (int *) 0))!=EOF)
 	{
 		unsigned long int tmp;
@@ -412,6 +418,41 @@ main(int argc, char **argv)
 		case 'r': Lzconv = ZCRESUM; break;
 		case 'R': Restricted = TRUE; break;
 		case 'q': Quiet=TRUE; Verbose=0; break;
+		case 's':
+			if (isdigit(*optarg)) {
+				struct tm *tm;
+				time_t t;
+				int hh,mm;
+				char *nex;
+
+				hh = strtoul (optarg, &nex, 10);
+				if (hh>23)
+					usage(2,_("hour to large (0..23)"));
+				if (*nex!=':')
+					usage(2, _("unparsable stop time\n"));
+				nex++;
+				mm = strtoul (optarg, &nex, 10);
+				if (mm>59)
+					usage(2,_("minute to large (0..59)"));
+
+				t=time(NULL);
+				tm=localtime(&t);
+				tm->tm_hour=hh;
+				tm->tm_min=hh;
+				stop_time=mktime(tm);
+				if (stop_time<t)
+					stop_time+=86400L; /* one day more */
+				if (stop_time - t <10) 
+					usage(2,_("stop time to small"));
+			} else {
+				s_err = xstrtoul (optarg, NULL, 0, &tmp, NULL);
+				stop_time = tmp + time(0);
+				if (s_err != LONGINT_OK)
+					STRTOL_FATAL_ERROR (optarg, _("stop-at"), s_err);
+				if (tmp<10)
+					usage(2,_("stop time to small"));
+			}
+			break;
 		case 'S': enable_timesync=1; break;
 		case 'T': turbo_escape=1; break;
 		case 't':
@@ -469,6 +510,12 @@ main(int argc, char **argv)
 #  endif
 #endif
 			break;
+		case 4:
+			s_err = xstrtoul (optarg, NULL, 0, &tmp, NULL);
+			startup_delay = tmp;
+			if (s_err != LONGINT_OK)
+				STRTOL_FATAL_ERROR (optarg, _("startup delay"), s_err);
+			break;
 		default:
 			usage (2,NULL);
 			break;
@@ -477,6 +524,14 @@ main(int argc, char **argv)
 
 	if (argc<2)
 		usage(2,_("need at least one file to send"));
+
+	if (startup_delay)
+		sleep(startup_delay);
+
+#ifdef HAVE_SIGINTERRUPT
+	/* we want interrupted system calls to fail and not to be restarted. */
+	siginterrupt(SIGALRM,1);
+#endif
 
 	npats = argc - optind;
 	patts=&argv[optind];
@@ -526,16 +581,13 @@ main(int argc, char **argv)
 	io_mode(io_mode_fd,1);
 	readline_setup(io_mode_fd, 128, 256);
 
-#ifndef linux
-	if (signal(SIGINT, bibi) == SIG_IGN) {
-		signal(SIGINT, SIG_IGN); signal(SIGKILL, SIG_IGN);
-	} else {
-		signal(SIGINT, bibi); signal(SIGKILL, bibi);
+	if (signal(SIGINT, bibi) == SIG_IGN)
+		signal(SIGINT, SIG_IGN);
+	else {
+		signal(SIGINT, bibi); 
+		play_with_sigint=1;
 	}
-	if ( !Fromcu)
-		signal(SIGQUIT, SIG_IGN);
 	signal(SIGTERM, bibi);
-#endif
 
 	if ( protocol!=ZM_XMODEM) {
 		if (protocol==ZM_ZMODEM) {
@@ -545,7 +597,7 @@ main(int argc, char **argv)
 		countem(npats, patts);
 		if (protocol == ZM_ZMODEM) {
 			/* throw away any input already received. This doesn't harm
-			 * as we invite the receiver to send it's data again, und
+			 * as we invite the receiver to send it's data again, and
 			 * might be useful if the receiver has already died or
 			 * if there is dirt left if the line 
 			 */
@@ -553,7 +605,7 @@ main(int argc, char **argv)
 			{
 				struct timeval t;
 				fd_set f;
-				unsigned char c;
+				unsigned char throwaway;
 				
 				t.tv_sec = 0;
 				t.tv_usec = 0;
@@ -562,7 +614,7 @@ main(int argc, char **argv)
 				FD_SET(io_mode_fd,&f);
 				
 				while (select(1,&f,NULL,NULL,&t)) {
-					if (0==read(io_mode_fd,&c,1)) /* EOF ... */
+					if (0==read(io_mode_fd,&throwaway,1)) /* EOF ... */
 						break;
 				}
 			}
@@ -668,7 +720,7 @@ wcsend (int argc, char *argp[])
 				fprintf (stderr, " (%s %ld)\r\n", _ ("timezone"), timezone / 60);
 #else
 			if (Verbose)
-				fprintf (stderr, " (%s %s)\r\n", _ ("timezone"), _ ("unknown"));
+				fprintf (stderr, " (%s %s)\r\n", _ ("timezone unknown"));
 #endif
 			fclose (f);
 			if (wcs (tmp) == ERROR)
@@ -784,7 +836,9 @@ wcs(const char *oname)
 			sprintf(name, "s%d.lsz", getpid());
 		}
 		input_f=stdin;
+#ifdef HAVE_MMAP
 		dont_mmap_this=1;
+#endif
 	} else if ((input_f=fopen(oname, "r"))==NULL) {
 		int e=errno;
 		error(0,e, _("cannot open %s"),oname);
@@ -846,12 +900,12 @@ wcs(const char *oname)
 	zi.fname=name;
 	zi.modtime=f.st_mtime;
 	zi.mode=f.st_mode;
-	zi.bytes_total=f.st_size;
+	zi.bytes_total= c == S_IFIFO ? DEFBYTL : f.st_size;
 	zi.bytes_sent=0;
 	zi.bytes_received=0;
 	zi.bytes_skipped=0;
 	zi.eof_seen=0;
-	timing(1);
+	timing(1,NULL);
 
 	++Filcnt;
 	switch (wctxpn(&zi)) {
@@ -886,19 +940,19 @@ wcs(const char *oname)
 #endif
 		) {
 		long bps;
-		double d=timing(0);
+		double d=timing(0,NULL);
 		if (d==0) /* can happen if timing() uses time() */
 			d=0.5;
-		bps=(zi.bytes_total-zi.bytes_skipped)/d;
+		bps=zi.bytes_sent/d;
 		putc('\r',stderr);
 		if (Verbose > 1) 
 			fprintf(stderr,
-				_("Bytes Sent:%7ld   BPS:%-8ld                       \n"),
-				zi.bytes_total,bps);
+				_("Bytes Sent:%7ld   BPS:%-8ld                        \n"),
+				zi.bytes_sent,bps);
 #ifdef ENABLE_SYSLOG
 		if (enable_syslog)
 			syslog(LOG_INFO, "%s/%s: %ld Bytes, %ld BPS",shortname,
-				protname(), (long) zi.bytes_total,bps);
+				protname(), (long) zi.bytes_sent,bps);
 #endif
 	}
 	return 0;
@@ -1268,6 +1322,7 @@ usage(int exitcode, const char *what)
 "  -c, --command COMMAND       execute remote command COMMAND (Z)\n"
 "  -C, --command-tries N       try N times to execute a command (Z)\n"
 "  -d, --dot-to-slash          change '.' to '/' in pathnames (Y/Z)\n"
+"      --delay-startup N       sleep N seconds before doing anything\n"
 "  -e, --escape                escape all control characters (Z)\n"
 "  -E, --rename                force receiver to rename files it already has\n"
 "  -f, --full-path             send full pathname (Y/Z)\n"
@@ -1286,6 +1341,7 @@ usage(int exitcode, const char *what)
 "  -r, --resume                resume interrupted file transfer (Z)\n"
 "  -R, --restricted            restricted, more secure mode\n"
 "  -q, --quiet                 quiet (no progress reports)\n"
+"  -s, --stop-at {HH:MM|+N}    stop transmission at HH:MM or in N seconds\n"
 "  -u, --unlink                unlink file after transmission\n"
 "  -U, --unrestrict            turn off restricted mode (if allowed to)\n"
 "  -v, --verbose               be verbose, provide debugging information\n"
@@ -1341,7 +1397,7 @@ getzrxinit(void)
 			if ( !(Rxflags & CANFDX))
 				Txwindow = 0;
 			vfile("Rxbuflen=%d Tframlen=%d", Rxbuflen, Tframlen);
-			if ( !Fromcu)
+			if ( play_with_sigint)
 				signal(SIGINT, SIG_IGN);
 			io_mode(io_mode_fd,2);	/* Set cbreak, XON/XOFF, etc. */
 #ifndef READCHECK
@@ -1633,10 +1689,8 @@ zsendfdata (struct zm_fileinfo *zi)
 		}
 #endif
 	}
-#ifndef linux
-	if (!Fromcu)
+	if (play_with_sigint)
 		signal (SIGINT, onintr);
-#endif
 
 	newcnt = Rxbuflen;
 	Txwcnt = 0;
@@ -1675,12 +1729,13 @@ zsendfdata (struct zm_fileinfo *zi)
 			e = ZCRCQ;
 		} else
 			e = ZCRCG;
-		if ((Verbose > 1 || min_bps)
+		if ((Verbose > 1 || min_bps || stop_time)
 			&& (not_printed > (min_bps ? 3 : 7) 
 				|| zi->bytes_sent > last_bps / 2 + last_txpos)) {
 			int minleft = 0;
 			int secleft = 0;
-			last_bps = (zi->bytes_sent / timing (0));
+			time_t now;
+			last_bps = (zi->bytes_sent / timing (0,&now));
 			if (last_bps > 0) {
 				minleft = (zi->bytes_total - zi->bytes_sent) / last_bps / 60;
 				secleft = ((zi->bytes_total - zi->bytes_sent) / last_bps) % 60;
@@ -1688,9 +1743,9 @@ zsendfdata (struct zm_fileinfo *zi)
 			if (min_bps) {
 				if (low_bps) {
 					if (last_bps<min_bps) {
-						if (time(NULL)-low_bps>=min_bps_time) {
+						if (now-low_bps>=min_bps_time) {
 							/* too bad */
-							vfile(_("rzfile: bps rate %ld below min %ld"),
+							vfile(_("zsendfdata: bps rate %ld below min %ld"),
 								  last_bps, min_bps);
 							DO_SYSLOG((LOG_INFO, "%s/%s: bps rate low: %ld <%ld",
 									   shortname, protname(), last_bps, min_bps));
@@ -1699,8 +1754,15 @@ zsendfdata (struct zm_fileinfo *zi)
 					} else
 						low_bps=0;
 				} else if (last_bps < min_bps) {
-					low_bps=time(NULL);
+					low_bps=now;
 				}
+			}
+			if (stop_time && now>=stop_time) {
+				/* too bad */
+				vfile(_("zsendfdata: reached stop time"));
+				DO_SYSLOG((LOG_INFO, "%s/%s: reached stop time",
+						   shortname, protname()));
+				return ERROR;
 			}
 
 			if (Verbose > 1) {
@@ -1770,7 +1832,7 @@ zsendfdata (struct zm_fileinfo *zi)
 	} while (!zi->eof_seen);
 
 
-	if (!Fromcu)
+	if (play_with_sigint)
 		signal (SIGINT, SIG_IGN);
 
 	for (;;) {
@@ -1807,7 +1869,7 @@ calc_blklen(long total_sent)
 	static long last_error_count=0;
 	static int last_blklen=0;
 	static long last_bytes_per_error=0;
-	long best_bytes=0;
+	unsigned long best_bytes=0;
 	long best_size=0;
 	long this_bytes_per_error;
 	long d;
@@ -1897,13 +1959,13 @@ calcit:
 	for (i=32;i<=max_blklen;i*=2) {
 		long ok; /* some many ok blocks do we need */
 		long failed; /* and that's the number of blocks not transmitted ok */
-		long transmitted;
+		unsigned long transmitted;
 		ok=total_bytes / i + 1;
 		failed=((long) i + OVERHEAD) * ok / this_bytes_per_error;
 		transmitted=total_bytes + ok * OVERHEAD  
 			+ failed * ((long) i+OVERHEAD+OVER_ERR);
 		if (Verbose > 4)
-			fprintf(stderr,"calc_blklen: blklen %d, ok %ld, failed %ld -> %ld\n",
+			fprintf(stderr,"calc_blklen: blklen %d, ok %ld, failed %ld -> %lu\n",
 				i,ok,failed,transmitted);
 		if (transmitted < best_bytes || !best_bytes)
 		{
@@ -2108,6 +2170,9 @@ countem (int argc, char **argv)
 				++Filesleft;
 				Totalleft += f.st_size;
 			}
+		} else if (strcmp (*argv, "-") == 0) {
+			++Filesleft;
+			Totalleft += DEFBYTL;
 		}
 		if (Verbose > 2)
 			fprintf (stderr, " %ld", (long) f.st_size);

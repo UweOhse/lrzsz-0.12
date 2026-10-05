@@ -200,11 +200,16 @@ if running in restricted mode.
 Output file data to /dev/null; for testing.
 (Unix only)
 .TP
+.B "--delay-startup N"
+Wait 
+.B N
+seconds before doing anything.
+.TP
 .B "-e, --escape"
 Force sender to escape all control characters;
 normally XON, XOFF, DLE, CR-@-CR, and Ctrl-X are escaped.
 .TP
--B "-E, --rename"
+.B "-E, --rename"
 Rename incoming file if target filename already exists. The new file
 name will have a dot and a number (0..999) appended.
 .TP
@@ -242,6 +247,19 @@ with a leading dot if this option is given twice.
 See 
 .B SECURITY
 for mode information about restricted mode.
+.TP
+.B "-s HH:MM, --stop-at HH:MM"
+Stop transmission at
+.B HH
+hours,
+.B MM
+minutes. Another variant, using
+.B +N
+instead of
+.B HH:MM,
+stops transmission in
+.B N
+seconds.
 .TP
 .B "-S, --timesync"
 Request timesync packet from the sender. The sender sends its system time, 

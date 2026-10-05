@@ -238,6 +238,11 @@ This option enables the
 .B "--full-path"
 option.
 .TP
+.B "--delay-startup N"
+Wait
+.B N
+seconds before doing anything.
+.TP
 .B "-e, --escape"
 Escape all control characters;
 normally XON, XOFF, DLE, CR-@-CR, and Ctrl-X are escaped.
@@ -329,6 +334,19 @@ If the source file is longer than the destination file,
 the transfer commences at the offset in the source file that equals
 the length of the destination file.
 .TP
+.B "-s HH:MM, --stop-at HH:MM"
+Stop transmission at
+.B HH 
+hours, 
+.B MM
+minutes. Another variant, using 
+.B +N 
+instead of 
+.B HH:MM,
+stops transmission in
+.B N
+seconds.
+.TP
 .B "-S, --timesync"
 enable timesync protocol support. See timesync.doc for further 
 information.
@@ -350,7 +368,7 @@ Do not escape certain characters (^P, ^P|0x80, telenet escape sequence
 hurt in the normal case (but be careful - ^P might be useful if connected
 through a terminal server).
 .TP
-.B u
+.B "-u"
 Unlink the file after successful transmission.
 .TP
 .B "-U, --unrestrict"

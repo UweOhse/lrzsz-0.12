@@ -208,6 +208,8 @@ extern int enable_syslog;
 
 #define UNIXFILE 0xF000  /* The S_IFMT file mask bit for stat */
 
+#define DEFBYTL 2000000000L	/* default rx file size */
+
 enum zm_type_enum {
 	ZM_XMODEM,
 	ZM_YMODEM,

@@ -1,3 +1,80 @@
+Mon Oct  7 22:57:09 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+	* src/lsz.c (usage): 
+	* src/lrz.c (usage): updated help text.
+
+	* configure.in (VERSION): changed to 0.12.11
+
+	* src/lrz.c (main): 
+	* src/lsz.c (main): "rshell" is another name for a restricted shell.
+
+Sun Oct  6 20:45:20 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+	* src/lrz.c (wcreceive): changed calls to timing().
+	  (rzfiles): dito.
+	  (rzfile): dito. implement --stop-at TIME.
+	  (main): recognize --stop-at and parse argument.
+	  (usage): document --stop-at.
+
+	* src/lsz.c (wcs): changed call to timing().
+	  (wcs): dito.
+	  (zsendfdata): implement --stop-at TIME. changed call to timing(),
+	  threw out calls to time():
+	  (main): recognize --stop-at and parse argument.
+	  (usage): document --stop-at.
+
+	* src/timing.c (timing): now gets another parameter time_t *now, to
+	  be filled with the "now" time (to reduce number of system call if
+	  using --min-bps or --stop-at).
+
+	* src/timing.h (timing): changed prototype for timing() (optional
+	  parameter time_t *now);
+
+Thu Oct  3 09:22:26 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+	* src/lrz.c (tryz): don't return FALSE to early if getting to many ZRQINITs.
+
+	* src/lsz.c (main): tell library to interrupt system calls if we get an
+	  SIGALRM (stupid BSD people - why did they make restarting systems calls
+	  the *default*)?
+
+	* configure.in (ALL_LINGUAS): check for siginterrupt().
+
+	* src/lrz.c (ecgetsec): read at max 1000 bytes after we got an bad header.
+	  (was endless loop, if sender didn't time out).
+
+	* src/lrz.c (main): 
+	* src/lsz.c (main): new option --delay-startup N: makes program sleep
+	  for N seconds before sarting transactions (for debugging).
+
+	* lib/Makefile.am (zmodem_SOURCES): remove duplicate zmodem_SOURCES line.
+
+Wed Sep 18 20:27:00 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+	* src/lsz.c (wcs): #ifdef HAVE_MMAP around dont_mmap_this.
+
+Wed Sep 18 18:36:40 1996  Philippe De Muyter  <phdm@info.ucl.ac.be>
+
+	* lib/Makefile.am (EXTRA_DIST): distribute stpcpy.c.
+
+	* src/lrz.c, src/lsz.c: declare stpcpy if not STRICT_PROTOTYPES.
+
+	* src/lrz.c (DEFBYTL): declaration removed from here.
+
+	* src/zglobal.h (DEFBYTL): declaration moved here.
+
+	* src/lsz.c (wcs): enclose dont_mmap_this in #ifdef HAVE_MMAP;
+	initialize bytes_total to DEFBYTL if file is a pipe;
+	use bytes_sent, not bytes_total for final statistics.
+	(calc_blklen): best_bytes and transmitted made unsigned long, not long.
+	(countem): use DEFBYTL as filesize for "-".
+	
+Tue Sep 17 23:50:34 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+	* src/lrz.c (main): enable SIGINT code.
+
+	* src/lsz.c: whole file: enable SIGINT code.
+
 Sat Sep 14 10:02:41 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
 	* configure.in (VERSION): change to 0.12.10
@@ -17,377 +94,376 @@ Sat Sep 14 10:02:41 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
 Thu Sep  5 21:22:32 1996  Uwe Ohse  <uwe@tirka.gun.de>
 	
-		* src/lsz.c (wcsend): use stpcpy instead of strcpy + strcat.
+	* src/lsz.c (wcsend): use stpcpy instead of strcpy + strcat.
 
-		* src/lrz.c (procheader): use stpcpy instead of strcpy + strlen.
+	* src/lrz.c (procheader): use stpcpy instead of strcpy + strlen.
 
-		* lib/stpcpy.c: new file.
+	* lib/stpcpy.c: new file.
 
-		* configure.in: Replace strtol, strpbrk, stpcpy if needed.
+	* configure.in: Replace strtol, strpbrk, stpcpy if needed.
 
-		* check.lrzsz: Redirect all error messages to $testdir/error.log.
-		  Modified to avoid 'cp -f', dd conv=notrunc, /dev/zero.
-		  Typo : management, not managment.
-		  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+	* check.lrzsz: Redirect all error messages to $testdir/error.log.
+	  Modified to avoid 'cp -f', dd conv=notrunc, /dev/zero.
+	  Typo : management, not managment.
+	  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
 
-		* configure.in: check for mode_t, replace strtoul if needed.
-		  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+	* configure.in: check for mode_t, replace strtoul if needed.
+	  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
 
-		* src/rbsb.c: Do not include fcntl.h twice.
-		  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
-		
-		* src/lrz.c (long_options): 
-		* src/lsz.c (long_options): fix typo (restriced -> restricted)
-		  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
-		
-		* intl/l10nflist.c, intl/explodename.c (stdlib.h): Include 
-		  sys/types.h and define NULL for size_t-less or missing stdlib.h.
-		  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+	* src/rbsb.c: Do not include fcntl.h twice.
+	  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+	
+	* src/lrz.c (long_options): 
+	* src/lsz.c (long_options): fix typo (restriced -> restricted)
+	  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+	
+	* intl/l10nflist.c, intl/explodename.c (stdlib.h): Include 
+	  sys/types.h and define NULL for size_t-less or missing stdlib.h.
+	  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
 
 Wed Sep  4 20:21:56 1996  Uwe Ohse  <uwe@tirka.gun.de>
-		
-		* src/zglobal.h: include <sys/select.h> if it exists.
-		  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+	
+	* src/zglobal.h: include <sys/select.h> if it exists.
+	  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
 
-		* configure.in: check for sys/select.h 
-		  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+	* configure.in: check for sys/select.h 
+	  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
 
-		* src/lsz.c (getinsync): clearerr(input_f) is a bad idea
-		  if (input_f == NULL).
+	* src/lsz.c (getinsync): clearerr(input_f) is a bad idea
+	  if (input_f == NULL).
 
 Tue Sep  3 21:55:30 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* src/lsz.c (wcs): oops, use name where oname should have
-		  been printed in error message. if sending file "-" treat
-		  it special.
-		  (main): replace `0' with io_mode_fd, set io_mode_fd to
-		  1 if sending file "-".
-		  (wctx): replace `0' with io_mode_fd.
-		  (zsendfdata): rdchk(io_fd) instead of rdchk(0).
+	* src/lsz.c (wcs): oops, use name where oname should have
+	  been printed in error message. if sending file "-" treat
+	  it special.
+	  (main): replace `0' with io_mode_fd, set io_mode_fd to
+	  1 if sending file "-".
+	  (wctx): replace `0' with io_mode_fd.
+	  (zsendfdata): rdchk(io_fd) instead of rdchk(0).
 
 Sun Sep  1 10:12:42 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* configure.in (VERSION): changed to 0.12.9
+	* configure.in (VERSION): changed to 0.12.9
 
-		* man/lrz.1: documetn --rename, --min-bps, --min-bps-time.
+	* man/lrz.1: documetn --rename, --min-bps, --min-bps-time.
 
-		* man/lsz.1: document --turbo, --rename, --min-bps,
-		--min-bps-time.
+	* man/lsz.1: document --turbo, --rename, --min-bps,
+	--min-bps-time.
 
-		* src/lsz.c (main): support -m/--min-bps and -M/min-bps-time
-		  options.
-		  (wctxpn): added missing error messages.
-		  (zsendfile): added missing error messages.
-		  (zsendfdata): support --min-bps and --min-bps-time.
-		  (usage): document --min-bps and --min-bps-time.
+	* src/lsz.c (main): support -m/--min-bps and -M/min-bps-time
+	  options.
+	  (wctxpn): added missing error messages.
+	  (zsendfile): added missing error messages.
+	  (zsendfdata): support --min-bps and --min-bps-time.
+	  (usage): document --min-bps and --min-bps-time.
 
-		* src/lrz.c (main): support -m/--min-bps M option.
-		(rzfile): support --min-bps-Option, --min-bps-time.
-		(main): support --min-bps-time/-M option.
-		(rzfiles): does print error messages to syslog (rzfiles did 
-		just say "error", rzfiles can tell *what* error happened).
-		  (usage): document min-bps and min-bps-time. document --error.
+	* src/lrz.c (main): support -m/--min-bps M option.
+	(rzfile): support --min-bps-Option, --min-bps-time.
+	(main): support --min-bps-time/-M option.
+	(rzfiles): does print error messages to syslog (rzfiles did 
+	just say "error", rzfiles can tell *what* error happened).
+	  (usage): document min-bps and min-bps-time. document --error.
 
 Wed Aug 28 11:23:01 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* src/zreadline.c: include errno.h
+	* src/zreadline.c: include errno.h
 
-		* src/zglobal.h: include limits.h (_POSIX_PATH_MAX).
-		  Fixed misspelled HAVE_TERMIO_H to HAVE_TERMIOS_H.
-		  changed long Locmode, long Locbit to extern.
+	* src/zglobal.h: include limits.h (_POSIX_PATH_MAX).
+	  Fixed misspelled HAVE_TERMIO_H to HAVE_TERMIOS_H.
+	  changed long Locmode, long Locbit to extern.
 
-		* po/de.po:
-		* src/lrz.c (usage): 
-		* src/lsz.c (usage): add --rename option.
+	* po/de.po:
+	* src/lrz.c (usage): 
+	* src/lsz.c (usage): add --rename option.
 
 Tue Aug 27 10:53:43 1996  Uwe Ohse  <uwe@tirka.gun.de>
 		
-		* Release 0.12.8
+	* Release 0.12.8
 
-		* src/lsz.c (main): do a select/read-loop after calling purgeline()
-		  to get rid of really anything already in the queue.
+	* src/lsz.c (main): do a select/read-loop after calling purgeline()
+	  to get rid of really anything already in the queue.
 
-		* configure.in (VERSION): changed to 0.12.8
+	* configure.in (VERSION): changed to 0.12.8
 
-		* src/lrz.c (rzfile): added missing error message.
-		(rzfile): buffer packets we received out-of-sync, and try to
-		  reuse them later.
+	* src/lrz.c (rzfile): added missing error message.
+	(rzfile): buffer packets we received out-of-sync, and try to
+	  reuse them later.
 
-		* src/lsz.c: (whole file): renamed flags.
-		  (main): new option -E --rename: change name if target exists.
-		  (long_options): new option --rename.
+	* src/lsz.c: (whole file): renamed flags.
+	  (main): new option -E --rename: change name if target exists.
+	  (long_options): new option --rename.
 
-		* src/lrz.c: (whole file) renamed flags.
-		(procheader): implement ZF1_ZMCHNG (change name if target exists).
-		(main): new option -E --rename: change name if target exists.
-		(long_options): new option --rename.
-		(procheader): fix --append-Option (ZF1_ZMAPND). Will now work
-		even on binary files (why not send wtmp?).
+	* src/lrz.c: (whole file) renamed flags.
+	(procheader): implement ZF1_ZMCHNG (change name if target exists).
+	(main): new option -E --rename: change name if target exists.
+	(long_options): new option --rename.
+	(procheader): fix --append-Option (ZF1_ZMAPND). Will now work
+	even on binary files (why not send wtmp?).
 
-		* src/zmodem.h (ZF1_ZMCHNG): new flag. change filename if 
-		  destination exists.
-		  Some flags renamed (prefixed with ZFn etc).
-		  changed some octal numbers to hex.
+	* src/zmodem.h (ZF1_ZMCHNG): new flag. change filename if 
+	  destination exists.
+	  Some flags renamed (prefixed with ZFn etc).
+	  changed some octal numbers to hex.
 
-		* src/lsz.c (main): setup readline to read up to 128 bytes.
+	* src/lsz.c (main): setup readline to read up to 128 bytes.
 
-		* src/zreadline.c (readline): minimal timeout now 1 second if 
-		  timeout-variable is 1.
+	* src/zreadline.c (readline): minimal timeout now 1 second if 
+	  timeout-variable is 1.
 
-		* src/zreadline.c (readline): if Verbose > 9 dump up to 48 
-		  bytes direct after read().
+	* src/zreadline.c (readline): if Verbose > 9 dump up to 48 
+	  bytes direct after read().
 
-		* src/lsz.c (main): call purgeline to get rid of junk on
-		  the line.
+	* src/lsz.c (main): call purgeline to get rid of junk on
+	  the line.
 
-		* check.lrzsz: use source files for resume test.
+	* check.lrzsz: use source files for resume test.
 
 Sun Aug 25 11:11:17 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* src/zm.c (zsendline_init): if turbo_escape is set:
-		  do not escape ^P, 0200|^P,015,0215.
+	* src/zm.c (zsendline_init): if turbo_escape is set:
+	  do not escape ^P, 0200|^P,015,0215.
 
-		* src/lsz.c (main): recognize -T aka --turbo, sets variable 
-		  turbo_escape.
+	* src/lsz.c (main): recognize -T aka --turbo, sets variable 
+	  turbo_escape.
 
-		* src/zm.c: new variable turbo_escape.
+	* src/zm.c: new variable turbo_escape.
 
-		* src/lsz.c (calc_blklen): calculated with *full* last block, causing
-		  to choose smaller block sizes if last block not full.
+	* src/lsz.c (calc_blklen): calculated with *full* last block, causing
+	  to choose smaller block sizes if last block not full.
 
-		* src/zreadline.c (readline): print strerror(errno) if read
-		  returned -1 bytes and Verbose > 5.
+	* src/zreadline.c (readline): print strerror(errno) if read
+	  returned -1 bytes and Verbose > 5.
 
 Sat Aug 24 16:39:41 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* src/rbsb.c (from_cu): debug messages deleted.
+	* src/rbsb.c (from_cu): debug messages deleted.
 
 Fri Aug 23 14:32:51 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* src/lsz.c (usage1): usage1 is static, had static prototype,
-		  but was not made static.
+	* src/lsz.c (usage1): usage1 is static, had static prototype,
+	  but was not made static.
 
-		* src/lrz.c (procheader): case result of strdup because we
-		  might not have a prototype for it.
+	* src/lrz.c (procheader): case result of strdup because we
+	  might not have a prototype for it.
 
-		* lib/alloca.c: provide xmalloc.
+	* lib/alloca.c: provide xmalloc.
 		
-		* configure.in: use GCC-CFlags only if using gcc (did a test
-		  with lcc ...).
+	* configure.in: use GCC-CFlags only if using gcc (did a test
+	  with lcc ...).
 
 Thu Aug 22 19:48:16 1996  Uwe Ohse  <uwe@tirka.gun.de>
-		
-		* Release 0.12.7
+	
+	* Release 0.12.7
 
-		* configure.in (VERSION): changed to 0.12.7
+	* configure.in (VERSION): changed to 0.12.7
 
 Tue Aug 13 00:00:27 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* check.lrzsz: accepts third parameter (x,y,z,z8,sz-r,rz-r,abuse),
-		  to do one test.
+	* check.lrzsz: accepts third parameter (x,y,z,z8,sz-r,rz-r,abuse),
+	  to do one test.
 
-		* src/timing.c (timing): DST_NONE might be undefined.
+	* src/timing.c (timing): DST_NONE might be undefined.
 
-		* src/lsz.c: do not include unistd.h, limits.h.
-		  (wcsend): dynamically alloca tmp and pa variables (PATH_MAX).
-		  (wctxpn): dito.
+	* src/lsz.c: do not include unistd.h, limits.h.
+	  (wcsend): dynamically alloca tmp and pa variables (PATH_MAX).
+	  (wctxpn): dito.
 
-		* src/zglobal.h: get alloca.
+	* src/zglobal.h: get alloca.
 
 
 Mon Aug 12 21:46:09 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* src/lrz.c (procheader): dynamically allocate Pathname-String
-		  (PATH_MAX may be variable).
-		  (wcreceive): dynamically allocate Pathname.
+	* src/lrz.c (procheader): dynamically allocate Pathname-String
+	  (PATH_MAX may be variable).
+	  (wcreceive): dynamically allocate Pathname.
 
-		* configure.in: check for sys/param.h
+	* configure.in: check for sys/param.h
 
-		* src/rbsb.c:  don't include sys/stat.h, sys/types.h
+	* src/rbsb.c:  don't include sys/stat.h, sys/types.h
 
-		* src/lsz.c: 
-		* src/lrz.c: don't include time-includes.
-		  do not include sys/stat.h, unistd.h
+	* src/lsz.c: 
+	* src/lrz.c: don't include time-includes.
+	  do not include sys/stat.h, unistd.h
 
-		* src/zglobal.h: include time-includes.
-		  include sys/stat.h, sys/types.h
-		  #define PATH_MAX if needed.
+	* src/zglobal.h: include time-includes.
+	  include sys/stat.h, sys/types.h
+	  #define PATH_MAX if needed.
 
 Sun Aug 11 07:39:37 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* src/lrz.c (rzfile): instead of sending ZACK flush XON flush
-		  send (ZACK | 0x80) to remote. This removes on write operation.
+	* src/lrz.c (rzfile): instead of sending ZACK flush XON flush
+	  send (ZACK | 0x80) to remote. This removes on write operation.
 
-		* src/zm.c (zshhdr): use a mask of 0x7f for frametype (see change
-		  to lrz.c above).
+	* src/zm.c (zshhdr): use a mask of 0x7f for frametype (see change
+	  to lrz.c above).
 
-		* configure.in (VERSION): increased version number to 0.12.6
+	* configure.in (VERSION): increased version number to 0.12.6
 
-		* src/lsz.c: buffersize, use_mmap: new variables.
-		  (long_options): add --bufsize aka -B option.
-		  (wcs): added support for variable buffer size (input file).
-		  (zsendfdata): use mmap only if use_mmap != 0.
-		  (usage): show -B option.
+	* src/lsz.c: buffersize, use_mmap: new variables.
+	  (long_options): add --bufsize aka -B option.
+	  (wcs): added support for variable buffer size (input file).
+	  (zsendfdata): use mmap only if use_mmap != 0.
+	  (usage): show -B option.
 
-		* po/de.po: added translation for -B option.
+	* po/de.po: added translation for -B option.
 
-		* src/lrz.c (usage): show -B option.
+	* src/lrz.c (usage): show -B option.
 
-		* man/lsz.1: 
-		* man/lrz.1: documented -B option.
+	* man/lsz.1: 
+	* man/lrz.1: documented -B option.
 
-		* src/lsz.c: 
-		* src/lrz.c: added extern declarations for time(), strerror()
-		  and strstr(), if not STRICT_PROTOTYPES. (phdm@info.ucl.ac.be)
-		
-		* src/lrz.c: (procheader): use variable size FILE buffer.
-		  buffersize: new variable
-		  (main): added -B-Option to set buffersize.
-		  (long_options): new option --bufsize aka -B.
+	* src/lsz.c: 
+	* src/lrz.c: added extern declarations for time(), strerror()
+	  and strstr(), if not STRICT_PROTOTYPES. (phdm@info.ucl.ac.be)
+	
+	* src/lrz.c: (procheader): use variable size FILE buffer.
+	  buffersize: new variable
+	  (main): added -B-Option to set buffersize.
+	  (long_options): new option --bufsize aka -B.
 
-		* acconfig.h: #undef STRICT PROTOTYPES
+	* acconfig.h: #undef STRICT PROTOTYPES
 
-		* configure.in: remove AC_PROG_LN_S (not used anymore).
-		  moved "test $prefix = NONE && prefix=/usr" to local part
-		  (if host == tirka.gun.de). (phdm@info.ucl.ac.be)
-		  if -Wstrict-prototypes in CFLAGS then
-		  AC_DEFINES(STRICT_PROTOTYPES).
+	* configure.in: remove AC_PROG_LN_S (not used anymore).
+	  moved "test $prefix = NONE && prefix=/usr" to local part
+	  (if host == tirka.gun.de). (phdm@info.ucl.ac.be)
+	  if -Wstrict-prototypes in CFLAGS then
+	  AC_DEFINES(STRICT_PROTOTYPES).
 
-		* src/Makefile.am (install-exec-local): used ln, not ln -s.
-		  don't use -f option to ln (unportable). (phdm@info.ucl.ac.be)
+	* src/Makefile.am (install-exec-local): used ln, not ln -s.
+	  don't use -f option to ln (unportable). (phdm@info.ucl.ac.be)
 
-		* check.lrzsz (z_test_files): try mknod if mkfifo failed.
-		  (phdm@info.ucl.ac.be)
+	* check.lrzsz (z_test_files): try mknod if mkfifo failed.
+	  (phdm@info.ucl.ac.be)
 
-		* src/rbsb.c: sys/types.h and sys/stat.h included twice.
-		  (phdm@info.ucl.ac.be)
-		
-		* config.guess, config.sub: replaced by autoconf-2.10 version.
-		  (phdm@info.ucl.ac.be)
+	* src/rbsb.c: sys/types.h and sys/stat.h included twice.
+	  (phdm@info.ucl.ac.be)
+	
+	* config.guess, config.sub: replaced by autoconf-2.10 version.
+	  (phdm@info.ucl.ac.be)
 
 Tue Aug  6 11:16:12 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* src/zm.c (count_blk) (printout_blocksizes): neuer Code.
-		  wenn DEBUG_BLOCKSIZE definiert ist und gcc verwendet wird,
-		  wird am Ende der Übertragung eine Statistik der Blockgrößen
-		  mit syslog(LOG_DEBUG) ausgegeben.
+	* src/zm.c (count_blk) (printout_blocksizes): neuer Code.
+	  wenn DEBUG_BLOCKSIZE definiert ist und gcc verwendet wird,
+	  wird am Ende der Übertragung eine Statistik der Blockgrößen
+	  mit syslog(LOG_DEBUG) ausgegeben.
 
-		* src/zglobal.h (CANBREAK): nun hier definiert.
-		  (USE_SGTTY,USE_*TERMIO*): nun hier definiert, includes finden
-		  hier statt.
+	* src/zglobal.h (CANBREAK): nun hier definiert.
+	  (USE_SGTTY,USE_*TERMIO*): nun hier definiert, includes finden
+	  hier statt.
 
-		* src/rbsb.c: einen Teil der Includes nach zglobal.h verlegt
-		  (lrz.c benötigt CANBREAK).
-		  (sendbrk): #define CANBREAK nach zglobal.h verlagert.
+	* src/rbsb.c: einen Teil der Includes nach zglobal.h verlegt
+	  (lrz.c benötigt CANBREAK).
+	  (sendbrk): #define CANBREAK nach zglobal.h verlagert.
 
 Sat Aug  3 16:14:47 1996  Uwe Ohse
 
-		* configure.in: change version number to 0.12.5
-		* Release 0.12.5
+	* configure.in: change version number to 0.12.5
+	* Release 0.12.5
 
 Wed Jul 24 13:14:45 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* configure.in: AC_REPLACE_GNU_GETOPT missing.
+	* configure.in: AC_REPLACE_GNU_GETOPT missing.
 
 Tue Jul 23 16:20:06 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* src/rbsb.c (rdchk): f should have been fd.
+	* src/rbsb.c (rdchk): f should have been fd.
 
-		* src/zperr.c: include errno.h
+	* src/zperr.c: include errno.h
 
 Fri Jul  5 15:51:51 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* configure.in: AC_DEFINE(HAVE_STRERROR,1)
+	* configure.in: AC_DEFINE(HAVE_STRERROR,1)
 
-		* acconfig.h: #undef HAVE_STRERROR
+	* acconfig.h: #undef HAVE_STRERROR
 
 Thu Jun 20 16:42:26 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* src/Makefile.am (uninstall-local) (install-exec-local): 
-		  new targets, creating symlinks from l[rs]z to
-		  l[rs][bx].
+	* src/Makefile.am (uninstall-local) (install-exec-local): 
+	  new targets, creating symlinks from l[rs]z to
+	  l[rs][bx].
 
 Sat Jun 15 08:13:41 1996  Uwe Ohse
 
-		* changed version number to 0.12.4
+	* changed version number to 0.12.4
 
 Thu Jun 13 08:25:22 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		* oh, i should have written this in english. Sorry.
+	* oh, i should have written this in english. Sorry.
 
-		* check.lrzsz: neue Tests, ob recovery funktioniert.
+	* check.lrzsz: neue Tests, ob recovery funktioniert.
 
-		* lsz.c: wenn sender keine Konvertierungsoptionen
-		  (ZCBIN, ZCNL oder ZCRESUME), sondern das Feld
-		  auf 0 läßt, wird nun ZCBIN angenommen. Und schon
-		  funktioniert die `-r'-Logik in procheader().
+	* lsz.c: wenn sender keine Konvertierungsoptionen
+	  (ZCBIN, ZCNL oder ZCRESUME), sondern das Feld
+	  auf 0 läßt, wird nun ZCBIN angenommen. Und schon
+	  funktioniert die `-r'-Logik in procheader().
 
-		* zm.c (zdlread): weite Teile werden nun ge-inline-d.
-		  Das spart in etwa drei Funktionsaufrufe pro
-		  4 gelesene Bytes.
+	* zm.c (zdlread): weite Teile werden nun ge-inline-d.
+	  Das spart in etwa drei Funktionsaufrufe pro
+	  4 gelesene Bytes.
 
-		* src/lrz.c (procheader): oops, setvbuf wurde nur bei
-		  der ersten Datei aufgerufen.
+	* src/lrz.c (procheader): oops, setvbuf wurde nur bei
+	  der ersten Datei aufgerufen.
 
-		* src/lrz.c (usage): 
-		* src/lsz.c (usage): In der Usage-Zeile wurden nicht alle
-		  Optionen ausgegeben. Es waren ohnehin ohnehin zu viele,
-		  deshalb wird [options] geschrieben.
+	* src/lrz.c (usage): 
+	* src/lsz.c (usage): In der Usage-Zeile wurden nicht alle
+	  Optionen ausgegeben. Es waren ohnehin ohnehin zu viele,
+	  deshalb wird [options] geschrieben.
 
-		* check.lrzsz: Behandlung von /pub/gnu/emacs-*.tar.gz war
-		  falsch (der Fall, daß sie nicht da waren, wurde nicht
-		  abgefangen).
-		  Wenn ZMODEM-Test fehlschlug wurde am Ende ausgegeben, daß
-		  XMODEM nicht funktioniert.
+	* check.lrzsz: Behandlung von /pub/gnu/emacs-*.tar.gz war
+	  falsch (der Fall, daß sie nicht da waren, wurde nicht
+	  abgefangen).
+	  Wenn ZMODEM-Test fehlschlug wurde am Ende ausgegeben, daß
+	  XMODEM nicht funktioniert.
 
 Sun Jun  9 07:43:32 1996 Uwe Ohse <uwe@tirka.gun.de>
 
-		* Prototypendeklaration für gettimeofday aus timing.c entfernt,
-		  kollidiert mit Solaris oder HP/UX. Sollte ohnehin überflüssig
-		  sein.
+	* Prototypendeklaration für gettimeofday aus timing.c entfernt,
+	  kollidiert mit Solaris oder HP/UX. Sollte ohnehin überflüssig
+	  sein.
 
 Sat Jun  8 23:56:42 1996 Uwe Ohse
 
-		* configure.in: Versionsnummer auf 0.12.3 erhöht.
-		  AC_LINK_FILES($nls_cv_header_libgt, $nls_cv_header_intl)
-		  wird nun aufgerufen.
+	* configure.in: Versionsnummer auf 0.12.3 erhöht.
+	  AC_LINK_FILES($nls_cv_header_libgt, $nls_cv_header_intl)
+	  wird nun aufgerufen.
 
-		* zm.c,lsz.c: Variable Zmodem, irrtümlich am Mittwoch
-		  verkannt (sie bedeutete nicht "wir benutzen Zmodem",
-		  sondern "ZModem-Request erhalten") und entfernt, ist
-		  nun wieder eingebaut als zmodem_requested.
-		* lrz.c: Zmodem -> zmodem_requested.
+	* zm.c,lsz.c: Variable Zmodem, irrtümlich am Mittwoch
+	  verkannt (sie bedeutete nicht "wir benutzen Zmodem",
+	  sondern "ZModem-Request erhalten") und entfernt, ist
+	  nun wieder eingebaut als zmodem_requested.
+	* lrz.c: Zmodem -> zmodem_requested.
 
 Thu Jun  6 12:03:24 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-		all files:
-		* use automake.
-		* go away from flat directory.
-		* internationalized.
-		* de-localized.
-		* cleaned up.
-		* added syslog support.
-		* added termios support.
-		short: everything changed.
+	all files:
+	* use automake.
+	* go away from flat directory.
+	* internationalized.
+	* de-localized.
+	* cleaned up.
+	* added syslog support.
+	* added termios support.
+	short: everything changed.
 
 Mon Jun  3 08:06:52 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
+	* lsz.c (countem): replaced access(,04) with access(,R_OK).
+	  protoized function.
+	  (usage): protoized, added parameter ("describe failure").
+	  (chkinvok), (chartest), (zsendcmd), (bttyout), (saybibi),
+	  (getinsync), (canit), (zsendfdata), (zperr),
 
-		* lsz.c (countem): replaced access(,04) with access(,R_OK).
-		  protoized function.
-		  (usage): protoized, added parameter ("describe failure").
-		  (chkinvok), (chartest), (zsendcmd), (bttyout), (saybibi),
-		  (getinsync), (canit), (zsendfdata), (zperr),
+	* lrz.c (bttyout): moved to zm.c
 
-		* lrz.c (bttyout): moved to zm.c
+	* lsz.c: include unistd.h, define R_OK if undefined.
 
-		* lsz.c: include unistd.h, define R_OK if undefined.
+	* Makefile.in (MOSTLYCLEANFILES): added lint target.
 
-		* Makefile.in (MOSTLYCLEANFILES): added lint target.
+	* timing.c (timing): got rid of a warning.
 
-		* timing.c (timing): got rid of a warning.
-
-		* configure.in: added missing AC_ARG_PROGRAM
+	* configure.in: added missing AC_ARG_PROGRAM
 
 ----------------------------------------------------------------------
 Original lrzsz CHANGES file:

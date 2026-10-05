@@ -169,6 +169,9 @@
 /* Define if you have the settimeofday function.  */
 #undef HAVE_SETTIMEOFDAY
 
+/* Define if you have the siginterrupt function.  */
+#undef HAVE_SIGINTERRUPT
+
 /* Define if you have the stpcpy function.  */
 #undef HAVE_STPCPY
 

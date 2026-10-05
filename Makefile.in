@@ -285,6 +285,10 @@ vcheck-orig-kombi:
 	$(srcdir)/check.lrzsz $(srcdir) `pwd` orig-kombi
 vcheck-abuse:
 	$(srcdir)/check.lrzsz $(srcdir) `pwd` abuse
+vcheck-startup:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` startup
+vcheck-tmp:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` tmp
 
 # Tag before making distribution.  Also, don't make a distribution if
 # checks fail.  Also, make sure the NEWS file is up-to-date.

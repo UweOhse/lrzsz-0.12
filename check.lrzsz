@@ -540,6 +540,154 @@ if test "$mode" = turbo ; then
 	fi
 fi
 
+#
+# startup timing checks
+#
+# test lsz -> zm rz (zxrx)
+if test "$mode" = startup ; then
+
+	echo "testing lsz -> zm rz. lsz sleeps 10 seconds"
+	mkdir $testdir/startup.1
+	failed=0
+	($SZ --delay-startup 10 -q  $BUFSIZE $z_test_files ) 2>/dev/null <$testdir/pipe | \
+		(cd $testdir/startup.1 ; exec zmrx $QUIET >>../pipe)
+	for i in $z_test_files ; do 
+		bn=`basename $i`
+		cmp $i $testdir/startup.1/$bn
+		if test $? -eq 0 ; then
+			rm -f $testdir/startup.1/$bn
+		else
+			failed=1
+		fi
+	done
+	rmdir $testdir/startup.1 2>&5
+	if test $failed = 1 ; then 
+		echo "zm-rz startup-timing test failed"
+		any_failure="$any_failure zm-rz-startup-timing"
+	fi
+
+	echo "testing lsz -> omen.rz. lsz sleeps 10 seconds"
+	mkdir $testdir/startup.2
+	failed=0
+	($SZ --delay-startup 10 -q  $BUFSIZE $z_test_files ) 2>/dev/null <$testdir/pipe | \
+		(cd $testdir/startup.2 ; exec omen.rz $QUIET >>../pipe)
+	for i in $z_test_files ; do 
+		bn=`basename $i`
+		cmp $i $testdir/startup.2/$bn
+		if test $? -eq 0 ; then
+			rm -f $testdir/startup.2/$bn
+		else
+			failed=1
+		fi
+	done
+	rmdir $testdir/startup.2 2>&5
+	if test $failed = 1 ; then 
+		echo "omen.rz startup-timing test failed"
+		any_failure="$any_failure omen-rz-startup-timing"
+	fi
+
+	echo "testing lsz -> lrz. lsz sleeps 10 seconds"
+	mkdir $testdir/startup.3
+	failed=0
+	($SZ --delay-startup 10 -q  $BUFSIZE $z_test_files ) 2>/dev/null <$testdir/pipe | \
+		(cd $testdir/startup.3 ; exec $RZ $QUIET >>../pipe)
+	for i in $z_test_files ; do 
+		bn=`basename $i`
+		cmp $i $testdir/startup.3/$bn
+		if test $? -eq 0 ; then
+			rm -f $testdir/startup.3/$bn
+		else
+			failed=1
+		fi
+	done
+	rmdir $testdir/startup.3 2>&5
+	if test $failed = 1 ; then 
+		echo "lrz startup-timing test failed"
+		any_failure="$any_failure lrz-startup-timing"
+	fi
+
+	echo "testing zmtx -> lrz. lrz sleeps 10 seconds"
+	mkdir $testdir/startup.4
+	failed=0
+	(zmtx $z_test_files ) 2>/dev/null <$testdir/pipe | \
+		(cd $testdir/startup.4 ; exec $RZ --delay-startup 10 $QUIET >>../pipe)
+	for i in $z_test_files ; do 
+		bn=`basename $i`
+		cmp $i $testdir/startup.4/$bn
+		if test $? -eq 0 ; then
+			rm -f $testdir/startup.4/$bn
+		else
+			failed=1
+		fi
+	done
+	rmdir $testdir/startup.4 2>&5
+	if test $failed = 1 ; then 
+		echo "zmtx startup-timing test failed"
+		any_failure="$any_failure zmtx-startup-timing"
+	fi
+
+	echo "testing omen.sz -> lrz. lrz sleeps 10 seconds"
+	mkdir $testdir/startup.5
+	failed=0
+	(omen.sz $z_test_files ) 2>/dev/null <$testdir/pipe | \
+		(cd $testdir/startup.5 ; exec $RZ --delay-startup 10 $QUIET >>../pipe)
+	for i in $z_test_files ; do 
+		bn=`basename $i`
+		cmp $i $testdir/startup.5/$bn
+		if test $? -eq 0 ; then
+			rm -f $testdir/startup.5/$bn
+		else
+			failed=1
+		fi
+	done
+	rmdir $testdir/startup.5 2>&5
+	if test $failed = 1 ; then 
+		echo "omen.sz startup-timing test failed"
+		any_failure="$any_failure omen.sz-startup-timing"
+	fi
+
+	echo "testing lsz -> lrz. lrz sleeps 10 seconds"
+	mkdir $testdir/startup.6
+	failed=0
+	($SZ -q $z_test_files ) 2>/dev/null <$testdir/pipe | \
+		(cd $testdir/startup.6 ; exec $RZ --delay-startup 10 $QUIET >>../pipe)
+	for i in $z_test_files ; do 
+		bn=`basename $i`
+		cmp $i $testdir/startup.6/$bn
+		if test $? -eq 0 ; then
+			rm -f $testdir/startup.6/$bn
+		else
+			failed=1
+		fi
+	done
+	rmdir $testdir/startup.6 2>&5
+	if test $failed = 1 ; then 
+		echo "lsz startup-timing test failed"
+		any_failure="$any_failure lsz-startup-timing"
+	fi
+fi
+if test "$mode" = tmp ; then
+	echo "testing zmtx -> lrz. lrz sleeps 10 seconds"
+	mkdir $testdir/tmp
+	failed=0
+	($SZ --stop-at +10 $z8_test_files ) 2>/dev/null <$testdir/pipe | \
+		(cd $testdir/tmp ; exec $RZ $QUIET -vvvvvv >>../pipe)
+	for i in $z8_test_files ; do 
+		bn=`basename $i`
+		cmp $i $testdir/tmp/$bn
+		if test $? -eq 0 ; then
+			rm -f $testdir/tmp/$bn
+		else
+			failed=1
+		fi
+	done
+	rmdir $testdir/tmp 2>&5
+	if test $failed = 1 ; then 
+		echo "tmp test failed"
+		any_failure="$any_failure tmp"
+	fi
+fi
+
 if test "x$any_failure" = x  ; then
 	:
 else

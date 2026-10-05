@@ -10,7 +10,7 @@ AC_SUBST(host_cpu)
 AC_ARG_PROGRAM
 
 PACKAGE=lrzsz
-VERSION=0.12.10
+VERSION=0.12.11
 
 PACKAGE_VERSION="$PACKAGE-$VERSION"
 AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE")
@@ -151,7 +151,7 @@ AC_EGREP_HEADER([struct.*utimbuf], utime.h, AC_DEFINE(HAVE_STRUCT_UTIMBUF))
 
 AC_CHECK_FUNCS(gettimeofday settimeofday strftime)
 AC_CHECK_FUNCS(strchr memcpy)
-AC_CHECK_FUNCS(times rdchk utime syslog)
+AC_CHECK_FUNCS(times rdchk utime syslog siginterrupt)
 AC_REPLACE_FUNCS(mkdir strerror strstr strdup strtoul strtol strpbrk stpcpy)
 AC_REPLACE_GNU_GETOPT
 dnl for lib/error.c

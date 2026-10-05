@@ -4,7 +4,8 @@
   system), and what is the max value?
   Anyway - we don't *need* it. It just reduced system load (but that's
   not a real problem - zmodem over a ISDN/modem link is not much load).
-- an option to stop transmission at a certain time.
+- an option to stop transmission if it will not be completed at a 
+  certain time (calc. with BPS rate).
 - look into freebsd changes to rzsz3.37 - there are some nonobvious
   changes, which i don't really understand, but which make sense.
 

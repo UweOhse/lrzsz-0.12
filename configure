@@ -598,7 +598,7 @@ test "$program_transform_name" = "" && program_transform_name="s,x,x,"
 
 
 PACKAGE=lrzsz
-VERSION=0.12.10
+VERSION=0.12.11
 
 PACKAGE_VERSION="$PACKAGE-$VERSION"
 cat >> confdefs.h <<EOF
@@ -2300,7 +2300,7 @@ else
 fi
 done
 
-for ac_func in times rdchk utime syslog
+for ac_func in times rdchk utime syslog siginterrupt
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then

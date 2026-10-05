@@ -32,6 +32,7 @@
 extern time_t time();
 extern char *strerror();
 extern char *strstr();
+extern char *stpcpy();
 #endif
 
 extern int errno;
@@ -63,7 +64,6 @@ int errors;
 int Restricted=1;	/* restricted; no /.. or ../ in filenames */
 int Readnum = HOWMANY;	/* Number of bytes to ask for in read() from modem */
 
-#define DEFBYTL 2000000000L	/* default rx file size */
 char *Pathname;
 const char *program_name;		/* the name by which we were called */
 
@@ -131,6 +131,7 @@ int Zctlesc;		/* Encode control characters */
 int Zrwindow = 1400;	/* RX window size (controls garbage count) */
 
 int tryzhdrtype=ZRINIT;	/* Header type to send corresponding to Last rx close */
+time_t stop_time;
 
 #ifdef ENABLE_SYSLOG
 #  if defined(ENABLE_SYSLOG_FORCE) || defined(ENABLE_SYSLOG_DEFAULT)
@@ -171,6 +172,7 @@ static struct option const long_options[] =
 	{"resume", no_argument, NULL, 'r'},
 	{"restricted", no_argument, NULL, 'R'},
 	{"quiet", no_argument, NULL, 'q'},
+	{"stop-at", required_argument, NULL, 's'},
 	{"timesync", no_argument, NULL, 'S'},
 	{"timeout", required_argument, NULL, 't'},
 	{"keep-uppercase", no_argument, NULL, 'u'},
@@ -184,6 +186,8 @@ static struct option const long_options[] =
 	{"overwrite", no_argument, NULL, 'y'},
 	{"null", no_argument, NULL, 'D'},
 	{"syslog", optional_argument, NULL , 2},
+
+	{"delay-startup", required_argument, NULL, 4},
 	{NULL,0,NULL,0}
 };
 
@@ -195,11 +199,12 @@ main(int argc, char *argv[])
 	char **patts=NULL; /* keep compiler quiet */
 	int exitcode=0;
 	int c;
+	int startup_delay=0;
 
 	Rxtimeout = 100;
 	setbuf(stderr, NULL);
 	if ((cp=getenv("SHELL")) && (strstr(cp, "rsh") || strstr(cp, "rksh")
-		|| strstr(cp,"rbash")))
+		|| strstr(cp,"rbash") || strstr(cp, "rshell")))
 		under_rsh=TRUE;
 	if ((cp=getenv("ZMODEM_RESTRICTED"))!=NULL)
 		Restricted=2;
@@ -218,7 +223,7 @@ main(int argc, char *argv[])
     parse_long_options (argc, argv, program_name, PACKAGE_VERSION, usage1);
 
 	while ((c = getopt_long (argc, argv, 
-		"a+bB:cCDeEghm:M:OpqrRSt:w:uUvy",
+		"a+bB:cCDeEghm:M:OpqrRsSt:w:uUvy",
 		long_options, (int *) 0)) != EOF)
 	{
 		unsigned long int tmp;
@@ -263,6 +268,43 @@ main(int argc, char *argv[])
 		case 'O': no_timeout=TRUE; break;
 		case 'p': Lzmanag = ZF1_ZMPROT;  break;
 		case 'q': Quiet=TRUE; Verbose=0; break;
+		case 's':
+			if (isdigit(*optarg)) {
+				struct tm *tm;
+				time_t t;
+				int hh,mm;
+				char *nex;
+				
+				hh = strtoul (optarg, &nex, 10);
+				if (hh>23)
+					usage(2,_("hour to large (0..23)"));
+				if (*nex!=':')
+					usage(2, _("unparsable stop time\n"));
+				nex++;
+                mm = strtoul (optarg, &nex, 10);
+				if (mm>59)
+					usage(2,_("minute to large (0..59)"));
+				
+				t=time(NULL);
+				tm=localtime(&t);
+				tm->tm_hour=hh;
+				tm->tm_min=hh;
+				stop_time=mktime(tm);
+				if (stop_time<t)
+					stop_time+=86400L; /* one day more */
+				if (stop_time - t <10)
+					usage(2,_("stop time to small"));
+			} else {
+				s_err = xstrtoul (optarg, NULL, 0, &tmp, NULL);
+				stop_time = tmp + time(0);
+				if (s_err != LONGINT_OK)
+					STRTOL_FATAL_ERROR (optarg, _("stop-at"), s_err);
+				if (tmp<10)
+					usage(2,_("stop time to small"));
+			}
+			break;
+
+
 		case 'r': try_resume=TRUE;  break;
 		case 'R': Restricted++;  break;
 		case 'S':
@@ -331,11 +373,23 @@ main(int argc, char *argv[])
 			if (bytes_per_error<100)
 				usage(2,_("error-per-byte should be >100"));
 			break;
+        case 4:
+			s_err = xstrtoul (optarg, NULL, 0, &tmp, NULL);
+			startup_delay = tmp;
+			if (s_err != LONGINT_OK)
+				STRTOL_FATAL_ERROR (optarg, _("startup delay"), s_err);
+			break;
 		default:
 			usage(2,NULL);
 		}
 
 	}
+
+#ifdef HAVE_SIGINTERRUPT
+	siginterrupt(SIGALRM,1);
+#endif
+	if (startup_delay)
+		sleep(startup_delay);
 
 	npats = argc - optind;
 	patts=&argv[optind];
@@ -353,15 +407,11 @@ main(int argc, char *argv[])
 	vfile("%s %s for %s-%s\n", program_name, VERSION, CPU, OS);
 	io_mode(0,1);
 	readline_setup(0, HOWMANY, MAX_BLOCK*2);
-#ifndef linux
-	if (signal(SIGINT, bibi) == SIG_IGN) {
-		signal(SIGINT, SIG_IGN); signal(SIGKILL, SIG_IGN);
-	}
-	else {
-		signal(SIGINT, bibi); signal(SIGKILL, bibi);
-	}
+	if (signal(SIGINT, bibi) == SIG_IGN) 
+		signal(SIGINT, SIG_IGN);
+	else
+		signal(SIGINT, bibi);
 	signal(SIGTERM, bibi);
-#endif
 	if (wcreceive(npats, patts)==ERROR) {
 		exitcode=0200;
 		canit();
@@ -418,6 +468,7 @@ usage(int exitcode, const char *what)
 "  -c, --with-crc              Use 16 bit CRC (X)\n"
 "  -C, --allow-remote-commands allow execution of remote commands (Z)\n"
 "  -D, --null                  write all received data to /dev/null\n"
+"      --delay-startup N       sleep N seconds before doing anything\n"
 "  -e, --escape                Escape control characters (Z)\n"
 "  -E, --rename                rename any files already existing\n"
 "      --errors N              generate CRC error every N bytes (debugging)\n"
@@ -429,6 +480,7 @@ usage(int exitcode, const char *what)
 "  -q, --quiet                 quiet, no progress reports\n"
 "  -r, --resume                try to resume interrupted file transfer (Z)\n"
 "  -R, --restricted            restricted, more secure mode\n"
+"  -s, --stop-at {HH:MM|+N}    stop transmission at HH:MM or in N seconds\n"
 "  -S, --timesync              request remote time (twice: set local time)\n"
 "      --syslog[=off]          turn syslog on or off, if possible\n"
 "  -t, --timeout N             set timeout to N tenths of a second\n"
@@ -490,7 +542,7 @@ wcreceive(int argc, char **argp)
 					|| enable_syslog
 #endif
 				)
-					timing(1);
+					timing(1,NULL);
 #ifdef ENABLE_SYSLOG
 				shortname=NULL;
 #endif
@@ -517,7 +569,7 @@ wcreceive(int argc, char **argp)
 				) {
 					double d;
 					long bps;
-					d=timing(0);
+					d=timing(0,NULL);
 					if (d==0)
 						d=0.5; /* can happen if timing uses time() */
 					bps=(zi.bytes_received-zi.bytes_skipped)/d;
@@ -544,7 +596,7 @@ wcreceive(int argc, char **argp)
 			|| enable_syslog
 #endif
 			) 
-			timing(1);
+			timing(1,NULL);
 		procheader(dummy, &zi);
 
 		if (Pathname)
@@ -585,7 +637,7 @@ wcreceive(int argc, char **argp)
 	 		) {
 			double d;
 			long bps;
-			d=timing(0);
+			d=timing(0,NULL);
 			if (d==0)
 				d=0.5; /* can happen if timing uses time() */
 			bps=(zi.bytes_received-zi.bytes_skipped)/d;
@@ -799,8 +851,11 @@ bilge:
 
 humbug:
 		Lastrx=0;
-		while(readline(1)!=TIMEOUT)
-			;
+		{
+			int cnt=1000;
+			while(cnt-- && readline(1)!=TIMEOUT)
+				;
+		}
 		if (Firstsec) {
 			sendline(Crcflg?WANTCRC:NAK);
 			flushmo();
@@ -1288,11 +1343,13 @@ tryz(void)
 {
 	register c, n;
 	register cmdzack1flg;
+	int zrqinits_received=0;
 
 	if (protocol!=ZM_ZMODEM)		/* Check for "rb" program name */
 		return 0;
 
-	for (n=zmodem_requested?15:5; --n>=0; ) {
+	for (n=zmodem_requested?15:5; 
+		 (--n + zrqinits_received) >=0 && zrqinits_received<10; ) {
 		/* Set buffer length (0) and capability flags */
 #ifdef SEGMENTS
 		stohdr(SEGMENTS*MAX_BLOCK);
@@ -1316,7 +1373,14 @@ tryz(void)
 again:
 		switch (zgethdr(Rxhdr, 0)) {
 		case ZRQINIT:
+			/* getting one ZRQINIT is totally ok. Normally a ZFILE follows 
+			 * (and might be in out buffer, so don't purge it). But if we
+			 * get more ZRQINITs than the sender has started up before us
+			 * and sent ZRQINITs while waiting. 
+			 */
+			zrqinits_received++;
 			continue;
+		
 		case ZEOF:
 			continue;
 		case TIMEOUT:
@@ -1431,7 +1495,7 @@ rzfiles(struct zm_fileinfo *zi)
 	register c;
 
 	for (;;) {
-		timing(1);
+		timing(1,NULL);
 		c = rzfile(zi);
 		switch (c) {
 		case ZEOF:
@@ -1442,7 +1506,7 @@ rzfiles(struct zm_fileinfo *zi)
 	 		) {
 				double d;
 				long bps;
-				d=timing(0);
+				d=timing(0,NULL);
 				if (d==0)
 					d=0.5; /* can happen if timing uses time() */
 				bps=(zi->bytes_received-zi->bytes_skipped)/d;
@@ -1669,13 +1733,14 @@ nxthdr:
 				zmputs(Attn);  continue;
 			}
 moredata:
-			if ((Verbose>1 || min_bps)
+			if ((Verbose>1 || min_bps || stop_time)
 				&& (not_printed > (min_bps ? 3 : 7) 
 					|| zi->bytes_received > last_bps / 2 + last_rxbytes)) {
 				int minleft =  0;
 				int secleft =  0;
+				time_t now;
 				double d;
-				d=timing(0);
+				d=timing(0,&now);
 				if (d==0)
 					d=0.5; /* timing() might use time() */
 				last_bps=zi->bytes_received/d;
@@ -1686,7 +1751,7 @@ moredata:
 				if (min_bps) {
 					if (low_bps) {
 						if (last_bps<min_bps) {
-							if (time(NULL)-low_bps>=min_bps_time) {
+							if (now-low_bps>=min_bps_time) {
 								/* too bad */
 								vfile(_("rzfile: bps rate %ld below min %ld"), 
 									  last_bps, min_bps);
@@ -1698,9 +1763,17 @@ moredata:
 						else
 							low_bps=0;
 					} else if (last_bps<min_bps) {
-						low_bps=time(NULL);
+						low_bps=now;
 					}
 				}
+				if (stop_time && now>=stop_time) {
+					/* too bad */
+					vfile(_("rzfile: reached stop time"));
+					DO_SYSLOG((LOG_INFO, "%s/%s: reached stop time",
+							   shortname, protname()));
+					return ERROR;
+				}
+				
 				if (Verbose > 1) {
 					fprintf(stderr,
 							_("\rBytes received: %7ld/%7ld   BPS:%-6ld ETA %02d:%02d  "),
