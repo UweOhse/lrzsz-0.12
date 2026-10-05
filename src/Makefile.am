@@ -4,6 +4,7 @@ lsz_SOURCES=lsz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c
 noinst_HEADERS = timing.h zglobal.h zmodem.h
 datadir = $(prefix)/@DATADIRNAME@
 localedir = $(datadir)/locale
+CFLAGS=@CFLAGS@
 
 LDADD = ../lib/libzmodem.a @INTLLIBS@
 AUTOMAKE_OPTIONS=ansi2knr

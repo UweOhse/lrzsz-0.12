@@ -43,6 +43,7 @@ zmodem_LIBADD=@LIBOBJS@ @ALLOCA@
 AUTOMAKE_OPTIONS=ansi2knr
 zmodem_SOURCES= alloca.c ansi2knr.1 ansi2knr.c mkdir.c strdup.c strerror.c \
 	strstr.c
+CFLAGS=@CFLAGS@
 
 noinst_LIBRARIES = zmodem
 
@@ -66,7 +67,6 @@ YACC = @YACC@
 
 DEFS = @DEFS@ -I. -I$(srcdir) -I..
 CPPFLAGS = @CPPFLAGS@
-CFLAGS = @CFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 

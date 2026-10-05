@@ -14,6 +14,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include "error.h"
 
@@ -74,10 +75,15 @@ readline(int timeout)
 	if (!no_timeout)
 		alarm(0);
 	if (readline_left>0 && bytes_per_error) {
-		int i;
-		for (i=0;i<readline_left;i++) {
-			if ((rand() % bytes_per_error) == 0)
-				readline_ptr[i]^=0x55;
+		static long ct=0;
+		static int mod=1;
+		ct+=readline_left;
+		while (ct>bytes_per_error) {
+			readline_ptr[ct % bytes_per_error]^=mod;
+			ct-=bytes_per_error;
+			mod++;
+			if (mod==256)
+				mod=1;
 		}
 	}
 	if (Verbose > 5) {

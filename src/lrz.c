@@ -120,6 +120,8 @@ static void zmputs(const char *s);
 static long getfree(void);
 
 static long buffersize=32768;
+static long min_bps=0;
+static long min_bps_time=120;
 
 char Lzmanag;		/* Local file management request */
 char zconv;		/* ZMODEM file conversion request */
@@ -163,6 +165,8 @@ static struct option const long_options[] =
 	{"errors", required_argument, NULL, 3},
 	{"disable-timeouts", no_argument, NULL, 'O'},
 	{"disable-timeout", no_argument, NULL, 'O'}, /* i can't get it right */
+	{"min-bps", required_argument, NULL, 'm'},
+	{"min-bps-time", required_argument, NULL, 'M'},
 	{"protect", no_argument, NULL, 'p'},
 	{"resume", no_argument, NULL, 'r'},
 	{"restriced", no_argument, NULL, 'R'},
@@ -214,10 +218,11 @@ main(int argc, char *argv[])
     parse_long_options (argc, argv, program_name, PACKAGE_VERSION, usage1);
 
 	while ((c = getopt_long (argc, argv, 
-		"a+bB:cCDehOpqrRSt:w:uUvy",
+		"a+bB:cCDeEghm:M:OpqrRSt:w:uUvy",
 		long_options, (int *) 0)) != EOF)
 	{
 		unsigned long int tmp;
+		char *tmpptr;
 		enum strtol_error s_err;
 
 		switch (c)
@@ -239,6 +244,22 @@ main(int argc, char *argv[])
 		case 'E': Lzmanag = ZF1_ZMCHNG;
 		case 'e': Zctlesc = 1; break;
 		case 'h': usage(0,NULL); break;
+		case 'm':
+			s_err = xstrtoul (optarg, &tmpptr, 0, &tmp, "km");
+			min_bps = tmp;
+			if (s_err != LONGINT_OK)
+				STRTOL_FATAL_ERROR (optarg, _("min_bps"), s_err);
+			if (min_bps<0)
+				usage(2,_("min_bps must be >= 0"));
+			break;
+		case 'M':
+			s_err = xstrtoul (optarg, NULL, 0, &tmp, NULL);
+			min_bps_time = tmp;
+			if (s_err != LONGINT_OK)
+				STRTOL_FATAL_ERROR (optarg, _("min_bps_time"), s_err);
+			if (min_bps_time<=1)
+				usage(2,_("min_bps_time must be > 1"));
+			break;
 		case 'O': no_timeout=TRUE; break;
 		case 'p': Lzmanag = ZF1_ZMPROT;  break;
 		case 'q': Quiet=TRUE; Verbose=0; break;
@@ -269,7 +290,7 @@ main(int argc, char *argv[])
 			s_err = xstrtoul (optarg, NULL, 0, &tmp, NULL);
 			Zrwindow = tmp;
 			if (s_err != LONGINT_OK)
-				STRTOL_FATAL_ERROR (optarg, _("timeout"), s_err);
+				STRTOL_FATAL_ERROR (optarg, _("window size"), s_err);
 			break;
 		case 'u':
 			MakeLCPathname=FALSE; break;
@@ -303,10 +324,10 @@ main(int argc, char *argv[])
 #  endif
 #endif
 		case 3:
-			s_err = xstrtoul (optarg, NULL, 0, &tmp, NULL);
+			s_err = xstrtoul (optarg, NULL, 0, &tmp, "km");
 			bytes_per_error = tmp;
 			if (s_err != LONGINT_OK)
-				STRTOL_FATAL_ERROR (optarg, _("timeout"), s_err);
+				STRTOL_FATAL_ERROR (optarg, _("bytes_per_error"), s_err);
 			if (bytes_per_error<100)
 				usage(2,_("error-per-byte should be >100"));
 			break;
@@ -318,10 +339,6 @@ main(int argc, char *argv[])
 
 	npats = argc - optind;
 	patts=&argv[optind];
-
-	if (bytes_per_error) {
-		srand(77); /* no, not really random */
-	}
 
 	if (npats > 1)
 		usage(2,"garbage on commandline");
@@ -402,7 +419,11 @@ usage(int exitcode, const char *what)
 "  -C, --allow-remote-commands allow execution of remote commands (Z)\n"
 "  -D, --null                  write all received data to /dev/null\n"
 "  -e, --escape                Escape control characters (Z)\n"
+"  -E, --rename                rename any files already existing\n"
+"      --errors N              generate CRC error every N bytes (debugging)\n"
 "  -h, --help                  Help, print this usage message\n"
+"  -m, --min-bps N             stop transmission if BPS below N\n"
+"  -M, --min-bps-time N          for at least N seconds (default: 120)\n"
 "  -O, --disable-timeouts      disable timeout code, wait forever for data\n"
 "  -p, --protect               protect existing files\n"
 "  -q, --quiet                 quiet, no progress reports\n"
@@ -593,6 +614,7 @@ fubar:
 	}
 	if (fout)
 		fclose(fout);
+
 	if (Restricted) {
 		unlink(Pathname);
 		fprintf(stderr, _("\r\n%s: %s removed.\r\n"), program_name, Pathname);
@@ -759,7 +781,7 @@ get2:
 #endif
 		else if (firstch==CAN) {
 			if (Lastrx==CAN) {
-				zperr( _("Sender CANcelled"));
+				zperr( _("Sender Cancelled"));
 				return ERROR;
 			} else {
 				Lastrx=CAN;
@@ -1380,6 +1402,26 @@ again:
 	return 0;
 }
 
+#ifdef ENABLE_SYSLOG
+#define DO_SYSLOG(message) do { \
+	if (enable_syslog) { \
+		const char *shortname; \
+		if (!zi->fname) \
+			shortname="no.name"; \
+		else { \
+			shortname=strrchr(zi->fname,'/'); \
+			if (!shortname) \
+				shortname=zi->fname; \
+			else \
+				shortname++; \
+		} \
+        syslog message ; \
+	} \
+} while(0)
+#else
+#define DO_SYSLOG(message) do { } while(0)
+#endif
+
 /*
  * Receive 1 or more files with ZMODEM protocol
  */
@@ -1389,25 +1431,8 @@ rzfiles(struct zm_fileinfo *zi)
 	register c;
 
 	for (;;) {
-#ifdef ENABLE_SYSLOG
-		const char *shortname=NULL;
-#endif
 		timing(1);
 		c = rzfile(zi);
-#ifdef ENABLE_SYSLOG
-		if (enable_syslog) {
-			if (!zi->fname)
-				shortname="no.name";
-			else
-			{
-				shortname=strrchr(zi->fname,'/');
-				if (!shortname)	
-					shortname=zi->fname;
-				else
-					shortname++;
-			}
-		}
-#endif
 		switch (c) {
 		case ZEOF:
 			if (Verbose > 1
@@ -1426,21 +1451,15 @@ rzfiles(struct zm_fileinfo *zi)
 						_("\rBytes received: %7ld/%7ld   BPS:%-6ld                \r\n"),
 						zi->bytes_received, zi->bytes_total, bps);
 				}
-#ifdef ENABLE_SYSLOG
-				if (enable_syslog)
-                    syslog(LOG_INFO, "%s/%s: %ld Bytes, %ld BPS",shortname,
-						protname(), (long) zi->bytes_total,bps);
-#endif
+				DO_SYSLOG((LOG_INFO, "%s/%s: %ld Bytes, %ld BPS",shortname,
+						   protname(), (long) zi->bytes_total,bps));
 			}
 		case ZSKIP:
 			if (c==ZSKIP)
 			{
 				if (Verbose) 
 					fprintf(stderr,_("Skipped"));
-#ifdef ENABLE_SYSLOG
-				if (enable_syslog) 
-                    syslog(LOG_INFO, "%s/%s: skipped",shortname, protname());
-#endif
+				DO_SYSLOG((LOG_INFO, "%s/%s: skipped",shortname,protname()));
 			}
 			switch (tryz()) {
 			case ZCOMPL:
@@ -1454,10 +1473,7 @@ rzfiles(struct zm_fileinfo *zi)
 		default:
 			return c;
 		case ERROR:
-#ifdef ENABLE_SYSLOG
-			if (enable_syslog) 
-                   syslog(LOG_INFO, "%s/%s: error",shortname, protname());
-#endif
+			DO_SYSLOG((LOG_INFO, "%s/%s: error",shortname,protname()));
 			return ERROR;
 		}
 	}
@@ -1489,12 +1505,15 @@ rzfile(struct zm_fileinfo *zi)
 	long last_rxbytes=0;
 	long last_bps=0;
 	long not_printed=0;
+	time_t low_bps=0;
 
 	zi->eof_seen=FALSE;
 
 	n = 20;
 
 	if (procheader(secbuf,zi) == ERROR) {
+		DO_SYSLOG((LOG_INFO, "%s/%s: procheader error",
+				   shortname,protname()));
 		return (tryzhdrtype = ZSKIP);
 	}
 
@@ -1536,6 +1555,8 @@ nxthdr:
 		c = zgethdr(Rxhdr, 0);
 		switch (c) {
 		default:
+			DO_SYSLOG((LOG_INFO, "%s/%s: error: zgethdr returned %d",shortname,
+					   protname(),c));
 			vfile("rzfile: zgethdr returned %d", c);
 			return ERROR;
 		case ZNAK:
@@ -1545,6 +1566,8 @@ nxthdr:
 			chinseg = 0;
 #endif
 			if ( --n < 0) {
+				DO_SYSLOG((LOG_INFO, "%s/%s: error: zgethdr returned %s",shortname,
+					   protname(),c == ZNAK ? "ZNAK" : "TIMEOUT"));
 				vfile("rzfile: zgethdr returned %d", c);
 				return ERROR;
 			}
@@ -1566,6 +1589,8 @@ nxthdr:
 			}
 			if (closeit(zi)) {
 				tryzhdrtype = ZFERR;
+				DO_SYSLOG((LOG_INFO, "%s/%s: error: closeit return <>0",
+						   shortname, protname()));
 				vfile("rzfile: closeit returned <> 0");
 				return ERROR;
 			}
@@ -1577,6 +1602,8 @@ nxthdr:
 			chinseg = 0;
 #endif
 			if ( --n < 0) {
+				DO_SYSLOG((LOG_INFO, "%s/%s: error: zgethdr returned %d",
+						   shortname, protname(),c));
 				vfile("rzfile: zgethdr returned %d", c);
 				return ERROR;
 			}
@@ -1588,6 +1615,8 @@ nxthdr:
 			chinseg = 0;
 #endif
 			closeit(zi);
+			DO_SYSLOG((LOG_INFO, "%s/%s: error: sender skipped",
+					   shortname, protname()));
 			vfile("rzfile: Sender SKIPPED file");
 			return c;
 		case ZDATA:
@@ -1598,6 +1627,8 @@ nxthdr:
 #endif
 				if ( --n < 0) {
 					vfile("rzfile: out of sync");
+					DO_SYSLOG((LOG_INFO, "%s/%s: error: out of sync",
+					   shortname, protname()));
 					return ERROR;
 				}
 #if defined(SAVE_OOSB)
@@ -1638,8 +1669,9 @@ nxthdr:
 				zmputs(Attn);  continue;
 			}
 moredata:
-			if (Verbose>1 
-				&& (not_printed > 7 || zi->bytes_received > last_bps / 2 + last_rxbytes)) {
+			if ((Verbose>1 || min_bps)
+				&& (not_printed > (min_bps ? 3 : 7) 
+					|| zi->bytes_received > last_bps / 2 + last_rxbytes)) {
 				int minleft =  0;
 				int secleft =  0;
 				double d;
@@ -1651,12 +1683,31 @@ moredata:
 					minleft =  (R_BYTESLEFT(zi))/last_bps/60;
 					secleft =  ((R_BYTESLEFT(zi))/last_bps)%60;
 				}
-
-				fprintf(stderr,
-					_("\rBytes received: %7ld/%7ld   BPS:%-6ld ETA %02d:%02d  "),
-					zi->bytes_received, zi->bytes_total, last_bps, minleft, secleft);
-				last_rxbytes=zi->bytes_received;
-				not_printed=0;
+				if (min_bps) {
+					if (low_bps) {
+						if (last_bps<min_bps) {
+							if (time(NULL)-low_bps>=min_bps_time) {
+								/* too bad */
+								vfile(_("rzfile: bps rate %ld below min %ld"), 
+									  last_bps, min_bps);
+								DO_SYSLOG((LOG_INFO, "%s/%s: bps rate low: %ld < %ld",
+										   shortname, protname(), last_bps, min_bps));
+								return ERROR;
+							}
+						}
+						else
+							low_bps=0;
+					} else if (last_bps<min_bps) {
+						low_bps=time(NULL);
+					}
+				}
+				if (Verbose > 1) {
+					fprintf(stderr,
+							_("\rBytes received: %7ld/%7ld   BPS:%-6ld ETA %02d:%02d  "),
+							zi->bytes_received, zi->bytes_total, last_bps, minleft, secleft);
+					last_rxbytes=zi->bytes_received;
+					not_printed=0;
+				}
 			} else if (Verbose)
 				not_printed++;
 #ifdef SEGMENTS
@@ -1674,7 +1725,9 @@ moredata:
 				putsec(secbuf, chinseg);
 				chinseg = 0;
 #endif
-				vfile("rzfile: zgethdr returned %d", c);
+				vfile("rzfile: zrdata returned %d", c);
+				DO_SYSLOG((LOG_INFO, "%s/%s: zrdata returned ZCAN",
+						   shortname, protname()));
 				return ERROR;
 			case ERROR:	/* CRC error */
 #ifdef SEGMENTS
@@ -1683,6 +1736,8 @@ moredata:
 #endif
 				if ( --n < 0) {
 					vfile("rzfile: zgethdr returned %d", c);
+					DO_SYSLOG((LOG_INFO, "%s/%s: zrdata returned ERROR",
+							   shortname, protname()));
 					return ERROR;
 				}
 				zmputs(Attn);
@@ -1693,6 +1748,8 @@ moredata:
 				chinseg = 0;
 #endif
 				if ( --n < 0) {
+					DO_SYSLOG((LOG_INFO, "%s/%s: zrdata returned TIMEOUT",
+							   shortname, protname()));
 					vfile("rzfile: zgethdr returned %d", c);
 					return ERROR;
 				}
@@ -1780,13 +1837,15 @@ zmputs(const char *s)
 static int
 closeit(struct zm_fileinfo *zi)
 {
+	int ret;
 	if (Topipe) {
 		if (pclose(fout)) {
 			return ERROR;
 		}
 		return OK;
 	}
-	if (fclose(fout)) {
+	ret=fclose(fout);
+	if (ret) {
 		zpfatal(_("file close error"));
 		/* this may be any sort of error, including random data corruption */
 

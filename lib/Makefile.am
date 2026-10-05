@@ -3,6 +3,7 @@ zmodem_LIBADD=@LIBOBJS@ @ALLOCA@
 AUTOMAKE_OPTIONS=ansi2knr
 zmodem_SOURCES= alloca.c ansi2knr.1 ansi2knr.c mkdir.c strdup.c strerror.c \
 	strstr.c
+CFLAGS=@CFLAGS@
 
 ## Process this file with automake to produce Makefile.in
 noinst_LIBRARIES = zmodem

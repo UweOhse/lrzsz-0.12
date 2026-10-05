@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include <sys/types.h>
+#include <limits.h>
 
 #ifdef __GNUC__
 # define alloca __builtin_alloca
@@ -75,7 +76,7 @@ char *strchr (), *strrchr ();
 #  endif
 #endif
 
-#ifdef HAVE_TERMIO_H
+#ifdef HAVE_TERMIOS_H
 #  include <termios.h>
 #  define USE_TERMIOS
 #elif defined(HAVE_SYS_TERMIOS_H)
@@ -91,8 +92,8 @@ char *strchr (), *strrchr ();
 #  include <sgtty.h>
 #  define USE_SGTTY
 #  ifdef LLITOUT
-long Locmode;		/* Saved "local mode" for 4.x BSD "new driver" */
-long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
+extern long Locmode;		/* Saved "local mode" for 4.x BSD "new driver" */
+extern long Locbit;	/* Bit SUPPOSED to disable output translations */
 #  endif
 #else
 #  error neither termio.h nor sgtty.h found. Cannot continue.

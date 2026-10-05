@@ -68,7 +68,7 @@ if test "$mode" = all -o "$mode" = z ; then
 	echo "testing ZMODEM"
 	mkdir $testdir/zmodem
 	failed=0
-	($SZ -q  $BUFSIZE $z_test_files ) 2>/dev/null <$testdir/pipe | \
+	($SZ $BUFSIZE $z_test_files) 2>/dev/null <$testdir/pipe | \
 		(cd $testdir/zmodem ; exec $RZ $BUFSIZE $QUIET >>../pipe)
 	for i in $z_test_files ; do 
 		bn=`basename $i`

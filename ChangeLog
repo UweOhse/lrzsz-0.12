@@ -1,4 +1,41 @@
+Sun Sep  1 10:12:42 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+		* configure.in (VERSION): changed to 0.12.9
+
+		* man/lrz.1: documetn --rename, --min-bps, --min-bps-time.
+
+		* man/lsz.1: document --turbo, --rename, --min-bps,
+		--min-bps-time.
+
+		* src/lsz.c (main): support -m/--min-bps and -M/min-bps-time
+		  options.
+		  (wctxpn): added missing error messages.
+		  (zsendfile): added missing error messages.
+		  (zsendfdata): support --min-bps and --min-bps-time.
+		  (usage): document --min-bps and --min-bps-time.
+
+		* src/lrz.c (main): support -m/--min-bps M option.
+		(rzfile): support --min-bps-Option, --min-bps-time.
+		(main): support --min-bps-time/-M option.
+		(rzfiles): does print error messages to syslog (rzfiles did 
+		just say "error", rzfiles can tell *what* error happened).
+		  (usage): document min-bps and min-bps-time. document --error.
+
+Wed Aug 28 11:23:01 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+		* src/zreadline.c: include errno.h
+
+		* src/zglobal.h: include limits.h (_POSIX_PATH_MAX).
+		  Fixed misspelled HAVE_TERMIO_H to HAVE_TERMIOS_H.
+		  changed long Locmode, long Locbit to extern.
+
+		* po/de.po:
+		* src/lrz.c (usage): 
+		* src/lsz.c (usage): add --rename option.
+
 Tue Aug 27 10:53:43 1996  Uwe Ohse  <uwe@tirka.gun.de>
+		
+		* Release 0.12.8
 
 		* src/lsz.c (main): do a select/read-loop after calling purgeline()
 		  to get rid of really anything already in the queue.

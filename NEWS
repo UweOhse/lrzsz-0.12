@@ -1,3 +1,12 @@
+Version 0.12.9 - September 1996, Uwe Ohse
+
+* new options --min-bps N and --min-bps-time M: If BPS rate falls under N
+  for at least M seconds (default: 120) transmission will be stopped.
+
+* added some missing error messages.
+
+* updated manual pages.
+
 Version 0.12.8 - August 1996, Uwe Ohse
 
 * bug fixes.

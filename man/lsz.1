@@ -241,6 +241,10 @@ option.
 .B "-e, --escape"
 Escape all control characters;
 normally XON, XOFF, DLE, CR-@-CR, and Ctrl-X are escaped.
+.TP 
+.B"-E, --rename"
+Force the sender to rename the new file if a file with the same
+name already exists.
 .TP
 .B "-f, --full-path"
 Send Full pathname.
@@ -269,6 +273,13 @@ Use ZMODEM sub-packets of length N.
 A larger N (32 <= N <= 1024) gives slightly higher throughput,
 a smaller N speeds error recovery.
 The default is 128 below 300 baud, 256 above 300 baud, or 1024 above 2400 baud.
+.TP 
+.B "-m N, --min-bps N"
+Stop transmission if BPS-Rate (Bytes Per Second) falls below N for a 
+certain time (see --min-bps-time option).
+.TP
+.B "-M N, --min-bps-time"
+Used together with --min-bps. Default is 120 (seconds).
 .TP
 .B "-l N, --framelen N"
 Wait for the receiver to acknowledge correct data every
@@ -332,6 +343,12 @@ This option is ignored if no syslog support is compiled in.
 Change timeout to
 .I TIM
 tenths of seconds.
+.TP
+.B "-T, --turbo"
+Do not escape certain characters (^P, ^P|0x80, telenet escape sequence
+[CR + @]). This improves performance by about 1 percent and shouldn't
+hurt in the normal case (but be careful - ^P might be useful if connected
+through a terminal server).
 .TP
 .B u
 Unlink the file after successful transmission.

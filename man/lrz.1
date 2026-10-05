@@ -204,8 +204,19 @@ Output file data to /dev/null; for testing.
 Force sender to escape all control characters;
 normally XON, XOFF, DLE, CR-@-CR, and Ctrl-X are escaped.
 .TP
+-B "-E, --rename"
+Rename incoming file if target filename already exists. The new file
+name will have a dot and a number (0..999) appended.
+.TP
 .B "-h, --help"
 give help screen.
+.TP
+.B "-m N, --min-bps N"
+Stop transmission if BPS-Rate (Bytes Per Second) falls below N for a
+certain time (see --min-bps-time option).
+.TP
+.B "-M N, --min-bps-time"
+Used together with --min-bps. Default is 120 (seconds).
 .TP
 .B "-O, --disable-timeouts"
 Disable read timeout handling code. This makes lrz hang if the

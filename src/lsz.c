@@ -80,6 +80,26 @@ static int wcsend(int argc, char *argp[]);
 static int wcputsec(char *buf, int sectnum, int cseclen);
 static void usage1(int exitcode);
 
+#ifdef ENABLE_SYSLOG
+#define DO_SYSLOG(message) do { \
+    if (enable_syslog) { \
+        const char *shortname; \
+        if (!zi->fname) \
+            shortname="no.name"; \
+									 else { \
+            shortname=strrchr(zi->fname,'/'); \
+            if (!shortname) \
+                shortname=zi->fname; \
+            else \
+                shortname++; \
+								 } \
+        syslog message ; \
+							 } \
+								   } while(0)
+#else
+#define DO_SYSLOG(message) do { } while(0)
+#endif
+
 int Filesleft;
 long Totalleft;
 size_t buffersize=16384;
@@ -164,6 +184,9 @@ int enable_syslog=FALSE;
 
 jmp_buf intrjmp;	/* For the interrupt on RX CAN */
 
+static long min_bps;
+static long min_bps_time;
+
 /* called by signal interrupt or terminate to clean things up */
 RETSIGTYPE
 bibi (int n)
@@ -214,6 +237,8 @@ static struct option const long_options[] =
   {"1k", no_argument, NULL, 'k'},
   {"packetlen", required_argument, NULL, 'L'},
   {"framelen", required_argument, NULL, 'l'},
+  {"min-bps", required_argument, NULL, 'm'},
+  {"min-bps-time", required_argument, NULL, 'M'},
   {"newer", no_argument, NULL, 'n'},
   {"newer-or-longer", no_argument, NULL, 'N'},
   {"16-bit-crc", no_argument, NULL, 'o'},
@@ -275,10 +300,11 @@ main(int argc, char **argv)
 	Rxtimeout = 600;
 
 	while ((c = getopt_long (argc, argv, 
-		"2+8abB:C:c:dfehi:kL:l:NnOopRrqSt:TUuvw:XYy",
+		"2+8abB:C:c:dfeEghi:kL:l:m:M:NnOopRrqSt:TUuvw:XYy",
 		long_options, (int *) 0))!=EOF)
 	{
 		unsigned long int tmp;
+		char *tmpptr;
 		enum strtol_error s_err;
 
 		switch (c)
@@ -356,6 +382,22 @@ main(int argc, char **argv)
 					(long) MAX_BLOCK);
 				usage(2,meld);
 			}
+			break;
+        case 'm':
+			s_err = xstrtoul (optarg, &tmpptr, 0, &tmp, "km");
+			min_bps = tmp;
+			if (s_err != LONGINT_OK)
+				STRTOL_FATAL_ERROR (optarg, _("min_bps"), s_err);
+			if (min_bps<0)
+				usage(2,_("min_bps must be >= 0"));
+			break;
+        case 'M':
+			s_err = xstrtoul (optarg, NULL, 0, &tmp, NULL);
+			min_bps_time = tmp;
+			if (s_err != LONGINT_OK)
+				STRTOL_FATAL_ERROR (optarg, _("min_bps_time"), s_err);
+			if (min_bps_time<=1)
+				usage(2,_("min_bps_time must be > 1"));
 			break;
 		case 'N': Lzmanag = ZF1_ZMNEWL;  break;
 		case 'n': Lzmanag = ZF1_ZMNEW;  break;
@@ -760,7 +802,6 @@ wcs(const char *oname)
 #endif
 		}
 	}
-	timing(1);
 	vpos = 0;
 	/* Check for directory or block special files */
 	fstat(fileno(input_f), &f);
@@ -779,6 +820,7 @@ wcs(const char *oname)
 	zi.bytes_received=0;
 	zi.bytes_skipped=0;
 	zi.eof_seen=0;
+	timing(1);
 
 	++Filcnt;
 	switch (wctxpn(&zi)) {
@@ -857,8 +899,12 @@ wctxpn(struct zm_fileinfo *zi)
 		return OK;
 	}
 	if (!zmodem_requested)
-		if (getnak())
+		if (getnak()) {
+			vfile("getnak failed");
+			DO_SYSLOG((LOG_INFO, "%s/%s: getnak failed",
+					   shortname,protname()));
 			return ERROR;
+		}
 
 	q = (char *) 0;
 	if (Dottoslash) {		/* change . to . */
@@ -903,8 +949,12 @@ wctxpn(struct zm_fileinfo *zi)
 	}
 	if (zmodem_requested)
 		return zsendfile(zi,txbuf, 1+strlen(p)+(p-txbuf));
-	if (wcputsec(txbuf, 0, 128)==ERROR)
+	if (wcputsec(txbuf, 0, 128)==ERROR) {
+		vfile("wcputsec failed");
+		DO_SYSLOG((LOG_INFO, "%s/%s: wcputsec failed",
+				   shortname,protname()));
 		return ERROR;
+	}
 	return OK;
 }
 
@@ -1174,12 +1224,15 @@ usage(int exitcode, const char *what)
 "  -C, --command-tries N       try N times to execute a command (Z)\n"
 "  -d, --dot-to-slash          change '.' to '/' in pathnames (Y/Z)\n"
 "  -e, --escape                escape all control characters (Z)\n"
+"  -E, --rename                force receiver to rename files it already has\n"
 "  -f, --full-path             send full pathname (Y/Z)\n"
 "  -i, --immediate-command CMD send remote CMD, return immediately (Z)\n"
 "  -h, --help                  print this usage message\n"
 "  -k, --1k                    send 1024 byte packets (X)\n"
 "  -L, --packetlen N           limit subpacket length to N bytes (Z)\n"
 "  -l, --framelen N            limit frame length to N bytes (l>=L) (Z)\n"
+"  -m, --min-bps N             stop transmission if BPS below N\n"
+"  -M, --min-bps-time N          for at least N seconds (default: 120)\n"
 "  -n, --newer                 send file if source newer (Z)\n"
 "  -N, --newer-or-longer       send file if source newer or longer (Z)\n"
 "  -o, --16-bit-crc            use 16 bit CRC instead of 32 bit CRC (Z)\n"
@@ -1262,7 +1315,7 @@ getzrxinit(void)
 				fstat(fileno(input_f), &f);
 				if ((f.st_mode & S_IFMT) != S_IFREG) {
 					Canseek = -1;
-					return ERROR;
+					/* return ERROR; */
 				}
 			}
 			/* Set initial subpacket length */
@@ -1357,14 +1410,26 @@ again:
 		case ZRQINIT:  /* remote site is sender! */
 			if (Verbose)
 				fprintf(stderr,_("got ZRQINIT"));
+			DO_SYSLOG((LOG_INFO, "%s/%s: got ZRQINIT - sz talks to sz",
+					   shortname,protname()));
 			return ERROR;
 		case ZCAN:
 			if (Verbose)
 				fprintf(stderr,_("got ZCAN"));
+			DO_SYSLOG((LOG_INFO, "%s/%s: got ZCAN - receiver canceled",
+					   shortname,protname()));
 			return ERROR;
 		case TIMEOUT:
+			DO_SYSLOG((LOG_INFO, "%s/%s: got TIMEOUT",
+					   shortname,protname()));
+			return ERROR;
 		case ZABORT:
+			DO_SYSLOG((LOG_INFO, "%s/%s: got ZABORT",
+					   shortname,protname()));
+			return ERROR;
 		case ZFIN:
+			DO_SYSLOG((LOG_INFO, "%s/%s: got ZFIN",
+					   shortname,protname()));
 			return ERROR;
 		case ZCRC:
 			crc = 0xFFFFFFFFL;
@@ -1391,6 +1456,9 @@ again:
 		case ZSKIP:
 			if (input_f)
 				fclose(input_f);
+			vfile("receiver skipped");
+			DO_SYSLOG((LOG_INFO, "%s/%s: receiver skipped",
+					   shortname, protname()));
 			return c;
 		case ZRPOS:
 			/*
@@ -1400,13 +1468,18 @@ again:
 #ifdef HAVE_MMAP
 			if (!mm_addr)
 #endif
-			if (Rxpos && fseek(input_f, Rxpos, 0))
+			if (Rxpos && fseek(input_f, Rxpos, 0)) {
+				int er=errno;
+				vfile("fseek failed: %s", strerror(er));
+				DO_SYSLOG((LOG_INFO, "%s/%s: fseek failed: %s",
+						   shortname, protname(), strerror(er)));
 				return ERROR;
+			}
 			if (Rxpos)
 				zi->bytes_skipped=Rxpos;
 			bytcnt = zi->bytes_sent = Rxpos;
 			Lastsync = Rxpos -1;
-			return zsendfdata(zi);
+	 		return zsendfdata(zi);
 		}
 	}
 }
@@ -1423,6 +1496,7 @@ zsendfdata (struct zm_fileinfo *zi)
 	long last_bps = 0;
 	long not_printed = 0;
 	static long total_sent = 0;
+	time_t low_bps=0;
 
 #ifdef HAVE_MMAP
 	if (use_mmap)
@@ -1453,13 +1527,22 @@ zsendfdata (struct zm_fileinfo *zi)
 	  gotack:
 		switch (c) {
 		default:
+			if (input_f)
+				fclose (input_f);
+			DO_SYSLOG((LOG_INFO, "%s/%s: got %d",
+					   shortname, protname(), c));
+			return ERROR;
 		case ZCAN:
 			if (input_f)
 				fclose (input_f);
+			DO_SYSLOG((LOG_INFO, "%s/%s: got ZCAN",
+					   shortname, protname(), c));
 			return ERROR;
 		case ZSKIP:
 			if (input_f)
 				fclose (input_f);
+			DO_SYSLOG((LOG_INFO, "%s/%s: got ZSKIP",
+					   shortname, protname(), c));
 			return c;
 		case ZACK:
 		case ZRPOS:
@@ -1536,8 +1619,9 @@ zsendfdata (struct zm_fileinfo *zi)
 			e = ZCRCQ;
 		} else
 			e = ZCRCG;
-		if (Verbose > 1
-			&& (not_printed > 5 || zi->bytes_sent > last_bps / 2 + last_txpos)) {
+		if ((Verbose > 1 || min_bps)
+			&& (not_printed > (min_bps ? 3 : 7) 
+				|| zi->bytes_sent > last_bps / 2 + last_txpos)) {
 			int minleft = 0;
 			int secleft = 0;
 			last_bps = (zi->bytes_sent / timing (0));
@@ -1545,10 +1629,30 @@ zsendfdata (struct zm_fileinfo *zi)
 				minleft = (zi->bytes_total - zi->bytes_sent) / last_bps / 60;
 				secleft = ((zi->bytes_total - zi->bytes_sent) / last_bps) % 60;
 			}
-			putc ('\r', stderr);
-			fprintf (stderr,
-				  _ ("Bytes Sent:%7ld/%7ld   BPS:%-8ld ETA %02d:%02d  "),
-			zi->bytes_sent, zi->bytes_total, last_bps, minleft, secleft);
+			if (min_bps) {
+				if (low_bps) {
+					if (last_bps<min_bps) {
+						if (time(NULL)-low_bps>=min_bps_time) {
+							/* too bad */
+							vfile(_("rzfile: bps rate %ld below min %ld"),
+								  last_bps, min_bps);
+							DO_SYSLOG((LOG_INFO, "%s/%s: bps rate low: %ld <%ld",
+									   shortname, protname(), last_bps, min_bps));
+							return ERROR;
+						}
+					} else
+						low_bps=0;
+				} else if (last_bps < min_bps) {
+					low_bps=time(NULL);
+				}
+			}
+
+			if (Verbose > 1) {
+				putc ('\r', stderr);
+				fprintf (stderr,
+						 _ ("Bytes Sent:%7ld/%7ld   BPS:%-8ld ETA %02d:%02d  "),
+						 zi->bytes_sent, zi->bytes_total, last_bps, minleft, secleft);
+			}
 			last_txpos = zi->bytes_sent;
 		} else if (Verbose)
 			not_printed++;
@@ -1626,10 +1730,14 @@ zsendfdata (struct zm_fileinfo *zi)
 		case ZSKIP:
 			if (input_f)
 				fclose (input_f);
+			DO_SYSLOG((LOG_INFO, "%s/%s: got ZSKIP",
+					   shortname, protname()));
 			return c;
 		default:
 			if (input_f)
 				fclose (input_f);
+			DO_SYSLOG((LOG_INFO, "%s/%s: got %d",
+					   shortname, protname(), c));
 			return ERROR;
 		}
 	}
