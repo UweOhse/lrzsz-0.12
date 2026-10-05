@@ -43,7 +43,7 @@ for i in $objdir/src/l?z ; do
 	z_test_files="$z_test_files $i" 
 	y_test_files="$y_test_files $i" 
 done
-for i in /pub/gnu/emacs-*.tar.gz ; do
+for i in /pub/gnu/emacs-1*.tar.gz ; do
 	case $i in
 	/pub/gnu/emacs-?.tar.gz) ;;
 	*) 
@@ -71,6 +71,8 @@ if test "$mode" = all -o "$mode" = z ; then
 	failed=0
 	($SZ -q $SZBUFSIZE $z_test_files ) <$testdir/pipe | \
 		(cd $testdir/zmodem ; exec $RZ $RZBUFSIZE $QUIET >>../pipe )
+	mv $testdir/zmodem/gmon.out gmon.out.rz.$$
+	mv gmon.out gmon.out.sz.$$
 	for i in $z_test_files ; do 
 		bn=`basename $i`
 		cmp $i $testdir/zmodem/$bn
@@ -250,7 +252,8 @@ if test "$mode" = error ; then
 		echo "testing error, lsz"
 		mkdir $testdir/error.lsz
 		failed=0
-		$SZ -q8 $SZBUFSIZE $y_test_files <$testdir/pipe | \
+		# strace -vs 128 -o out $SZ -8 -vvvvvvvv $SZBUFSIZE $y_test_files <$testdir/pipe | \
+		$SZ -8q $SZBUFSIZE $y_test_files <$testdir/pipe | \
 			(cd $testdir/error.lsz ; $RZ --errors 32768 $RZBUFSIZE $QUIET >>../pipe 2>/dev/null)
 		for i in $y_test_files ; do 
 			bn=`basename $i`

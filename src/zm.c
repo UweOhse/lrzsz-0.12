@@ -455,11 +455,11 @@ zsda32(const char *buf, size_t length, int frameend)
 
 	crc = 0xFFFFFFFFL;
 	zsendline_s(buf,length);
-	do {
+	for (; length; length--) {
 		c = *buf & 0377;
 		crc = UPDC32(c, crc);
 		buf++;
-	} while(--length>0);
+	}
 	xsendline(ZDLE); xsendline(frameend);
 	crc = UPDC32(frameend, crc);
 

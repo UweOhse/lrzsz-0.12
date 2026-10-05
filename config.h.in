@@ -138,6 +138,9 @@
    extern x(); declarations. */
 #undef STRICT_PROTOTYPES
 
+/* where the localedata hides */
+#undef LOCALEDIR
+
 /* which OS */
 #undef OS
 
@@ -148,7 +151,7 @@
 #undef HAVE_ERRNO_DECLARATION
 
 /* define to type of speed_t (long?) */
-#undef LRZSZ_TYPE_SPEED_T
+#undef speed_t
 
 /* Define if you have the __argz_count function.  */
 #undef HAVE___ARGZ_COUNT
@@ -323,9 +326,6 @@
 
 /* Define if you have the i library (-li).  */
 #undef HAVE_LIBI
-
-/* Define if you have the nsl library (-lnsl).  */
-#undef HAVE_LIBNSL
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET

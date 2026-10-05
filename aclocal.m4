@@ -30,10 +30,7 @@ AC_REQUIRE([AC_HEADER_STDC])dnl
 AC_REQUIRE([LRZSZ_HEADERS_TERM_IO])dnl
 AC_MSG_CHECKING(for speed_t)
 AC_CACHE_VAL(ac_cv_type_speed_t,
-[AC_EGREP_CPP(dnl
-changequote(<<,>>)dnl
-<<$1[^a-zA-Z_0-9]>>dnl
-changequote([,]), [#include <sys/types.h>
+[AC_EGREP_CPP(speed_t, [#include <sys/types.h>
 #if STDC_HEADERS
 #include <stdlib.h>
 #include <stddef.h>

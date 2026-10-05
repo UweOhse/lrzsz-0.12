@@ -70,6 +70,7 @@ int errors;
 enum zm_type_enum protocol;
 int under_rsh=FALSE;
 extern int turbo_escape;
+static int no_unixmode;
 
 int Canseek=1; /* 1: can; 0: only rewind, -1: neither */
 
@@ -94,7 +95,6 @@ static void saybibi __P ((void));
 static int wcsend __P ((int argc, char *argp[]));
 static int wcputsec __P ((char *buf, int sectnum, size_t cseclen));
 static void usage1 __P ((int exitcode));
-static void show_version(void);
 
 #ifdef ENABLE_SYSLOG
 #define DO_SYSLOG(message) do { \
@@ -118,6 +118,11 @@ static void show_version(void);
 
 #define ZSDATA(x,y,z) \
 	do { if (Crc32t) {zsda32(x,y,z); } else {zsdata(x,y,z);}} while(0)
+#ifdef HAVE_MMAP
+#define DATAADR (mm_addr ? ((char *)mm_addr)+zi->bytes_sent : txbuf)
+#else
+#define DATAADR (txbuf)
+#endif
 
 int Filesleft;
 long Totalleft;
@@ -255,11 +260,13 @@ static struct option const long_options[] =
   {"bufsize", required_argument, NULL, 'B'},
   {"cmdtries", required_argument, NULL, 'C'},
   {"command", required_argument, NULL, 'c'},
-  {"immediate-command", required_argument, NULL, 'c'},
+  {"immediate-command", required_argument, NULL, 'i'},
   {"dot-to-slash", no_argument, NULL, 'd'},
   {"full-path", no_argument, NULL, 'f'},
   {"escape", no_argument, NULL, 'e'},
   {"rename", no_argument, NULL, 'E'},
+  {"help", no_argument, NULL, 'h'},
+  {"crc-check", no_argument, NULL, 'H'},
   {"1024", no_argument, NULL, 'k'},
   {"1k", no_argument, NULL, 'k'},
   {"packetlen", required_argument, NULL, 'L'},
@@ -294,8 +301,16 @@ static struct option const long_options[] =
   {"tcp", no_argument, NULL, 5},
   {"tcp-server", no_argument, NULL, 6},
   {"tcp-client", required_argument, NULL, 7},
+  {"no-unixmode", no_argument, NULL, 8},
   {NULL, 0, NULL, 0}
 };
+
+static void
+show_version(void)
+{
+	printf ("%s (%s) %s\n", program_name, PACKAGE, VERSION);
+}
+
 
 int 
 main(int argc, char **argv)
@@ -336,7 +351,7 @@ main(int argc, char **argv)
 	Rxtimeout = 600;
 
 	while ((c = getopt_long (argc, argv, 
-		"2+48abB:C:c:dfeEghi:kL:l:m:M:NnOopRrqsSt:TUuvw:XYy",
+		"2+48abB:C:c:dfeEghHi:kL:l:m:M:NnOopRrqsSt:TUuvw:XYy",
 		long_options, (int *) 0))!=EOF)
 	{
 		unsigned long int tmp;
@@ -400,6 +415,7 @@ main(int argc, char **argv)
 		case 'e': Zctlesc = 1; break;
 		case 'E': Lzmanag = ZF1_ZMCHNG; break;
 		case 'h': usage(0,NULL); break;
+		case 'H': Lzmanag = ZF1_ZMCRC; break;
 		case 'k': start_blklen=1024; break;
 		case 'L':
 			s_err = xstrtoul (optarg, NULL, 0, &tmp, "ck");
@@ -450,7 +466,12 @@ main(int argc, char **argv)
 		case 'o': Wantfcs32 = FALSE; break;
 		case 'O': no_timeout = TRUE; break;
 		case 'p': Lzmanag = ZF1_ZMPROT;  break;
-		case 'r': Lzconv = ZCRESUM; break;
+		case 'r': 
+			if (Lzconv == ZCRESUM) 
+				Lzmanag = ZF1_ZMCRC;
+			else
+				Lzconv = ZCRESUM; 
+			break;
 		case 'R': Restricted = TRUE; break;
 		case 'q': Quiet=TRUE; Verbose=0; break;
 		case 's':
@@ -564,6 +585,7 @@ main(int argc, char **argv)
 				error(1,0,_("out of memory"));
 			}
 			break;
+		case 8: no_unixmode=1; break;
 		default:
 			usage (2,NULL);
 			break;
@@ -696,6 +718,8 @@ main(int argc, char **argv)
 		play_with_sigint=1;
 	}
 	signal(SIGTERM, bibi);
+	signal(SIGPIPE, bibi);
+	signal(SIGHUP, bibi);
 
 	if ( protocol!=ZM_XMODEM) {
 		if (protocol==ZM_ZMODEM) {
@@ -1163,7 +1187,8 @@ wctxpn(struct zm_fileinfo *zi)
 		*q++ = 0;
 	if (!Ascii && (input_f!=stdin) && *zi->fname && fstat(fileno(input_f), &f)!= -1)
 		sprintf(p, "%lu %lo %o 0 %d %ld", (long) f.st_size, f.st_mtime,
-		  f.st_mode, Filesleft, Totalleft);
+		  (no_unixmode) ? 0 : f.st_mode, 
+		  Filesleft, Totalleft);
 	if (Verbose)
 		vstringf(_("Sending: %s\n"),txbuf);
 	Totalleft -= f.st_size;
@@ -1409,6 +1434,15 @@ zfilbuf (struct zm_fileinfo *zi)
 	n = fread (txbuf, 1, blklen, input_f);
 	if (n < blklen)
 		zi->eof_seen = 1;
+	else {
+		/* save one empty paket in case file ends ob blklen boundary */
+		int c = getc(input_f);
+
+		if (c != EOF || !feof(input_f))
+			ungetc(c, input_f);
+		else
+			zi->eof_seen = 1;
+	}
 	return n;
 }
 
@@ -1424,19 +1458,6 @@ canit (void)
 	printf (canistr);
 	flushmo ();
 	purgeline(io_mode_fd);
-}
-
-static void
-show_version(void)
-{
-    printf("lsz (%s) %s\n",PACKAGE,VERSION);
-    printf(_("Copyright (C) until 1988 Chuck Forsberg (Omen Technology INC)\n"));
-    printf(_("Copyright (C) 1994 Matt Porter, Michael D. Black\n"));
-    printf(_("Copyright (C) %s Uwe Ohse\n"),"1997");
-    printf(_("This is free software, redistributable under the terms of the\n"
-             "GNU General Public License. There is NO warranty; not even for MERCHANTABILITY\n"
-             "or FITNESS FOR A PARTICULAR PURPOSE. See COPYING for details.\n"));
-    exit(0);
 }
 
 static void
@@ -1509,7 +1530,6 @@ usage(int exitcode, const char *what)
 "  -s, --stop-at {HH:MM|+N}    stop transmission at HH:MM or in N seconds\n"
 "      --tcp                   build a TCP connection to transmit files\n"
 "      --tcp-server            open socket, wait for connection\n"
-"      --tcp-client IP:PORT    open socket, wait for connection\n"
 "  -u, --unlink                unlink file after transmission\n"
 "  -U, --unrestrict            turn off restricted mode (if allowed to)\n"
 "  -v, --verbose               be verbose, provide debugging information\n"
@@ -1522,7 +1542,6 @@ usage(int exitcode, const char *what)
 "\n"
 "short options use the same arguments as the long ones\n"
 	),f);
-    fputs("Report bugs to bugs@ohse.de, using the lrzszbug script if possible\n",f);
 	exit(exitcode);
 }
 
@@ -1562,7 +1581,13 @@ getzrxinit(void)
 			Rxflags = 0377 & Rxhdr[ZF0];
 			Rxflags2 = 0377 & Rxhdr[ZF1];
 			Txfcs32 = (Wantfcs32 && (Rxflags & CANFC32));
-			Zctlesc |= Rxflags & TESCCTL;
+			{
+				int old=Zctlesc;
+				Zctlesc |= Rxflags & TESCCTL;
+				/* update table - was initialised to not escape */
+				if (Zctlesc && !old)
+					zsendline_init();
+			}
 			Rxbuflen = (0377 & Rxhdr[ZP0])+((0377 & Rxhdr[ZP1])<<8);
 			if ( !(Rxflags & CANFDX))
 				Txwindow = 0;
@@ -1600,7 +1625,7 @@ getzrxinit(void)
 			if ( !command_mode) {
 				fstat(fileno(input_f), &f);
 #if defined(S_ISREG)
-				if (S_ISREG(f.st_mode)) {
+				if (!(S_ISREG(f.st_mode))) {
 #else
 				if ((f.st_mode & S_IFMT) != S_IFREG) {
 #endif
@@ -1732,17 +1757,41 @@ again:
 		case ZCRC:
 			crc = 0xFFFFFFFFL;
 #ifdef HAVE_MMAP
+			if (use_mmap && !mm_addr)
+			{
+				struct stat st;
+				if (fstat (fileno (input_f), &st) == 0) {
+					mm_size = st.st_size;
+					mm_addr = mmap (0, mm_size, PROT_READ,
+									MAP_SHARED, fileno (input_f), 0);
+					if ((caddr_t) mm_addr == (caddr_t) - 1)
+						mm_addr = NULL;
+					else {
+						fclose (input_f);
+						input_f = NULL;
+					}
+				}
+			}
 			if (mm_addr) {
 				size_t i;
+				size_t count;
 				char *p=mm_addr;
-				for (i=0;i<rxpos && i<mm_size;i++,p++) {
+				count=(rxpos < mm_size && rxpos > 0)? rxpos: mm_size;
+				for (i=0;i<count;i++,p++) {
 					crc = UPDC32(*p, crc);
 				}
 				crc = ~crc;
 			} else
 #endif
 			if (Canseek >= 0) {
-				while (((c = getc(input_f)) != EOF) && --rxpos)
+				if (rxpos==0) {
+					struct stat st;
+					if (0==fstat(fileno(input_f),&st)) {
+						rxpos=st.st_size;
+					} else
+						rxpos=-1;
+				}
+				while (rxpos-- && ((c = getc(input_f)) != EOF))
 					crc = UPDC32(c, crc);
 				crc = ~crc;
 				clearerr(input_f);	/* Clear EOF */
@@ -1754,6 +1803,13 @@ again:
 		case ZSKIP:
 			if (input_f)
 				fclose(input_f);
+#ifdef HAVE_MMAP
+			else if (mm_addr) {
+				munmap(mm_addr,mm_size);
+				mm_addr=NULL;
+			}
+#endif
+
 			vfile("receiver skipped");
 			DO_SYSLOG((LOG_INFO, "%s/%s: receiver skipped",
 					   shortname, protname()));
@@ -1796,7 +1852,7 @@ zsendfdata (struct zm_fileinfo *zi)
 	static time_t low_bps=0;
 
 #ifdef HAVE_MMAP
-	if (use_mmap)
+	if (use_mmap && !mm_addr)
 	{
 		struct stat st;
 		if (fstat (fileno (input_f), &st) == 0) {
@@ -1985,12 +2041,7 @@ zsendfdata (struct zm_fileinfo *zi)
 			last_txpos = zi->bytes_sent;
 		} else if (Verbose)
 			not_printed++;
-#ifdef HAVE_MMAP
-		if (mm_addr)
-			ZSDATA (((char *) mm_addr) + zi->bytes_sent, n, e);
-		else
-#endif
-			ZSDATA (txbuf, n, e);
+		ZSDATA (DATAADR, n, e);
 		bytcnt = zi->bytes_sent += n;
 		if (e == ZCRCW)
 			goto waitack;
@@ -2028,7 +2079,9 @@ zsendfdata (struct zm_fileinfo *zi)
 		if (Txwindow) {
 			size_t tcount = 0;
 			while ((tcount = zi->bytes_sent - Lrxpos) >= Txwindow) {
-				vfile ("%ld window >= %u", tcount, Txwindow);
+				vfile ("%ld (%ld,%ld) window >= %u", tcount, 
+					(long) zi->bytes_sent, (long) Lrxpos,
+					Txwindow);
 				if (e != ZCRCQ)
 					ZSDATA (txbuf, 0, e = ZCRCQ);
 				c = getinsync (zi, 1);
@@ -2237,6 +2290,12 @@ getinsync(struct zm_fileinfo *zi, int flag)
 		case ZSKIP:
 			if (input_f)
 				fclose(input_f);
+#ifdef HAVE_MMAP
+			else if (mm_addr) {
+				munmap(mm_addr,mm_size);
+				mm_addr=NULL;
+			}
+#endif
 			return c;
 		case ERROR:
 		default:

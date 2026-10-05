@@ -1,25 +1,88 @@
+1998-01-18	Uwe Ohse  <uwe@ohse.de>
+
+	* src/lrz.c (show_version): new function.
+	  (main) call parse_long_options() with only 4 arguments.
+	  didn't wrap all mmap-specifics in #ifdef HAVE_MMAP.
+
+	* src/lsz.c (show_version): new function.
+	  (main) call parse_long_options() with only 4 arguments.
+	  didn't wrap all mmap-specifics in #ifdef HAVE_MMAP.
+
+	* configure.in: vasprintf should not only be checked for
+	  but replaced of needed.
+
+	* lib/long-options.c
+	* lib/long-options.h
+	  new versions with only 4 arguments. 
+
+1998-01-03	Philippe De Muyter  <phdm@macqel.be>
+
+	* src/lsz.c (zfilbuf): Look ahead for one char, to set eof_seen early
+	  and to avoid yielding 0 at the end of file.
+
+1997-12-14	Uwe Ohse  <uwe@ohse.de>
+
+	* src/lrz.c (do_crc_check): removed warnings.
+	  (procheader): removed warnings.
+	  (procheader): stupic bug: "&~1024" should have been "&~1023" to
+	  get block start aligned to whole kilobytes.
+	  global: moved DO_SYSLOG definition, renamed it to DO_SYSLOG_FNAME,
+	  replaced some lsyslog-Calls with new macro DO_SYSLOG.
+
+	* src/lsz.c (struct long_option): --immediate-command should have
+	  used shortopt `i', but used `c'.
+
+	applied patch from Philippe De Muyter  <phdm@macqel.be>, original date
+	1997-11-20:
+	* aclocal.m4 (LRZSZ_TYPE_SPEED_T): Really look for speed_t, not $1.
+	* acconfig.h (speed_t): New define slot; replaces LRZSZ_TYPE_SPEED_T.
+
+1997-12-13	Uwe Ohse  <uwe@ohse.de>
+
+	* src/lsz.c: new option --check-crc (implement ZMCRC option),
+	  use ZMCRC if --resume is given twice.
+	  (getzrxinit) Oops. Canseek was set incorrectly if S_ISREG
+	  was defined.
+	  (zsendfile): ZCRC-Code needed debugging. munmap added.
+
+	* src/lrz.c: new option --check-crc (implement ZMCRC option),
+	  use ZMCRC if --resume is given twice.
+	  (procheader) implement ZMCRC.
+	  (do_crc_check) new function.
+
+1997-12-09	Uwe Ohse  <uwe@ohse.de>
+
+	* src/lrz.c (procheader): implement --newer and --newer-or-longer
+	  option, which Chuck Forsberg must have forgotten to implement in
+	  rz (sz did know about them).
+	  implement a --junk-path option - junks the paths of the files,
+	  removing directory part of a file name.
+	  (main): implement command line switches for the options.
+
+1997-12-08	Uwe Ohse  <uwe@ohse.de>
+
+	* src/lrz.c (main): oops. --rename included Zctlesc ...
+	  catch SIGPIPE.
+	  (global): new variable skip_if_not_found.
+	  (procheader): use "r+" fopen()-mode if "skip_if_not_found" is set.
+	  if fopen() fails tell that to syslog.
+	  (tryz): set skip_of_not_found if ZF1_ZMSKNOLOC is received (this
+	  fixes the "--overwrite-or-skip" option)
+	  don't use "Zctlesc = TESCCTL & Rxhdr[ZF0];", use "|=" instead.
+
+	* src/lsz.c (main): catch SIGPIPE,SIGHUP.
+	  (global): new variable/option "--no-unixmode". This is needed to
+	  check the "keep-uppercase" option.
+	  (getzrxinit): call "zsendline_init" to reinitialize escape table
+	  if receiver told us to escape control chars (fixes "rz --escape").
+
+1997-12-07	Uwe Ohse  <uwe@ohse.de>
+
+	* src/zm.c (zsda32): crashed if sending packet with 0 bytes data.
+
 1997-11-07  Uwe Ohse  <uwe@ohse.de>
 
-    * src/rbsb.c (rdchk, reading version): return 0 if read returns
-      an error.
-
-    * src/tcp.c (tcp_connect): #define INADDR_NONE to -1 if it's
-      undefined.
-
-    * updated to gettext-0.10.32
-
-    * src/lsz.c (main):
-    * src/lrz.c (main): changed call to parse_long_options.
-      (show_version): new function.
-      (usage): "Report bugs to ..."
-
-    * src/lrz.c (wcreceive): changed a %m to %s strerror(errno).
-    
-    * lib/long-options.h: updated prototype vor parse_long_options
-
-    * lib/long-options.c (parse_long_options): slightly rewrote it to confirm
-      with newer GNU coding standards.
-
+    * configure.in: changed version number to 0.12.18.
 
     * src/zm.c: remove #include <syslog.h>
       (zgethdr): removed warnings.
@@ -37,10 +100,8 @@
 
     * src/Makefile.am (lsz_SOURCES and lrz_SOURCES): include lsyslog.c.
 
-    * configure.in (AC_REPLACE_FUNCS): check for vasprintf.c
+    * configure.in (AC_CHECK_FUNCS): check for vasprintf.c
       (elsewhere): changed tirka.gun.de hacks to tirka.ohse.de.
-      changed version number to 0.12.18.
-      check for libnsl (Solaris).
 
     * lib/Makefile.am (EXTRA_DIST): include vasprintf.c
 

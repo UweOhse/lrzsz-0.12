@@ -173,7 +173,7 @@ rdchk(int fd)
 	fcntl(fd, F_SETFL, savestat | O_NDELAY) ;
 	lf = read(fd, &checked, 1) ;
 	fcntl(fd, F_SETFL, savestat) ;
-	return(lf==-1 ? 0 : lf) ;
+	return(lf) ;
 }
 #endif
 
@@ -243,13 +243,14 @@ io_mode(int fd, int n)
 		tty.c_lflag = 0;
 		tty.c_cc[VINTR] = protocol==ZM_ZMODEM ? 03 : 030;	/* Interrupt char */
 #endif
-#if defined(_POSIX_VDISABLE)
-		/* that strange construction help on netbsd/mips where
-		 * _POSIX_VDISABLE is defined but empty ...
-		 */
-		tty.c_cc[VQUIT] = _POSIX_VDISABLE + 0;                  /* Quit char */
+#ifdef _POSIX_VDISABLE
+		if (((int) _POSIX_VDISABLE)!=(-1)) {
+			tty.c_cc[VQUIT] = _POSIX_VDISABLE;		/* Quit char */
+		} else {
+			tty.c_cc[VQUIT] = -1;			/* Quit char */
+		}
 #else
-		tty.c_cc[VQUIT] = 0xff;                 /* Quit char */
+		tty.c_cc[VQUIT] = -1;			/* Quit char */
 #endif
 #ifdef NFGVMIN
 		tty.c_cc[VMIN] = 1;

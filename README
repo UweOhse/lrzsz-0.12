@@ -16,12 +16,13 @@ you can still send bug reports to <bugs@bulkmail.ohse.de> as normal
 electronic mails.
 Please note that any mails sent to this address are forwarded to the lrzsz
 mailinglist, <uwe-lrzsz@bulkmail.ohse.de>. To subscribe to this list send
-mail to <uwe-lrzsz-subscribe@bulkmail.ohse.de>.
+a mail to <uwe-lrzsz-subscribe@bulkmail.ohse.de>.
 
 Please read:
 - INSTALL for installation instructions
 - NEWS for a list of major changes between the releases
 - ChangeLog for the list of minor changes.
 - AUTHORS and THANKS to see whom to thank for this package.
+- README.cvs for informations about CVS access to the lrzsz sources.
 
 Uwe Ohse

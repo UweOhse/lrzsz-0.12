@@ -78,6 +78,7 @@ int Firstsec;
 int errors;
 int Restricted=1;	/* restricted; no /.. or ../ in filenames */
 int Readnum = HOWMANY;	/* Number of bytes to ask for in read() from modem */
+int skip_if_not_found;
 
 char *Pathname;
 const char *program_name;		/* the name by which we were called */
@@ -93,6 +94,7 @@ int Rxascii=FALSE;	/* receive files in ascii (translate) mode */
 int Thisbinary;		/* current file is to be received in bin mode */
 int try_resume=FALSE;
 int allow_remote_commands=FALSE;
+int junk_path=FALSE;
 int no_timeout=FALSE;
 enum zm_type_enum protocol;
 int	under_rsh=FALSE;
@@ -137,7 +139,6 @@ static int wcreceive __P ((int argc, char **argp));
 static int rzfile __P ((struct zm_fileinfo *));
 static void usage __P ((int exitcode, const char *what));
 static void usage1 __P ((int exitcode));
-static void show_version __P ((void));
 static void exec2 __P ((const char *s));
 static int closeit __P ((struct zm_fileinfo *));
 static void ackbibi __P ((void));
@@ -165,6 +166,29 @@ int enable_syslog=TRUE;
 #  else
 int enable_syslog=FALSE;
 #  endif
+#define DO_SYSLOG_FNAME(message) do { \
+	if (enable_syslog) { \
+		const char *shortname; \
+		if (!zi->fname) \
+			shortname="no.name"; \
+		else { \
+			shortname=strrchr(zi->fname,'/'); \
+			if (!shortname) \
+				shortname=zi->fname; \
+			else \
+				shortname++; \
+		} \
+        lsyslog message ; \
+	} \
+} while(0)
+#define DO_SYSLOG(message) do { \
+	if (enable_syslog) { \
+        lsyslog message ; \
+	} \
+} while(0)
+#else
+#define DO_SYSLOG_FNAME(message) do { } while(0)
+#define DO_SYSLOG(message) do { } while(0)
 #endif
 
 
@@ -189,11 +213,16 @@ static struct option const long_options[] =
 	{"allow-remote-commands", no_argument, NULL, 'C'},
 	{"escape", no_argument, NULL, 'e'},
 	{"rename", no_argument, NULL, 'E'},
+	{"help", no_argument, NULL, 'h'},
+	{"crc-check", no_argument, NULL, 'H'},
+	{"junk-path", no_argument, NULL, 'j'},
 	{"errors", required_argument, NULL, 3},
 	{"disable-timeouts", no_argument, NULL, 'O'},
 	{"disable-timeout", no_argument, NULL, 'O'}, /* i can't get it right */
 	{"min-bps", required_argument, NULL, 'm'},
 	{"min-bps-time", required_argument, NULL, 'M'},
+	{"newer", no_argument, NULL, 'n'},
+	{"newer-or-longer", no_argument, NULL, 'N'},
 	{"protect", no_argument, NULL, 'p'},
 	{"resume", no_argument, NULL, 'r'},
 	{"restricted", no_argument, NULL, 'R'},
@@ -219,6 +248,12 @@ static struct option const long_options[] =
 	{"tcp-client", required_argument, NULL, 7},
 	{NULL,0,NULL,0}
 };
+
+static void
+show_version(void)
+{
+	printf ("%s (%s) %s\n", program_name, PACKAGE, VERSION);
+}
 
 int
 main(int argc, char *argv[])
@@ -275,9 +310,11 @@ main(int argc, char *argv[])
 		case 'c': Crcflg=TRUE; break;
 		case 'C': allow_remote_commands=TRUE; break;
 		case 'D': Nflag = TRUE; break;
-		case 'E': Lzmanag = ZF1_ZMCHNG;
+		case 'E': Lzmanag = ZF1_ZMCHNG; break;
 		case 'e': Zctlesc = 1; break;
 		case 'h': usage(0,NULL); break;
+		case 'H': Lzmanag= ZF1_ZMCRC; break;
+		case 'j': junk_path=TRUE; break;
 		case 'm':
 			s_err = xstrtoul (optarg, &tmpptr, 0, &tmp, "km");
 			min_bps = tmp;
@@ -292,6 +329,8 @@ main(int argc, char *argv[])
 			if (min_bps_time<=1)
 				usage(2,_("min_bps_time must be > 1"));
 			break;
+		case 'N': Lzmanag = ZF1_ZMNEWL;  break;
+		case 'n': Lzmanag = ZF1_ZMNEW;  break;
 		case 'O': no_timeout=TRUE; break;
 		case 'p': Lzmanag = ZF1_ZMPROT;  break;
 		case 'q': Quiet=TRUE; Verbose=0; break;
@@ -332,7 +371,12 @@ main(int argc, char *argv[])
 			break;
 
 
-		case 'r': try_resume=TRUE;  break;
+		case 'r': 
+			if (try_resume) 
+				Lzmanag= ZF1_ZMCRC;
+			else
+				try_resume=TRUE;  
+			break;
 		case 'R': Restricted++;  break;
 		case 'S':
 #ifdef ENABLE_TIMESYNC
@@ -366,9 +410,11 @@ main(int argc, char *argv[])
 		case 'U':
 			if (!under_rsh)
 				Restricted=0;
-			else 
+			else  {
+				DO_SYSLOG((LOG_INFO,"--unrestrict option used under restricted shell"));
 				error(1,0,
 	_("security violation: can't do that under restricted shell\n"));
+			}
 			break;
 		case 'v':
 			++Verbose; break;
@@ -447,8 +493,9 @@ main(int argc, char *argv[])
 		usage(2,_("garbage on commandline"));
 	if (protocol!=ZM_XMODEM && npats)
 		usage(2, _("garbage on commandline"));
-	if (Restricted && allow_remote_commands)
+	if (Restricted && allow_remote_commands) {
 		allow_remote_commands=FALSE;
+	}
 	if (Fromcu && !Quiet) {
 		if (Verbose == 0)
 			Verbose = 2;
@@ -508,6 +555,7 @@ main(int argc, char *argv[])
 	else
 		signal(SIGINT, bibi);
 	signal(SIGTERM, bibi);
+	signal(SIGPIPE, bibi);
 	if (wcreceive(npats, patts)==ERROR) {
 		exitcode=0200;
 		canit();
@@ -524,19 +572,6 @@ main(int argc, char *argv[])
 			fputs(_("Transfer complete\n"),stderr);
 	}
 	exit(exitcode);
-}
-
-static void
-show_version(void)
-{
-	printf("lrz (%s) %s\n",PACKAGE,VERSION);
-	printf(_("Copyright (C) until 1988 Chuck Forsberg (Omen Technology INC)\n"));
-	printf(_("Copyright (C) 1994 Matt Porter, Michael D. Black\n"));
-  	printf(_("Copyright (C) %s Uwe Ohse\n"),"1997");
-	printf(_("This is free software, redistributable under the terms of the\n"
-			 "GNU General Public License. There is NO warranty; not even for MERCHANTABILITY\n"
-			 "or FITNESS FOR A PARTICULAR PURPOSE. See COPYING for details.\n"));
-	exit(0);
 }
 
 static void
@@ -593,9 +628,6 @@ usage(int exitcode, const char *what)
 "  -s, --stop-at {HH:MM|+N}    stop transmission at HH:MM or in N seconds\n"
 "  -S, --timesync              request remote time (twice: set local time)\n"
 "      --syslog[=off]          turn syslog on or off, if possible\n"
-"      --tcp                   TCP-Verbindung zum Übertragen verwenden\n"
-"      --tcp-server            als TCP-Server arbeiten \n"
-"      --tcp-client IP:PORT    als TCP-Client für Server IP:PORT arbeiten\n"
 "  -t, --timeout N             set timeout to N tenths of a second\n"
 "  -u, --keep-uppercase        keep upper case filenames\n"
 "  -U, --unrestrict            disable restricted mode (if allowed to)\n"
@@ -608,7 +640,6 @@ usage(int exitcode, const char *what)
 "\n"
 "short options use the same arguments as the long ones\n"
 	),f);
-	fputs("Report bugs to bugs@ohse.de, using the lrzszbug script if possible\n",f);
 	exit(exitcode);
 }
 
@@ -738,8 +769,8 @@ wcreceive(int argc, char **argp)
 		if ((fout=fopen(Pathname, "w")) == NULL) {
 #ifdef ENABLE_SYSLOG
 			if (enable_syslog)
-				lsyslog(LOG_ERR,"%s/%s: cannot open: %s",
-					shortname,protname(),strerror(errno));
+				lsyslog(LOG_ERR,"%s/%s: cannot open: %m",
+					shortname,protname());
 #endif
 			return ERROR;
 		}
@@ -990,6 +1021,67 @@ humbug:
 	return ERROR;
 }
 
+#define ZCRC_DIFFERS (ERROR+1)
+#define ZCRC_EQUAL (ERROR+2)
+/*
+ * do ZCRC-Check for open file f.
+ * check at most check_bytes bytes (crash recovery). if 0 -> whole file.
+ * remote file size is remote_bytes.
+ */
+static int 
+do_crc_check(FILE *f, size_t remote_bytes, size_t check_bytes) {
+	struct stat st;
+	unsigned long crc;
+	unsigned long rcrc;
+	size_t n;
+	int c;
+	int t1=0,t2=0;
+	if (-1==fstat(fileno(f),&st)) {
+		DO_SYSLOG((LOG_ERR,"cannot fstat open file: %s",strerror(errno)));
+		return ERROR;
+	}
+	if (check_bytes==0 && ((size_t) st.st_size)!=remote_bytes)
+		return ZCRC_DIFFERS; /* shortcut */
+
+	crc=0xFFFFFFFFL;
+	n=check_bytes;
+	if (n==0)
+		n=st.st_size;
+	while (n-- && ((c = getc(f)) != EOF))
+		crc = UPDC32(c, crc);
+	crc = ~crc;
+	clearerr(f);  /* Clear EOF */
+	fseek(f, 0L, 0);
+
+	while (t1<3) {
+		stohdr(check_bytes);
+		zshhdr(ZCRC, Txhdr);
+		while(t2<3) {
+			size_t tmp;
+			c = zgethdr(Rxhdr, 0, &tmp);
+			rcrc=(unsigned long) tmp;
+			switch (c) {
+			default: /* ignore */
+				break;
+			case ZFIN:
+				return ERROR;
+			case ZRINIT:
+				return ERROR;
+			case ZCAN:
+				if (Verbose)
+					vstringf(_("got ZCAN"));
+				return ERROR;
+				break;
+			case ZCRC:
+				if (crc!=rcrc)
+					return ZCRC_DIFFERS;
+				return ZCRC_EQUAL;
+				break;
+			}
+		}
+	}
+	return ERROR;
+}
 
 /*
  * Process incoming file information header
@@ -1000,9 +1092,24 @@ procheader(char *name, struct zm_fileinfo *zi)
 	const char *openmode;
 	char *p;
 	static char *name_static=NULL;
+	char *nameend;
 
 	if (name_static)
 		free(name_static);
+	if (junk_path) {
+		p=strrchr(name,'/');
+		if (p) {
+			p++;
+			if (!*p) {
+				/* alert - file name ended in with a / */
+				if (Verbose)
+					vstringf(_("file name ends with a /, skipped: %s\n"),name);
+				DO_SYSLOG((LOG_ERR,"file name ends with a /, skipped: %s", name));
+				return ERROR;
+			}
+			name=p;
+		}
+	}
 	name_static=malloc(strlen(name)+1);
 	if (!name_static)
 		error(1,0,_("out of memory"));
@@ -1031,6 +1138,8 @@ procheader(char *name, struct zm_fileinfo *zi)
 		zconv=ZCRESUM;
 	if (zmanag == ZF1_ZMAPND && zconv!=ZCRESUM)
 		openmode = "a";
+	if (skip_if_not_found)
+		openmode="r+";
 
 #ifdef ENABLE_TIMESYNC
 	in_timesync=0;
@@ -1040,6 +1149,25 @@ procheader(char *name, struct zm_fileinfo *zi)
 	in_tcpsync=0;
 	if (tcpsync_flag && 0==strcmp(name,"$tcp$.t"))
 		in_tcpsync=1;
+
+	zi->bytes_total = DEFBYTL;
+	zi->mode = 0; 
+	zi->eof_seen = 0; 
+	zi->modtime = 0;
+
+	nameend = name + 1 + strlen(name);
+	if (*nameend) {	/* file coming from Unix or DOS system */
+		long modtime;
+		long bytes_total;
+		int mode;
+		sscanf(nameend, "%ld%lo%o", &bytes_total, &modtime, &mode);
+		zi->modtime=modtime;
+		zi->bytes_total=bytes_total;
+		zi->mode=mode;
+		if (zi->mode & UNIXFILE)
+			++Thisbinary;
+	}
+
 	/* Check for existing file */
 	if (zconv != ZCRESUM && !Rxclob && (zmanag&ZF1_ZMMASK) != ZF1_ZMCLOB 
 		&& (zmanag&ZF1_ZMMASK) != ZF1_ZMAPND
@@ -1052,47 +1180,66 @@ procheader(char *name, struct zm_fileinfo *zi)
 		char *tmpname;
 		char *ptr;
 		int i;
-		fclose(fout);
-		if ((zmanag & ZF1_ZMMASK)!=ZF1_ZMCHNG) {
-			if (Verbose)
-				vstringf(_("file exists, skipped: %s\n"),name);
-			return ERROR;
+		if (zmanag == ZF1_ZMNEW || zmanag==ZF1_ZMNEWL) {
+			if (-1==fstat(fileno(fout),&sta)) {
+				int e=errno;
+				if (Verbose)
+					vstringf(_("file exists, skipped: %s\n"),name);
+				DO_SYSLOG((LOG_ERR,"cannot fstat open file %s: %s",
+					name,strerror(e)));
+				return ERROR;
+			}
+			if (zmanag == ZF1_ZMNEW) {
+				if (sta.st_mtime > zi->modtime) {
+					DO_SYSLOG((LOG_INFO,"skipping %s: newer file exists", name));
+					return ERROR; /* skips file */
+				}
+			} else {
+				/* newer-or-longer */
+				if (((size_t) sta.st_size) >= zi->bytes_total 
+					&& sta.st_mtime > zi->modtime) {
+					DO_SYSLOG((LOG_INFO,"skipping %s: longer+newer file exists", name));
+					return ERROR; /* skips file */
+				}
+			}
+			fclose(fout);
+		} else if (zmanag==ZF1_ZMCRC) {
+			int r=do_crc_check(fout,zi->bytes_total,0);
+			if (r==ERROR) {
+				fclose(fout);
+				return ERROR;
+			}
+			if (r!=ZCRC_DIFFERS) {
+				return ERROR; /* skips */
+			}
+			fclose(fout);
+		} else {
+			fclose(fout);
+			if ((zmanag & ZF1_ZMMASK)!=ZF1_ZMCHNG) {
+				if (Verbose)
+					vstringf(_("file exists, skipped: %s\n"),name);
+				return ERROR;
+			}
+			/* try to rename */
+			tmpname=alloca(strlen(name)+5);
+			ptr=stpcpy(tmpname,name);
+			*ptr++='.';
+			i=0;
+			do {
+				sprintf(ptr,"%d",i++);
+			} while (i<1000 && stat(tmpname,&sta)==0);
+			if (i==1000)
+				return ERROR;
+			free(name_static);
+			name_static=malloc(strlen(tmpname)+1);
+			if (!name_static)
+				error(1,0,_("out of memory"));
+			strcpy(name_static,tmpname);
+			zi->fname=name_static;
 		}
-		/* try to rename */
-		tmpname=alloca(strlen(name)+5);
-		ptr=stpcpy(tmpname,name);
-		*ptr++='.';
-		i=0;
-		do {
-			sprintf(ptr,"%d",i++);
-		} while (i<1000 && stat(tmpname,&sta)==0);
-		if (i==1000)
-			return ERROR;
-		free(name_static);
-		name_static=malloc(strlen(tmpname)+1);
-		if (!name_static)
-			error(1,0,_("out of memory"));
-		strcpy(name_static,tmpname);
-		zi->fname=name_static;
 	}
 
-	zi->bytes_total = DEFBYTL;
-	zi->mode = 0; 
-	zi->eof_seen = 0; 
-	zi->modtime = 0;
-
-	p = name + 1 + strlen(name);
-	if (*p) {	/* file coming from Unix or DOS system */
-		long modtime;
-		long bytes_total;
-		int mode;
-		sscanf(p, "%ld%lo%o", &bytes_total, &modtime, &mode);
-		zi->modtime=modtime;
-		zi->bytes_total=bytes_total;
-		zi->mode=mode;
-		if (zi->mode & UNIXFILE)
-			++Thisbinary;
-	} else {		/* File coming from CP/M system */
+	if (!*nameend) {		/* File coming from CP/M system */
 		for (p=name_static; *p; ++p)		/* change / to _ */
 			if ( *p == '/')
 				*p = '_';
@@ -1193,9 +1340,23 @@ procheader(char *name, struct zm_fileinfo *zi)
 			fout = fopen(name_static, "r+");
 			if (fout && 0==fstat(fileno(fout),&st))
 			{
+				int can_resume=TRUE;
+				if (zmanag==ZF1_ZMCRC) {
+					int r=do_crc_check(fout,zi->bytes_total,st.st_size);
+					if (r==ERROR) {
+						fclose(fout);
+						return ZFERR;
+					}
+					if (r==ZCRC_DIFFERS) {
+						can_resume=FALSE;
+					}
+				}
+				if ((unsigned long)st.st_size > zi->bytes_total) {
+					can_resume=FALSE;
+				}
 				/* retransfer whole blocks */
-				zi->bytes_skipped = st.st_size & ~(1024);
-				if (zi->bytes_skipped < zi->bytes_total) {
+				zi->bytes_skipped = st.st_size & ~(1023);
+				if (can_resume) {
 					if (fseek(fout, (long) zi->bytes_skipped, SEEK_SET)) {
 						fclose(fout);
 						return ZFERR;
@@ -1218,7 +1379,10 @@ procheader(char *name, struct zm_fileinfo *zi)
 #endif
 		if ( !fout)
 		{
+			int e=errno;
 			zpfatal(_("cannot open %s"), name_static);
+			DO_SYSLOG((LOG_ERR,"%s: cannot open: %s",
+				protname(),strerror(e)));
 			return ERROR;
 		}
 	}
@@ -1542,6 +1706,10 @@ again:
 				/* resume with sz -r is impossible (at least with unix sz)
 				 * if this is not set */
 				zconv=ZCBIN;
+			if (Rxhdr[ZF1] & ZF1_ZMSKNOLOC) {
+				Rxhdr[ZF1] &= ~(ZF1_ZMSKNOLOC);
+				skip_if_not_found=TRUE;
+			}
 			zmanag = Rxhdr[ZF1];
 			ztrans = Rxhdr[ZF2];
 			tryzhdrtype = ZRINIT;
@@ -1552,7 +1720,16 @@ again:
 			zshhdr(ZNAK, Txhdr);
 			goto again;
 		case ZSINIT:
-			Zctlesc = TESCCTL & Rxhdr[ZF0];
+			/* this once was:
+			 * Zctlesc = TESCCTL & Rxhdr[ZF0];
+			 * trouble: if rz get --escape flag:
+			 * - it sends TESCCTL to sz, 
+			 *   get a ZSINIT _without_ TESCCTL (yeah - sender didn't know), 
+			 *   overwrites Zctlesc flag ...
+			 * - sender receives TESCCTL and uses "|=..."
+			 * so: sz escapes, but rz doesn't unescape ... not good.
+			 */
+			Zctlesc |= TESCCTL & Rxhdr[ZF0];
 			if (zrdata(Attn, ZATTNLEN,&bytes_in_block) == GOTCRCW) {
 				stohdr(1L);
 				zshhdr(ZACK, Txhdr);
@@ -1579,8 +1756,10 @@ again:
 						vstringf("%s: %s\n", program_name, 
 							_("not executed"));
 					zshhdr(ZCOMPL, Txhdr);
+					DO_SYSLOG((LOG_INFO,"rexec denied: %s",secbuf));
 					return ZCOMPL;
 				}
+				DO_SYSLOG((LOG_INFO,"rexec allowed: %s",secbuf));
 				if (cmdzack1flg & ZCACK1)
 					stohdr(0L);
 				else
@@ -1617,25 +1796,6 @@ again:
 	return 0;
 }
 
-#ifdef ENABLE_SYSLOG
-#define DO_SYSLOG(message) do { \
-	if (enable_syslog) { \
-		const char *shortname; \
-		if (!zi->fname) \
-			shortname="no.name"; \
-		else { \
-			shortname=strrchr(zi->fname,'/'); \
-			if (!shortname) \
-				shortname=zi->fname; \
-			else \
-				shortname++; \
-		} \
-        lsyslog message ; \
-	} \
-} while(0)
-#else
-#define DO_SYSLOG(message) do { } while(0)
-#endif
 
 /*
  * Receive 1 or more files with ZMODEM protocol
@@ -1666,7 +1826,7 @@ rzfiles(struct zm_fileinfo *zi)
 						_("\rBytes received: %7ld/%7ld   BPS:%-6ld                \r\n"),
 						zi->bytes_received, zi->bytes_total, bps);
 				}
-				DO_SYSLOG((LOG_INFO, "%s/%s: %ld Bytes, %ld BPS",shortname,
+				DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: %ld Bytes, %ld BPS",shortname,
 						   protname(), (long) zi->bytes_total,bps));
 			}
 			/* FALL THROUGH */
@@ -1675,7 +1835,7 @@ rzfiles(struct zm_fileinfo *zi)
 			{
 				if (Verbose) 
 					vstringf(_("Skipped"));
-				DO_SYSLOG((LOG_INFO, "%s/%s: skipped",shortname,protname()));
+				DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: skipped",shortname,protname()));
 			}
 			switch (tryz()) {
 			case ZCOMPL:
@@ -1689,7 +1849,7 @@ rzfiles(struct zm_fileinfo *zi)
 		default:
 			return c;
 		case ERROR:
-			DO_SYSLOG((LOG_INFO, "%s/%s: error",shortname,protname()));
+			DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: error",shortname,protname()));
 			return ERROR;
 		}
 	}
@@ -1729,7 +1889,7 @@ rzfile(struct zm_fileinfo *zi)
 	n = 20;
 
 	if (procheader(secbuf,zi) == ERROR) {
-		DO_SYSLOG((LOG_INFO, "%s/%s: procheader error",
+		DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: procheader error",
 				   shortname,protname()));
 		return (tryzhdrtype = ZSKIP);
 	}
@@ -1772,7 +1932,7 @@ nxthdr:
 		c = zgethdr(Rxhdr, 0, NULL);
 		switch (c) {
 		default:
-			DO_SYSLOG((LOG_INFO, "%s/%s: error: zgethdr returned %d",shortname,
+			DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: error: zgethdr returned %d",shortname,
 					   protname(),c));
 			vfile("rzfile: zgethdr returned %d", c);
 			return ERROR;
@@ -1783,7 +1943,7 @@ nxthdr:
 			chinseg = 0;
 #endif
 			if ( --n < 0) {
-				DO_SYSLOG((LOG_INFO, "%s/%s: error: zgethdr returned %s",shortname,
+				DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: error: zgethdr returned %s",shortname,
 					   protname(),c == ZNAK ? "ZNAK" : "TIMEOUT"));
 				vfile("rzfile: zgethdr returned %d", c);
 				return ERROR;
@@ -1806,7 +1966,7 @@ nxthdr:
 			}
 			if (closeit(zi)) {
 				tryzhdrtype = ZFERR;
-				DO_SYSLOG((LOG_INFO, "%s/%s: error: closeit return <>0",
+				DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: error: closeit return <>0",
 						   shortname, protname()));
 				vfile("rzfile: closeit returned <> 0");
 				return ERROR;
@@ -1819,7 +1979,7 @@ nxthdr:
 			chinseg = 0;
 #endif
 			if ( --n < 0) {
-				DO_SYSLOG((LOG_INFO, "%s/%s: error: zgethdr returned %d",
+				DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: error: zgethdr returned %d",
 						   shortname, protname(),c));
 				vfile("rzfile: zgethdr returned %d", c);
 				return ERROR;
@@ -1832,7 +1992,7 @@ nxthdr:
 			chinseg = 0;
 #endif
 			closeit(zi);
-			DO_SYSLOG((LOG_INFO, "%s/%s: error: sender skipped",
+			DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: error: sender skipped",
 					   shortname, protname()));
 			vfile("rzfile: Sender SKIPPED file");
 			return c;
@@ -1844,7 +2004,7 @@ nxthdr:
 #endif
 				if ( --n < 0) {
 					vfile("rzfile: out of sync");
-					DO_SYSLOG((LOG_INFO, "%s/%s: error: out of sync",
+					DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: error: out of sync",
 					   shortname, protname()));
 					return ERROR;
 				}
@@ -1908,7 +2068,7 @@ moredata:
 								/* too bad */
 								vfile(_("rzfile: bps rate %ld below min %ld"), 
 									  last_bps, min_bps);
-								DO_SYSLOG((LOG_INFO, "%s/%s: bps rate low: %ld < %ld",
+								DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: bps rate low: %ld < %ld",
 										   shortname, protname(), last_bps, min_bps));
 								return ERROR;
 							}
@@ -1922,7 +2082,7 @@ moredata:
 				if (stop_time && now>=stop_time) {
 					/* too bad */
 					vfile(_("rzfile: reached stop time"));
-					DO_SYSLOG((LOG_INFO, "%s/%s: reached stop time",
+					DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: reached stop time",
 							   shortname, protname()));
 					return ERROR;
 				}
@@ -1951,7 +2111,7 @@ moredata:
 				chinseg = 0;
 #endif
 				vfile("rzfile: zrdata returned %d", c);
-				DO_SYSLOG((LOG_INFO, "%s/%s: zrdata returned ZCAN",
+				DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: zrdata returned ZCAN",
 						   shortname, protname()));
 				return ERROR;
 			case ERROR:	/* CRC error */
@@ -1961,7 +2121,7 @@ moredata:
 #endif
 				if ( --n < 0) {
 					vfile("rzfile: zgethdr returned %d", c);
-					DO_SYSLOG((LOG_INFO, "%s/%s: zrdata returned ERROR",
+					DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: zrdata returned ERROR",
 							   shortname, protname()));
 					return ERROR;
 				}
@@ -1973,7 +2133,7 @@ moredata:
 				chinseg = 0;
 #endif
 				if ( --n < 0) {
-					DO_SYSLOG((LOG_INFO, "%s/%s: zrdata returned TIMEOUT",
+					DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: zrdata returned TIMEOUT",
 							   shortname, protname()));
 					vfile("rzfile: zgethdr returned %d", c);
 					return ERROR;

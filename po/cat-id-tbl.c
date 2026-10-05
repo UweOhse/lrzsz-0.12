@@ -66,23 +66,15 @@ const struct _msg_ent _msg_tbl[] = {
   {"Got burst for sector ACK", 57},
   {"Got %02x for sector ACK", 58},
   {"Retry Count Exceeded", 59},
-  {"Copyright (C) until 1988 Chuck Forsberg (Omen Technology INC)\n", 60},
-  {"Copyright (C) 1994 Matt Porter, Michael D. Black\n", 61},
-  {"Copyright (C) %s Uwe Ohse\n", 62},
-  {"\
-This is free software, redistributable under the terms of the\n\
-GNU General Public License. There is NO warranty; not even for \
-MERCHANTABILITY\n\
-or FITNESS FOR A PARTICULAR PURPOSE. See COPYING for details.\n", 63},
-  {"Try `%s --help' for more information.\n", 64},
-  {"%s version %s for %s-%s\n", 65},
-  {"Usage: %s [options] file ...\n", 66},
-  {"   or: %s [options] -{c|i} COMMAND\n", 67},
-  {"Send file(s) with ZMODEM/YMODEM/XMODEM protocol\n", 68},
+  {"Try `%s --help' for more information.\n", 60},
+  {"%s version %s for %s-%s\n", 61},
+  {"Usage: %s [options] file ...\n", 62},
+  {"   or: %s [options] -{c|i} COMMAND\n", 63},
+  {"Send file(s) with ZMODEM/YMODEM/XMODEM protocol\n", 64},
   {"\
     (X) = option applies to XMODEM only\n\
     (Y) = option applies to YMODEM only\n\
-    (Z) = option applies to ZMODEM only\n", 69},
+    (Z) = option applies to ZMODEM only\n", 65},
   {"\
   -+, --append                append to existing destination file (Z)\n\
   -2, --twostop               use 2 stop bits\n\
@@ -106,7 +98,7 @@ or FITNESS FOR A PARTICULAR PURPOSE. See COPYING for details.\n", 63},
   -L, --packetlen N           limit subpacket length to N bytes (Z)\n\
   -l, --framelen N            limit frame length to N bytes (l>=L) (Z)\n\
   -m, --min-bps N             stop transmission if BPS below N\n\
-  -M, --min-bps-time N          for at least N seconds (default: 120)\n", 70},
+  -M, --min-bps-time N          for at least N seconds (default: 120)\n", 66},
   {"\
   -n, --newer                 send file if source newer (Z)\n\
   -N, --newer-or-longer       send file if source newer or longer (Z)\n\
@@ -119,7 +111,6 @@ or FITNESS FOR A PARTICULAR PURPOSE. See COPYING for details.\n", 63},
   -s, --stop-at {HH:MM|+N}    stop transmission at HH:MM or in N seconds\n\
       --tcp                   build a TCP connection to transmit files\n\
       --tcp-server            open socket, wait for connection\n\
-      --tcp-client IP:PORT    open socket, wait for connection\n\
   -u, --unlink                unlink file after transmission\n\
   -U, --unrestrict            turn off restricted mode (if allowed to)\n\
   -v, --verbose               be verbose, provide debugging information\n\
@@ -130,38 +121,38 @@ or FITNESS FOR A PARTICULAR PURPOSE. See COPYING for details.\n", 63},
       --ymodem                use YMODEM protocol\n\
   -Z, --zmodem                use ZMODEM protocol\n\
 \n\
-short options use the same arguments as the long ones\n", 71},
-  {"got ZRQINIT", 72},
-  {"got ZCAN", 73},
-  {"blklen now %d\n", 74},
-  {"zsendfdata: bps rate %ld below min %ld", 75},
-  {"zsendfdata: reached stop time", 76},
-  {"Bytes Sent:%7ld/%7ld   BPS:%-8ld ETA %02d:%02d  ", 77},
-  {"calc_blklen: reduced to %d due to error\n", 78},
-  {"calc_blklen: returned old value %d due to low bpe diff\n", 79},
-  {"calc_blklen: old %ld, new %ld, d %ld\n", 80},
-  {"calc_blklen: calc total_bytes=%ld, bpe=%ld, ec=%ld\n", 81},
-  {"calc_blklen: blklen %d, ok %ld, failed %ld -> %lu\n", 82},
-  {"calc_blklen: returned %d as best\n", 83},
+short options use the same arguments as the long ones\n", 67},
+  {"got ZRQINIT", 68},
+  {"got ZCAN", 69},
+  {"blklen now %d\n", 70},
+  {"zsendfdata: bps rate %ld below min %ld", 71},
+  {"zsendfdata: reached stop time", 72},
+  {"Bytes Sent:%7ld/%7ld   BPS:%-8ld ETA %02d:%02d  ", 73},
+  {"calc_blklen: reduced to %d due to error\n", 74},
+  {"calc_blklen: returned old value %d due to low bpe diff\n", 75},
+  {"calc_blklen: old %ld, new %ld, d %ld\n", 76},
+  {"calc_blklen: calc total_bytes=%ld, bpe=%ld, ec=%ld\n", 77},
+  {"calc_blklen: blklen %d, ok %ld, failed %ld -> %lu\n", 78},
+  {"calc_blklen: returned %d as best\n", 79},
   {"\
 \n\
-countem: Total %d %ld\n", 84},
-  {"Bad escape sequence %x", 85},
-  {"Sender Canceled", 86},
-  {"TIMEOUT", 87},
-  {"Bad data subpacket", 88},
-  {"Data subpacket too long", 89},
-  {"Garbage count exceeded", 90},
-  {"Got %s", 91},
-  {"Retry %d: ", 92},
-  {"don't have settimeofday, will not set time\n", 93},
-  {"not running as root (this is good!), can not set time\n", 94},
-  {"bytes_per_error", 95},
-  {"bytes-per-error should be >100", 96},
-  {"O_SYNC not supported by the kernel", 97},
-  {"garbage on commandline", 98},
-  {"Usage: %s [options] [filename.if.xmodem]\n", 99},
-  {"Receive files with ZMODEM/YMODEM/XMODEM protocol\n", 100},
+countem: Total %d %ld\n", 80},
+  {"Bad escape sequence %x", 81},
+  {"Sender Canceled", 82},
+  {"TIMEOUT", 83},
+  {"Bad data subpacket", 84},
+  {"Data subpacket too long", 85},
+  {"Garbage count exceeded", 86},
+  {"Got %s", 87},
+  {"Retry %d: ", 88},
+  {"don't have settimeofday, will not set time\n", 89},
+  {"not running as root (this is good!), can not set time\n", 90},
+  {"bytes_per_error", 91},
+  {"bytes-per-error should be >100", 92},
+  {"O_SYNC not supported by the kernel", 93},
+  {"garbage on commandline", 94},
+  {"Usage: %s [options] [filename.if.xmodem]\n", 95},
+  {"Receive files with ZMODEM/YMODEM/XMODEM protocol\n", 96},
   {"\
   -+, --append                append to existing files\n\
   -a, --ascii                 ASCII transfer (change CR/LF to LF)\n\
@@ -186,9 +177,6 @@ countem: Total %d %ld\n", 84},
   -s, --stop-at {HH:MM|+N}    stop transmission at HH:MM or in N seconds\n\
   -S, --timesync              request remote time (twice: set local time)\n\
       --syslog[=off]          turn syslog on or off, if possible\n\
-      --tcp                   TCP-Verbindung zum Übertragen verwenden\n\
-      --tcp-server            als TCP-Server arbeiten \n\
-      --tcp-client IP:PORT    als TCP-Client für Server IP:PORT arbeiten\n\
   -t, --timeout N             set timeout to N tenths of a second\n\
   -u, --keep-uppercase        keep upper case filenames\n\
   -U, --unrestrict            disable restricted mode (if allowed to)\n\
@@ -199,42 +187,43 @@ countem: Total %d %ld\n", 84},
       --ymodem                use YMODEM protocol\n\
   -Z, --zmodem                use ZMODEM protocol\n\
 \n\
-short options use the same arguments as the long ones\n", 101},
-  {"%s waiting to receive.", 102},
-  {"\rBytes received: %7ld/%7ld   BPS:%-6ld                \r\n", 103},
-  {"%s: ready to receive %s", 104},
-  {"\rBytes received: %7ld   BPS:%-6ld                \r\n", 105},
+short options use the same arguments as the long ones\n", 97},
+  {"%s waiting to receive.", 98},
+  {"\rBytes received: %7ld/%7ld   BPS:%-6ld                \r\n", 99},
+  {"%s: ready to receive %s", 100},
+  {"\rBytes received: %7ld   BPS:%-6ld                \r\n", 101},
   {"\
 \r\n\
-%s: %s removed.\r\n", 106},
-  {"Pathname fetch returned EOT", 107},
-  {"Received dup Sector", 108},
-  {"Sync Error", 109},
-  {"CRC", 110},
-  {"Checksum", 111},
-  {"Sector number garbled", 112},
-  {"Sender Cancelled", 113},
-  {"Got 0%o sector header", 114},
-  {"zmanag=%d, Lzmanag=%d\n", 115},
-  {"zconv=%d\n", 116},
-  {"file exists, skipped: %s\n", 117},
-  {"TIMESYNC: here %ld, remote %ld, diff %d seconds\n", 118},
-  {"TIMESYNC: cannot set time: %s\n", 119},
-  {"cannot tmpfile() for tcp protocol synchronization", 120},
-  {"Topipe", 121},
-  {"Receiving: %s\n", 122},
-  {"Blocks received: %d", 123},
-  {"%s: %s exists\n", 124},
-  {"%s:\tSecurity Violation", 125},
-  {"remote command execution requested", 126},
-  {"not executed", 127},
-  {"got ZRINIT", 128},
-  {"Skipped", 129},
-  {"rzfile: bps rate %ld below min %ld", 130},
-  {"rzfile: reached stop time", 131},
-  {"\rBytes received: %7ld/%7ld   BPS:%-6ld ETA %02d:%02d  ", 132},
-  {"fgets for tcp protocol synchronization failed: ", 133},
-  {"file close error", 134},
+%s: %s removed.\r\n", 102},
+  {"Pathname fetch returned EOT", 103},
+  {"Received dup Sector", 104},
+  {"Sync Error", 105},
+  {"CRC", 106},
+  {"Checksum", 107},
+  {"Sector number garbled", 108},
+  {"Sender Cancelled", 109},
+  {"Got 0%o sector header", 110},
+  {"file name ends with a /, skipped: %s\n", 111},
+  {"zmanag=%d, Lzmanag=%d\n", 112},
+  {"zconv=%d\n", 113},
+  {"file exists, skipped: %s\n", 114},
+  {"TIMESYNC: here %ld, remote %ld, diff %d seconds\n", 115},
+  {"TIMESYNC: cannot set time: %s\n", 116},
+  {"cannot tmpfile() for tcp protocol synchronization", 117},
+  {"Topipe", 118},
+  {"Receiving: %s\n", 119},
+  {"Blocks received: %d", 120},
+  {"%s: %s exists\n", 121},
+  {"%s:\tSecurity Violation", 122},
+  {"remote command execution requested", 123},
+  {"not executed", 124},
+  {"got ZRINIT", 125},
+  {"Skipped", 126},
+  {"rzfile: bps rate %ld below min %ld", 127},
+  {"rzfile: reached stop time", 128},
+  {"\rBytes received: %7ld/%7ld   BPS:%-6ld ETA %02d:%02d  ", 129},
+  {"fgets for tcp protocol synchronization failed: ", 130},
+  {"file close error", 131},
 };
 
-int _msg_tbl_length = 134;
+int _msg_tbl_length = 131;

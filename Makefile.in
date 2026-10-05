@@ -86,8 +86,8 @@ host_cpu = @host_cpu@
 host_os = @host_os@
 l = @l@
 
-SUBDIRS = lib intl src po man
-EXTRA_DIST = check.lrzsz COMPATABILITY
+SUBDIRS = lib intl src po man testsuite
+EXTRA_DIST = check.lrzsz COMPATABILITY README.cvs
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = config.h
@@ -252,7 +252,7 @@ distdir: $(DISTFILES)
 info: info-recursive
 dvi: dvi-recursive
 check: all-am
-	$(MAKE) check-recursive check-local
+	$(MAKE) check-recursive
 installcheck: installcheck-recursive
 all-recursive-am: config.h
 	$(MAKE) all-recursive
@@ -320,10 +320,10 @@ installcheck-recursive info-recursive dvi-recursive \
 mostlyclean-recursive distclean-recursive clean-recursive \
 maintainer-clean-recursive tags tags-recursive mostlyclean-tags \
 distclean-tags clean-tags maintainer-clean-tags distdir info dvi \
-check-local installcheck all-recursive-am all-am install-exec \
-install-data install uninstall all installdirs mostlyclean-generic \
-distclean-generic clean-generic maintainer-clean-generic clean \
-mostlyclean distclean maintainer-clean
+installcheck all-recursive-am all-am install-exec install-data install \
+uninstall all installdirs mostlyclean-generic distclean-generic \
+clean-generic maintainer-clean-generic clean mostlyclean distclean \
+maintainer-clean
 
 
 dist-hook:
@@ -333,7 +333,7 @@ dist-hook:
 	cp -fa $(srcdir)/debian/copyright  $(distdir)/debian/
 	cp -fa $(srcdir)/debian/rules.in  $(distdir)/debian/
 
-check-local:
+oldcheck-local:
 	QUIET=-q $(srcdir)/check.lrzsz $(srcdir) `pwd`	
 vcheck:
 	$(srcdir)/check.lrzsz $(srcdir) `pwd`

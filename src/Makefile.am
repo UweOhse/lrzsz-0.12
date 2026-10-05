@@ -2,7 +2,8 @@ bin_PROGRAMS=lrz lsz
 lrz_SOURCES=lrz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c tcp.c lsyslog.c
 lsz_SOURCES=lsz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c tcp.c lsyslog.c
 noinst_HEADERS = timing.h zglobal.h zmodem.h
-localedir = $(prefix)/@DATADIRNAME@/locale
+datadir = $(prefix)/@DATADIRNAME@
+localedir = $(datadir)/locale
 CFLAGS=@CFLAGS@
 DISTCLEAN_FILES=lrzszbug
 
@@ -11,7 +12,7 @@ AUTOMAKE_OPTIONS=ansi2knr
 EXTRA_DIST = ansi2knr.1 ansi2knr.c lrzszbug.in
 INCLUDES = -I.. -I$(srcdir) -I$(top_srcdir)/src -I../intl -I$(top_srcdir)/lib
 #DEFS = -DLOCALEDIR=\"$(localedir)\" -DOS=\"@host_os@\" -DCPU=\"@host_cpu@\"
-DEFS = -DNFGVMIN @DEFS@ -DLOCALEDIR=\"$(localedir)\"
+DEFS = -DNFGVMIN @DEFS@
 
 install-exec-local:
 	rm -f $(bindir)/`echo lsb | sed -e '$(transform)'`

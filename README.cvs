@@ -1,0 +1,11 @@
+You can access the lrzsz sources through CVS, using something like
+	export CVSROOT=:pserver:cvsread@tirka.ohse.de:/var/cvs-pub 
+	cvs login
+		use `cvsread' as password
+	cvs checkout lrzsz
+
+But you'll need the same automake version as i use (1.2). The same might
+be true für autoconf and gettext.
+Automake _will_ be run because CVS garbles the timestamp of the files
+it checks out. You'll have to live with that.
+

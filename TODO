@@ -4,8 +4,6 @@
   system), and what is the max value?
   Anyway - we don't *need* it. It just reduces system load (but that's
   not a real problem - zmodem over a ISDN/modem link is not much load).
-- an option to stop transmission if it will not be completed at a 
-  certain time (calc. with BPS rate).
 - provide a way to not use any CRC check (for those people who
   a) think that lrzsz is to slow for their serial lines, or b) think
   that their transmission lines are safe. Oh well, some people don't
@@ -13,3 +11,7 @@
 - improve error reporting.
 - clean up Output in verbose mode. (document what's printed if
   verbose is `n')
+- implement ZF1_ZMCRC / ZCRC.
+  - command line option for sender, to request crc check (ZF1_ZMCRC)
+  - command line option for receiver, to request crc check (ZCRC)
+  - make receiver understand ZF1_ZMCRC

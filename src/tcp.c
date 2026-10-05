@@ -132,9 +132,6 @@ tcp_connect (char *buf)
 	}
 	*p++=0;
 	s_in.sin_addr.s_addr=inet_addr(buf+1);
-#ifndef INADDR_NONE
-#define INADDR_NONE (-1)
-#endif
 	if (s_in.sin_addr.s_addr==INADDR_NONE) {
 		struct hostent *h=gethostbyname(buf+1);
 		if (!h)

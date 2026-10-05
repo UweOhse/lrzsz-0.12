@@ -1,5 +1,5 @@
-SUBDIRS = lib intl src po man
-EXTRA_DIST = check.lrzsz COMPATABILITY
+SUBDIRS = lib intl src po man testsuite
+EXTRA_DIST = check.lrzsz COMPATABILITY README.cvs
 
 dist-hook:
 	mkdir $(distdir)/debian
@@ -8,7 +8,7 @@ dist-hook:
 	cp -fa $(srcdir)/debian/copyright  $(distdir)/debian/
 	cp -fa $(srcdir)/debian/rules.in  $(distdir)/debian/
 
-check-local:
+oldcheck-local:
 	QUIET=-q $(srcdir)/check.lrzsz $(srcdir) `pwd`	
 vcheck:
 	$(srcdir)/check.lrzsz $(srcdir) `pwd`

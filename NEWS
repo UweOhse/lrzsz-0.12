@@ -1,3 +1,14 @@
+Version 0.12.19 - January 1998, Uwe Ohse
+
+* 0.12.18 was broken, lsz crashed if receiver found an CRC error.
+
+* lrz options "--rename" and "--escape" didn't work.
+
+* lrz didn't implement senders "overwrite-or-skip" option.
+
+* added dejagnu testsuite. Maybe you need a dejagnu snapshot to
+  use it.
+
 Version 0.12.18 - November 1997, Uwe Ohse
 
 * syslog output now includes user name.

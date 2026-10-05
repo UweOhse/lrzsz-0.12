@@ -72,4 +72,4 @@
 #undef HAVE_ERRNO_DECLARATION
 
 /* define to type of speed_t (long?) */
-#undef LRZSZ_TYPE_SPEED_T
+#undef speed_t
