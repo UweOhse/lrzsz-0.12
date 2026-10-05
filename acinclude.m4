@@ -1,0 +1,6 @@
+dnl AC_REPLACE_GNU_GETOPT
+AC_DEFUN(AC_REPLACE_GNU_GETOPT,
+[AC_CHECK_FUNC(getopt_long, , [LIBOBJS="$LIBOBJS getopt1.o getopt.o"])
+AC_SUBST(LIBOBJS)dnl
+])
+

@@ -334,9 +334,11 @@ extern int Znulls;     /* Number of nulls to send at beginning of ZDATA hdr */
 extern char Attn[ZATTNLEN+1];  /* Attention string rx sends to tx on err */
 
 extern void zsendline __P ((int c));
+extern void zsendline_init __P ((void));
 void zsbhdr __P ((int type, char *hdr));
 void zshhdr __P ((int type, char *hdr));
 void zsdata __P ((const char *buf, int length, int frameend));
+void zsda32 __P ((const char *buf, int length, int frameend));
 int zrdata __P ((char *buf, int length));
 int zgethdr __P ((char *hdr, int eflag));
 void stohdr __P ((long pos));

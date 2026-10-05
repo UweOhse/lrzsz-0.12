@@ -1,4 +1,4 @@
-# Makefile.in generated automatically by automake 1.0 from Makefile.am
+# Makefile.in generated automatically by automake 1.1l from Makefile.am
 
 # Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
@@ -37,43 +37,80 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 transform = @program_transform_name@
+host_triplet = @host@
+host_alias = @host_alias@
+MKINSTALLDIRS = @MKINSTALLDIRS@
+INTLLIBS = @INTLLIBS@
+INTLDEPS = @INTLDEPS@
+LIBOBJS = @LIBOBJS@
+VERSION = @VERSION@
+ANSI2KNR = @ANSI2KNR@
+POSUB = @POSUB@
+GT_YES = @GT_YES@
+PACKAGE = @PACKAGE@
+CATALOGS = @CATALOGS@
+PACKAGE_VERSION = @PACKAGE_VERSION@
+ENABLE_TIMESYNC = @ENABLE_TIMESYNC@
+U = @U@
+GMOFILES = @GMOFILES@
+GT_NO = @GT_NO@
+RANLIB = @RANLIB@
+DATADIRNAME = @DATADIRNAME@
+XGETTEXT = @XGETTEXT@
+LDFLAGS = @LDFLAGS@
+USE_INCLUDED_LIBINTL = @USE_INCLUDED_LIBINTL@
+CATOBJEXT = @CATOBJEXT@
+host_cpu = @host_cpu@
+INTLOBJS = @INTLOBJS@
+CC = @CC@
+LIBS = @LIBS@
+INSTOBJEXT = @INSTOBJEXT@
+l = @l@
+MSGFMT = @MSGFMT@
+CFLAGS = @CFLAGS@
+GENCAT = @GENCAT@
+POFILES = @POFILES@
+GMSGFMT = @GMSGFMT@
+USE_NLS = @USE_NLS@
+host_os = @host_os@
 
 man_MANS = lrz.1 lsz.1
-mkinstalldirs = $(top_srcdir)/mkinstalldirs
+mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = ../config.h
+CONFIG_CLEAN_FILES = 
 MANS = lrz.1 lsz.1
 
 NROFF = nroff
-DIST_COMMON = Makefile.am Makefile.in
+DIST_COMMON =  Makefile.am Makefile.in
 
 
-PACKAGE = @PACKAGE@
-VERSION = @VERSION@
-
-DISTFILES = $(DIST_COMMON) $(SOURCES) $(BUILT_SOURCES) $(HEADERS) \
-	$(TEXINFOS) $(INFOS) $(MANS) $(EXTRA_DIST) $(DATA)
-DEP_DISTFILES = $(DIST_COMMON) $(SOURCES) $(BUILT_SOURCES) $(HEADERS) \
-	$(TEXINFOS) $(INFO_DEPS) $(MANS) $(EXTRA_DIST) $(DATA)
+DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) \
+	$(TEXINFOS) $(MANS) $(EXTRA_DIST)
 
 TAR = tar
 default: all
 
+.SUFFIXES:
+$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL) 
+	cd $(top_srcdir) && automake --gnu man/Makefile
 
-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in
-	cd $(top_srcdir) && automake $(subdir)/Makefile
+Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status $(BUILT_SOURCES)
+	cd $(top_builddir) \
+	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
-Makefile: $(top_builddir)/config.status Makefile.in
-	cd $(top_builddir) && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= ./config.status
 install-man: $(MANS)
+	$(NORMAL_INSTALL)
 	$(mkinstalldirs) $(mandir)/man1
-	@sect=1;				\
+	sect=1;				\
 	inst=`echo "lrz" | sed '$(transform)'`.1; \
-	echo installing lrz.1 as $(mandir)/man$$sect/$$inst; \
-	$(INSTALL_DATA) $(srcdir)/lrz.1 $(mandir)/man$$sect/$$inst
-	@sect=1;				\
+	if test -f $(srcdir)/lrz.1; then file=$(srcdir)/lrz.1; \
+	else file=lrz.1; fi; \
+	$(INSTALL_DATA) $$file $(mandir)/man$$sect/$$inst
+	sect=1;				\
 	inst=`echo "lsz" | sed '$(transform)'`.1; \
-	echo installing lsz.1 as $(mandir)/man$$sect/$$inst; \
-	$(INSTALL_DATA) $(srcdir)/lsz.1 $(mandir)/man$$sect/$$inst
+	if test -f $(srcdir)/lsz.1; then file=$(srcdir)/lsz.1; \
+	else file=lsz.1; fi; \
+	$(INSTALL_DATA) $$file $(mandir)/man$$sect/$$inst
 
 uninstall-man:
 	inst=`echo "lrz" | sed '$(transform)'`.1; \
@@ -85,25 +122,26 @@ tags: TAGS
 TAGS:
 
 
-subdir = man
 distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
-distdir: $(DEP_DISTFILES)
-	@for file in `cd $(srcdir) && echo $(DISTFILES)`; do \
+
+subdir = man
+distdir: $(DISTFILES)
+	@for file in $(DISTFILES); do \
+	  d=$(srcdir); \
 	  test -f $(distdir)/$$file \
-	  || ln $(srcdir)/$$file $(distdir)/$$file 2> /dev/null \
-	  || cp -p $(srcdir)/$$file $(distdir)/$$file; \
+	  || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
+	  || cp -p $$d/$$file $(distdir)/$$file; \
 	done
 info:
-
 dvi:
-
 check: all
-
+	$(MAKE)
 installcheck:
-
 install-exec: 
+	$(NORMAL_INSTALL)
 
 install-data: install-man
+	$(NORMAL_INSTALL)
 
 install: install-exec install-data all
 	@:
@@ -126,28 +164,28 @@ clean-generic:
 
 distclean-generic:
 	rm -f Makefile $(DISTCLEANFILES)
-	rm -f config.cache config.log $(CONFIG_HEADER) stamp-h
+	rm -f config.cache config.log stamp-h
+	test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 
 maintainer-clean-generic:
 	test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
 	test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 mostlyclean:  mostlyclean-generic
 
-clean:  clean-generic mostlyclean 
+clean:  clean-generic mostlyclean
 
-distclean:  distclean-generic clean 
+distclean:  distclean-generic clean
 	rm -f config.status
 
-maintainer-clean:  maintainer-clean-generic distclean 
+maintainer-clean:  maintainer-clean-generic distclean
 	@echo "This command is intended for maintainers to use;"
 	@echo "it deletes files that may require special tools to rebuild."
 
-.PHONY: default install-man uninstall-man tags distdir info dvi check \
+.PHONY: default install-man uninstall-man tags distdir info dvi \
 installcheck install-exec install-data install uninstall all \
 installdirs mostlyclean-generic distclean-generic clean-generic \
 maintainer-clean-generic clean mostlyclean distclean maintainer-clean
 
-.SUFFIXES:
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

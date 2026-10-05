@@ -1,4 +1,4 @@
-# Makefile.in generated automatically by automake 1.0 from Makefile.am
+# Makefile.in generated automatically by automake 1.1l from Makefile.am
 
 # Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
@@ -16,7 +16,6 @@ exec_prefix = @exec_prefix@
 bindir = @bindir@
 sbindir = @sbindir@
 libexecdir = @libexecdir@
-datadir = @datadir@
 sysconfdir = @sysconfdir@
 sharedstatedir = @sharedstatedir@
 localstatedir = @localstatedir@
@@ -37,6 +36,41 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 transform = @program_transform_name@
+host_triplet = @host@
+host_alias = @host_alias@
+MKINSTALLDIRS = @MKINSTALLDIRS@
+INTLLIBS = @INTLLIBS@
+INTLDEPS = @INTLDEPS@
+LIBOBJS = @LIBOBJS@
+VERSION = @VERSION@
+ANSI2KNR = @ANSI2KNR@
+POSUB = @POSUB@
+GT_YES = @GT_YES@
+PACKAGE = @PACKAGE@
+CATALOGS = @CATALOGS@
+PACKAGE_VERSION = @PACKAGE_VERSION@
+ENABLE_TIMESYNC = @ENABLE_TIMESYNC@
+U = @U@
+GMOFILES = @GMOFILES@
+GT_NO = @GT_NO@
+RANLIB = @RANLIB@
+DATADIRNAME = @DATADIRNAME@
+XGETTEXT = @XGETTEXT@
+LDFLAGS = @LDFLAGS@
+USE_INCLUDED_LIBINTL = @USE_INCLUDED_LIBINTL@
+CATOBJEXT = @CATOBJEXT@
+host_cpu = @host_cpu@
+INTLOBJS = @INTLOBJS@
+CC = @CC@
+LIBS = @LIBS@
+INSTOBJEXT = @INSTOBJEXT@
+l = @l@
+MSGFMT = @MSGFMT@
+GENCAT = @GENCAT@
+POFILES = @POFILES@
+GMSGFMT = @GMSGFMT@
+USE_NLS = @USE_NLS@
+host_os = @host_os@
 
 bin_PROGRAMS=lrz lsz
 lrz_SOURCES=lrz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c
@@ -52,43 +86,32 @@ EXTRA_DIST = ansi2knr.1 ansi2knr.c
 INCLUDES = -I.. -I$(srcdir) -I$(top_srcdir)/src -I../intl -I$(top_srcdir)/lib
 DEFS = -DLOCALEDIR=\"$(localedir)\" -DOS=\"@host_os@\" -DCPU=\"@host_cpu@\" \
 	-DNFGVMIN @DEFS@
-mkinstalldirs = $(top_srcdir)/mkinstalldirs
+mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = ../config.h
-PROGRAMS = $(bin_PROGRAMS)
+CONFIG_CLEAN_FILES = 
+PROGRAMS =  $(bin_PROGRAMS)
 
-
-CC = @CC@
-LEX = @LEX@
-YACC = @YACC@
 CPPFLAGS = @CPPFLAGS@
-LDFLAGS = @LDFLAGS@
-LIBS = @LIBS@
-
-COMPILE = $(CC) -c $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
-LINK = $(CC) $(LDFLAGS) -o $@
-
-ANSI2KNR = @ANSI2KNR@
-o = .@U@o
-lrz_OBJECTS = lrz$o timing$o zperr$o zreadline$o crctab$o rbsb$o zm$o \
-protname$o
-EXTRA_lrz_SOURCES =
+o = @U@o
+lrz_OBJECTS =  lrz.$o timing.$o zperr.$o zreadline.$o crctab.$o rbsb.$o \
+zm.$o protname.$o
 lrz_LDADD = $(LDADD)
-lsz_OBJECTS = lsz$o timing$o zperr$o zreadline$o crctab$o rbsb$o zm$o \
-protname$o
-EXTRA_lsz_SOURCES =
+lrz_DEPENDENCIES =  ../lib/libzmodem.a
+lrz_LDFLAGS = 
+lsz_OBJECTS =  lsz.$o timing.$o zperr.$o zreadline.$o crctab.$o rbsb.$o \
+zm.$o protname.$o
 lsz_LDADD = $(LDADD)
-HEADERS = $(noinst_HEADERS)
+lsz_DEPENDENCIES =  ../lib/libzmodem.a
+lsz_LDFLAGS = 
+COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
+LINK = $(CC) $(LDFLAGS) -o $@
+HEADERS =  $(noinst_HEADERS)
 
-DIST_COMMON = Makefile.am Makefile.in
+DIST_COMMON =  Makefile.am Makefile.in ansi2knr.1 ansi2knr.c
 
 
-PACKAGE = @PACKAGE@
-VERSION = @VERSION@
-
-DISTFILES = $(DIST_COMMON) $(SOURCES) $(BUILT_SOURCES) $(HEADERS) \
-	$(TEXINFOS) $(INFOS) $(MANS) $(EXTRA_DIST) $(DATA)
-DEP_DISTFILES = $(DIST_COMMON) $(SOURCES) $(BUILT_SOURCES) $(HEADERS) \
-	$(TEXINFOS) $(INFO_DEPS) $(MANS) $(EXTRA_DIST) $(DATA)
+DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) \
+	$(TEXINFOS) $(MANS) $(EXTRA_DIST)
 
 TAR = tar
 SOURCES = $(lrz_SOURCES) $(lsz_SOURCES)
@@ -96,27 +119,32 @@ OBJECTS = $(lrz_OBJECTS) $(lsz_OBJECTS)
 
 default: all
 
+.SUFFIXES:
+.SUFFIXES: .c .o ._c ._o
+$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL) 
+	cd $(top_srcdir) && automake --gnu src/Makefile
 
-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in
-	cd $(top_srcdir) && automake $(subdir)/Makefile
+Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status $(BUILT_SOURCES)
+	cd $(top_builddir) \
+	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
-Makefile: $(top_builddir)/config.status Makefile.in
-	cd $(top_builddir) && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= ./config.status
 
 mostlyclean-binPROGRAMS:
 
 clean-binPROGRAMS:
-	rm -f $(bin_PROGRAMS)
+	test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
 
 distclean-binPROGRAMS:
 
 maintainer-clean-binPROGRAMS:
 
 install-binPROGRAMS: $(bin_PROGRAMS)
+	$(NORMAL_INSTALL)
 	$(mkinstalldirs) $(bindir)
-	list="$(bin_PROGRAMS)"; for p in $$list; do \
+	@list="$(bin_PROGRAMS)"; for p in $$list; do \
 	  if test -f $$p; then \
-	    $(INSTALL_PROGRAM) $$p $(bindir)/`echo $$p|sed '$(transform)'`; \
+	    echo " $(INSTALL_PROGRAM) $$p $(bindir)/`echo $$p|sed '$(transform)'`"; \
+	     $(INSTALL_PROGRAM) $$p $(bindir)/`echo $$p|sed '$(transform)'`; \
 	  else :; fi; \
 	done
 
@@ -126,7 +154,7 @@ uninstall-binPROGRAMS:
 	done
 
 .c.o:
-	$(COMPILE) $<
+	$(COMPILE) -c $<
 
 mostlyclean-compile:
 	rm -f *.o core
@@ -138,28 +166,47 @@ distclean-compile:
 
 maintainer-clean-compile:
 
+ansi2knr: ansi2knr.o
+	$(LINK) ansi2knr.o $(LIBS)
+
+ansi2knr.o: $(CONFIG_HEADER)
+
+mostlyclean-krextra:
+
+clean-krextra:
+
+distclean-krextra:
+	rm -f ansi2knr
+
+maintainer-clean-krextra:
+
 .c._c:
 	$(ANSI2KNR) $< > $*.tmp && mv $*.tmp $@
 
 ._c._o:
-	@echo $(COMPILE) $<
+	@echo "$(COMPILE) -c $<"
 	@rm -f _$*.c
-	@ln $< _$*.c && $(COMPILE) _$*.c && mv _$*.o $@ && rm _$*.c
+	@ln $< _$*.c && $(COMPILE) -c _$*.c && mv _$*.o $@ && rm _$*.c
+
+._c.l_o:
+	@echo "$(LIBTOOL) --mode=compile $(COMPILE) -c $<"
+	@rm -f _$*.c
+	@ln $< _$*.c && $(LIBTOOL) --mode=compile $(COMPILE) -c _$*.c && mv _$*.lo $@ && rm _$*.c
 
 .c._o:
 	$(ANSI2KNR) $< > $*.tmp && mv $*.tmp $*._c
-	@echo $(COMPILE) $*._c
+	@echo "$(COMPILE) -c $*._c"
 	@rm -f _$*.c
-	@ln $*._c _$*.c && $(COMPILE) _$*.c && mv _$*.o $@ && rm _$*.c
+	@ln $*._c _$*.c && $(COMPILE) -c _$*.c && mv _$*.o $@ && rm _$*.c
 
-ansi2knr: ansi2knr.o
-	$(LINK) ansi2knr.o $(LIBS)
-
-$(OBJECTS): $(ANSI2KNR)
-ansi2knr.o: $(CONFIG_HEADER)
+.c.l_o:
+	$(ANSI2KNR) $< > $*.tmp && mv $*.tmp $*._c
+	@echo "$(LIBTOOL) --mode=compile $(COMPILE) -c $*._c"
+	@rm -f _$*.c
+	@ln $*._c _$*.c && $(LIBTOOL) --mode=compile $(COMPILE) -c _$*.c && mv _$*.lo $@ && rm _$*.c
 
 mostlyclean-kr:
-	rm -f *._o *._c _*.c _*.o
+	rm -f *._o *.l_o *._c _*.c _*.o
 
 clean-kr:
 
@@ -170,19 +217,27 @@ maintainer-clean-kr:
 $(lrz_OBJECTS): ../config.h
 
 lrz: $(lrz_OBJECTS) $(lrz_DEPENDENCIES)
-	$(LINK) $(lrz_OBJECTS) $(lrz_LDADD) $(LIBS)
+	$(LINK) $(lrz_LDFLAGS) $(lrz_OBJECTS) $(lrz_LDADD) $(LIBS)
 $(lsz_OBJECTS): ../config.h
 
 lsz: $(lsz_OBJECTS) $(lsz_DEPENDENCIES)
-	$(LINK) $(lsz_OBJECTS) $(lsz_LDADD) $(LIBS)
+	$(LINK) $(lsz_LDFLAGS) $(lsz_OBJECTS) $(lsz_LDADD) $(LIBS)
+protname._o zreadline._o zm._o crctab._o timing._o lrz._o lsz._o \
+rbsb._o zperr._o : $(ANSI2KNR)
+
+tags: TAGS
 
 ID: $(HEADERS) $(SOURCES)
 	here=`pwd` && cd $(srcdir) && mkid -f$$here/ID $(SOURCES) $(HEADERS)
 
-tags: TAGS
-
-TAGS: $(HEADERS) $(SOURCES) $(TAGS_DEPENDENCIES)
-	here=`pwd` && cd $(srcdir) && etags $(ETAGS_ARGS) $(SOURCES) $(HEADERS) -o $$here/TAGS
+TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES)
+	tags=; \
+	here=`pwd`; \
+	list="$(SUBDIRS)"; for subdir in $$list; do \
+	  test -f $$subdir/TAGS && tags="$$tags -i $$here/$$subdir/TAGS"; \
+	done; \
+	test -z "$(ETAGS_ARGS)$(SOURCES)$(HEADERS)$$tags" \
+	  || cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $(SOURCES) $(HEADERS) -o $$here/TAGS
 
 mostlyclean-tags:
 
@@ -193,46 +248,47 @@ distclean-tags:
 
 maintainer-clean-tags:
 
-subdir = src
 distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
-distdir: $(DEP_DISTFILES)
-	@for file in `cd $(srcdir) && echo $(DISTFILES)`; do \
+
+subdir = src
+distdir: $(DISTFILES)
+	@for file in $(DISTFILES); do \
+	  d=$(srcdir); \
 	  test -f $(distdir)/$$file \
-	  || ln $(srcdir)/$$file $(distdir)/$$file 2> /dev/null \
-	  || cp -p $(srcdir)/$$file $(distdir)/$$file; \
+	  || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
+	  || cp -p $$d/$$file $(distdir)/$$file; \
 	done
 crctab$o: crctab.c
-lrz$o: lrz.c zglobal.h ../config.h zmodem.h timing.h \
- ../lib/long-options.h ../lib/xstrtoul.h ../lib/xstrtol.h \
- ../lib/error.h
-lsz$o: lsz.c zglobal.h ../config.h zmodem.h timing.h \
- ../lib/long-options.h ../lib/xstrtoul.h ../lib/xstrtol.h \
- ../lib/error.h
+lrz.$o lrz.l$o: lrz.c zglobal.h ../config.h zmodem.h ../lib/getopt.h \
+	timing.h ../lib/long-options.h ../lib/xstrtoul.h \
+	../lib/xstrtol.h ../lib/error.h
+lsz.$o lsz.l$o: lsz.c zglobal.h ../config.h zmodem.h ../lib/getopt.h \
+	timing.h ../lib/long-options.h ../lib/xstrtoul.h \
+	../lib/xstrtol.h ../lib/error.h
 protname$o: protname.c zglobal.h ../config.h zmodem.h
 rbsb$o: rbsb.c zglobal.h ../config.h zmodem.h
 timing$o: timing.c zglobal.h ../config.h zmodem.h timing.h
-zm$o: zm.c zglobal.h ../config.h zmodem.h
+zm.$o zm.l$o: zm.c zglobal.h ../config.h zmodem.h
 zperr$o: zperr.c zglobal.h ../config.h zmodem.h
 zreadline$o: zreadline.c zglobal.h ../config.h zmodem.h ../lib/error.h
 
 info:
-
 dvi:
-
 check: all
-
+	$(MAKE)
 installcheck:
-
 install-exec: install-binPROGRAMS install-exec-local
+	$(NORMAL_INSTALL)
 
 install-data: 
+	$(NORMAL_INSTALL)
 
 install: install-exec install-data all
 	@:
 
 uninstall: uninstall-binPROGRAMS uninstall-local
 
-all: $(PROGRAMS) $(HEADERS) Makefile
+all: $(ANSI2KNR) $(PROGRAMS) $(HEADERS) Makefile
 
 install-strip:
 	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
@@ -248,36 +304,40 @@ clean-generic:
 
 distclean-generic:
 	rm -f Makefile $(DISTCLEANFILES)
-	rm -f config.cache config.log $(CONFIG_HEADER) stamp-h
+	rm -f config.cache config.log stamp-h
+	test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 
 maintainer-clean-generic:
 	test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
 	test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
-mostlyclean:  mostlyclean-binPROGRAMS mostlyclean-compile mostlyclean-kr \
-		mostlyclean-tags mostlyclean-generic
+mostlyclean:  mostlyclean-binPROGRAMS mostlyclean-compile \
+		mostlyclean-krextra mostlyclean-kr mostlyclean-tags \
+		mostlyclean-generic
 
-clean:  clean-binPROGRAMS clean-compile clean-kr clean-tags \
-		clean-generic mostlyclean 
+clean:  clean-binPROGRAMS clean-compile clean-krextra clean-kr \
+		clean-tags clean-generic mostlyclean
 
-distclean:  distclean-binPROGRAMS distclean-compile distclean-kr \
-		distclean-tags distclean-generic clean 
+distclean:  distclean-binPROGRAMS distclean-compile distclean-krextra \
+		distclean-kr distclean-tags distclean-generic clean
 	rm -f config.status
 
 maintainer-clean:  maintainer-clean-binPROGRAMS maintainer-clean-compile \
-		maintainer-clean-kr maintainer-clean-tags \
-		maintainer-clean-generic distclean 
+		maintainer-clean-krextra maintainer-clean-kr \
+		maintainer-clean-tags maintainer-clean-generic \
+		distclean
 	@echo "This command is intended for maintainers to use;"
 	@echo "it deletes files that may require special tools to rebuild."
 
 .PHONY: default mostlyclean-binPROGRAMS distclean-binPROGRAMS \
 clean-binPROGRAMS maintainer-clean-binPROGRAMS uninstall-binPROGRAMS \
 install-binPROGRAMS mostlyclean-compile distclean-compile clean-compile \
-maintainer-clean-compile mostlyclean-kr distclean-kr clean-kr \
-maintainer-clean-kr tags mostlyclean-tags distclean-tags clean-tags \
-maintainer-clean-tags distdir info dvi check installcheck install-exec \
-install-data install uninstall all installdirs mostlyclean-generic \
-distclean-generic clean-generic maintainer-clean-generic clean \
-mostlyclean distclean maintainer-clean
+maintainer-clean-compile mostlyclean-krextra distclean-krextra \
+clean-krextra maintainer-clean-krextra mostlyclean-kr distclean-kr \
+clean-kr maintainer-clean-kr tags mostlyclean-tags distclean-tags \
+clean-tags maintainer-clean-tags distdir info dvi installcheck \
+install-exec install-data install uninstall all installdirs \
+mostlyclean-generic distclean-generic clean-generic \
+maintainer-clean-generic clean mostlyclean distclean maintainer-clean
 
 
 install-exec-local:
@@ -299,8 +359,6 @@ uninstall-local:
 	rm -f $(bindir)/`echo lsx |sed -e '$(transform)'` 
 	rm -f $(bindir)/`echo lrb |sed -e '$(transform)'` 
 	rm -f $(bindir)/`echo lrx |sed -e '$(transform)'` 
-.SUFFIXES:
-.SUFFIXES: .c .o ._c ._o
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

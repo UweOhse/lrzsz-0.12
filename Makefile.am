@@ -1,11 +1,14 @@
 SUBDIRS = lib intl src po man
-EXTRA_DIST = @README_ALPHA@ check.lrzsz COMPATABILITY
+EXTRA_DIST = check.lrzsz COMPATABILITY
 
-
-check:
+check-local:
 	QUIET=-q $(srcdir)/check.lrzsz $(srcdir) `pwd`	
 vcheck:
 	$(srcdir)/check.lrzsz $(srcdir) `pwd`
+vcheck-%:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd`	$(subst vcheck-,,$@)
+check-%:
+	QUIET=-q $(srcdir)/check.lrzsz $(srcdir) `pwd`	$(subst check-,,$@)
 vcheck-x:
 	$(srcdir)/check.lrzsz $(srcdir) `pwd`	x
 vcheck-y:

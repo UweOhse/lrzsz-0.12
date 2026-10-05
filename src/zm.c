@@ -80,9 +80,8 @@ static int zgethex __P ((void));
 static int zrbhdr __P ((char *hdr));
 static int zrbhdr32 __P ((char *hdr));
 static int zrhhdr __P ((char *hdr));
-static void zsendline_init __P ((char *));
+static char zsendline_tab[256];
 static int zrdat32 __P ((char *buf, int length));
-static void zsda32 __P ((const char *buf, int length, int frameend));
 static void zsbh32 __P ((char *hdr, int type));
 
 extern int zmodem_requested;
@@ -202,14 +201,8 @@ noxrd7(void)
 void inline
 zsendline(int c)
 {
-	static int last_esc=-2;
-	static char tab[256];
-	if (Zctlesc!=last_esc) {
-		zsendline_init(tab);
-		last_esc=Zctlesc;
-	}
 
-	switch(tab[(unsigned) (c&=0377)])
+	switch(zsendline_tab[(unsigned) (c&=0377)])
 	{
 	case 0: 
 		xsendline(lastsent = c); 
@@ -228,6 +221,50 @@ zsendline(int c)
 			xsendline(lastsent = c);
 		}
 		break;
+	}
+}
+
+void inline
+zsendline_s(char *s, int count) 
+{
+	char *end=s+count;
+	while(s!=end) {
+		int last_esc;
+		char *t=s;
+		while (t!=end) {
+			last_esc=zsendline_tab[(unsigned) ((*t) & 0377)];
+			if (last_esc) 
+				break;
+			t++;
+		}
+		if (t!=s) {
+			fwrite(s,t-s,1,stdout);
+			lastsent=t[-1];
+			s=t;
+		}
+		if (last_esc) {
+			int c=*s;
+			switch(last_esc) {
+			case 0: 
+				xsendline(lastsent = c); 
+				break;
+			case 1:
+				xsendline(ZDLE);
+				c ^= 0100;
+				xsendline(lastsent = c);
+				break;
+			case 2:
+				if ((lastsent & 0177) != '@') {
+					xsendline(lastsent = c);
+				} else {
+					xsendline(ZDLE);
+					c ^= 0100;
+					xsendline(lastsent = c);
+				}
+				break;
+			}
+			s++;
+		}
 	}
 }
 
@@ -338,9 +375,11 @@ zsdata(const char *buf, int length, int frameend)
 	register unsigned short crc;
 
 	vfile("zsdata: %d %s", length, Zendnames[(frameend-ZCRCE)&3]);
+#if 0
 	if (Crc32t)
 		zsda32(buf, length, frameend);
 	else {
+#endif
 		crc = 0;
 		for (;--length >= 0; ++buf) {
 			zsendline(*buf); crc = updcrc((0377 & *buf), crc);
@@ -350,25 +389,25 @@ zsdata(const char *buf, int length, int frameend)
 
 		crc = updcrc(0,updcrc(0,crc));
 		zsendline(crc>>8); zsendline(crc);
+#if 0
 	}
+#endif
 	if (frameend == ZCRCW) {
 		xsendline(XON);  flushmo();
 	}
 }
 
-static void
+void
 zsda32(const char *buf, int length, int frameend)
 {
 	register int c;
 	register unsigned long crc;
+	vfile("zsdat32: %d %s", length, Zendnames[(frameend-ZCRCE)&3]);
 
 	crc = 0xFFFFFFFFL;
+	zsendline_s(buf,length);
 	for (;--length >= 0; ++buf) {
 		c = *buf & 0377;
-		if (c & 0140)
-			xsendline(lastsent = c);
-		else
-			zsendline(c);
 		crc = UPDC32(c, crc);
 	}
 	xsendline(ZDLE); xsendline(frameend);
@@ -383,6 +422,11 @@ zsda32(const char *buf, int length, int frameend)
 			zsendline(c);
 		crc >>= 8;
 	}
+#if 1
+	if (frameend == ZCRCW) {
+		xsendline(XON);  flushmo();
+	}
+#endif
 }
 
 #if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ <= 4)
@@ -511,7 +555,7 @@ zrdat32(char *buf, int length)
 	register char *end;
 	register int d;
 
-
+#if 1
 	crc = 0xFFFFFFFFL;  Rxcount = 0;  end = buf + length;
 	while (buf <= end) {
 		if ((c = zdlread()) & ~0377) {
@@ -560,6 +604,64 @@ crcfoo:
 	}
 	zperr(_("Data subpacket too long"));
 	return ERROR;
+#else
+	char *start=buf;
+	Rxcount = 0;  end = buf + length;
+	while (buf <= end) {
+cont:
+		if ((c = zdlread()) & ~0377) 
+			goto gotend;
+		*buf++ = c;
+	}
+	zperr(_("Data subpacket too long"));
+	return ERROR;
+gotend:
+	crc = 0xFFFFFFFFL;
+	while (buf!=start) 
+	{
+		crc=UPDC32(*(start++),crc);
+	}
+
+gotsomething:
+	switch (c) {
+	case GOTCRCE:
+	case GOTCRCG:
+	case GOTCRCQ:
+	case GOTCRCW:
+		d = c;
+		c &= 0377;
+		crc = UPDC32(c, crc);
+		if ((c = zdlread()) & ~0377)
+			goto gotsomething;
+		crc = UPDC32(c, crc);
+		if ((c = zdlread()) & ~0377)
+			goto gotsomething;
+		crc = UPDC32(c, crc);
+		if ((c = zdlread()) & ~0377)
+			goto gotsomething;
+		crc = UPDC32(c, crc);
+		if ((c = zdlread()) & ~0377)
+			goto gotsomething;
+		crc = UPDC32(c, crc);
+		if (crc != 0xDEBB20E3) {
+			zperr(badcrc);
+			return ERROR;
+		}
+		Rxcount = length - (end - buf);
+		COUNT_BLK(Rxcount);
+		vfile("zrdat32: %d %s", Rxcount, Zendnames[(d-GOTCRCE)&3]);
+		return d;
+	case GOTCAN:
+		zperr(_("Sender Canceled"));
+		return ZCAN;
+	case TIMEOUT:
+		zperr(_("TIMEOUT"));
+		return c;
+	default:
+		zperr(_("Bad data subpacket"));
+		return c;
+	}
+#endif
 }
 
 /*
@@ -820,13 +922,13 @@ zputhex(int c, char *pos)
 	pos[1]=digits[c&0x0F];
 }
 
-static void
-zsendline_init(char *tab)
+void
+zsendline_init(void)
 {
 	int i;
 	for (i=0;i<256;i++) {	
 		if (i & 0140)
-			tab[i]=0;
+			zsendline_tab[i]=0;
 		else {
 			switch(i)
 			{
@@ -835,29 +937,29 @@ zsendline_init(char *tab)
 			case XON: /* ^S */
 			case (XOFF | 0200):
 			case (XON | 0200):
-				tab[i]=1;
+				zsendline_tab[i]=1;
 				break;
 			case 020: /* ^P */
 			case 0220:
 				if (turbo_escape)
-					tab[i]=0;
+					zsendline_tab[i]=0;
 				else
-					tab[i]=1;
+					zsendline_tab[i]=1;
 				break;
 			case 015:
 			case 0215:
 				if (Zctlesc)
-					tab[i]=1;
+					zsendline_tab[i]=1;
 				else if (!turbo_escape)
-					tab[i]=2;
+					zsendline_tab[i]=2;
 				else 
-					tab[i]=0;
+					zsendline_tab[i]=0;
 				break;
 			default:
 				if (Zctlesc)
-					tab[i]=1;
+					zsendline_tab[i]=1;
 				else
-					tab[i]=0;
+					zsendline_tab[i]=0;
 			}
 		}
 	}

@@ -1,3 +1,16 @@
+Version 0.12.16 - March 1996, Uwe Ohse
+
+* major performance improvement (less CPU time needed - don't expect
+  faster transfers over slow lines). `make vcheck' now show about 50%
+  more throughput.
+
+* updated to gettext-0.12.27 and automake-1.1l
+  (automake-1.1l bug: AC_SUBST in AM_PATH_PROG_WITH_TEST leads
+  to a "$1=@$1@" line in Makefile.in. I hacked around it in
+  /usr/share/aclocal/gettext.m4)
+
+* minor bug fix.
+
 Version 0.12.15 - Februar 1996, Uwe Ohse
 
 * should now compile with pre-ANSI-compilers (tested with HPUX

@@ -234,6 +234,9 @@
 /* Define if you have the vprintf function.  */
 #undef HAVE_VPRINTF
 
+/* Define if you have the <argz.h> header file.  */
+#undef HAVE_ARGZ_H
+
 /* Define if you have the <fcntl.h> header file.  */
 #undef HAVE_FCNTL_H
 
@@ -305,9 +308,6 @@
 
 /* Define if you have the i library (-li).  */
 #undef HAVE_LIBI
-
-/* Define if you have the intl library (-lintl).  */
-#undef HAVE_LIBINTL
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET

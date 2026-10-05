@@ -93,7 +93,9 @@ char secbuf[MAX_BLOCK + 1];
 int timesync_flag=0;
 int in_timesync=0;
 #endif
+#if defined(F_GETFD) && defined(F_SETFD) && defined(O_SYNC)
 static int o_sync = 0;
+#endif
 static int rzfiles __P ((struct zm_fileinfo *));
 static int tryz __P ((void));
 static void checkpath __P ((const char *name));
@@ -372,7 +374,7 @@ main(int argc, char *argv[])
 			if (s_err != LONGINT_OK)
 				STRTOL_FATAL_ERROR (optarg, _("bytes_per_error"), s_err);
 			if (bytes_per_error<100)
-				usage(2,_("error-per-byte should be >100"));
+				usage(2,_("bytes-per-error should be >100"));
 			break;
         case 4:
 			s_err = xstrtoul (optarg, NULL, 0, &tmp, NULL);
@@ -381,7 +383,11 @@ main(int argc, char *argv[])
 				STRTOL_FATAL_ERROR (optarg, _("startup delay"), s_err);
 			break;
 		case 5:
+#if defined(F_GETFD) && defined(F_SETFD) && defined(O_SYNC)
 			o_sync=1;
+#else
+			error(0,0, _("O_SYNC not supported by the kernel"));
+#endif
 			break;
 		default:
 			usage(2,NULL);
@@ -389,6 +395,12 @@ main(int argc, char *argv[])
 
 	}
 
+	if (getuid()!=geteuid() || getgid() != getegid()) {
+		error(1,0,
+		_("this program was never intended to be used set[ug]id\n"));
+	}
+	/* initialize zsendline tab */
+	zsendline_init();
 #ifdef HAVE_SIGINTERRUPT
 	siginterrupt(SIGALRM,1);
 #endif
@@ -399,9 +411,9 @@ main(int argc, char *argv[])
 	patts=&argv[optind];
 
 	if (npats > 1)
-		usage(2,"garbage on commandline");
+		usage(2,_("garbage on commandline"));
 	if (protocol!=ZM_XMODEM && npats)
-		usage(2, "garbage on commandline");
+		usage(2, _("garbage on commandline"));
 	if (Restricted && allow_remote_commands)
 		allow_remote_commands=FALSE;
 	if (Fromcu && !Quiet) {
@@ -460,9 +472,9 @@ usage(int exitcode, const char *what)
 	fprintf(f,_("Usage: %s [options] [filename.if.xmodem]\n"), program_name);
 	fputs(_("Receive files with ZMODEM/YMODEM/XMODEM protocol\n"),f);
 	fputs(_(
-		"    (X) = Option applies to XMODEM only\n"
-		"    (Y) = Option applies to YMODEM only\n"
-		"    (Z) = Option applies to ZMODEM only\n"
+		"    (X) = option applies to XMODEM only\n"
+		"    (Y) = option applies to YMODEM only\n"
+		"    (Z) = option applies to ZMODEM only\n"
 		),f);
 	fputs(_(
 "  -+, --append                append to existing files\n"
@@ -1105,7 +1117,7 @@ buffer_it:
 	if (Topipe == 0) {
 		static char *s=NULL;
 		static size_t last_length=0;
-#if defined(F_GETFD) && defined(F_SETFD)
+#if defined(F_GETFD) && defined(F_SETFD) && defined(O_SYNC)
 		if (o_sync) {
 			int oldflags;
 			oldflags = fcntl (fileno(fout), F_GETFD, 0);

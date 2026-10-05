@@ -1,3 +1,47 @@
+Mon Mar 24 08:01:14 MET 1997
+
+	* Release 0.12.16
+
+	* Makefile.am: check -> check-local
+
+Sat Mar 15 08:26:39 MET 1997
+
+	* src/zglobal.h: provide prototypes for zsdat32.
+
+	* src/zm.c (zsdata): doesn't call zsdat32() anymore.
+	  (zsdat32): not static anymore.
+
+	* src/lsz.c (ZSDATA): new macro. calls zsdata or 
+	  zsdata32.
+	  (sendzsinit) (zsendfile) (zsendfdata) (zsendcmd):
+	  replaced zsdata with ZSDATA.
+
+Thu Mar 13 07:54:07 MET 1997
+
+	* src/lsz.c(main):
+	* src/lrz.c(main): don't run setuid or setgid.
+	  call_zsendline_init().
+
+	* src/zm.c (zsendline_init): don't takes a parameter anymore, uses
+	  sourcefile-static variable.
+	  (zsendline): don't call zsendline_init anymore.
+	  (zsendline_s): new function (faster blockmode version of zsendline)
+	  (zsda32): used zsendline_s()
+
+	* src/zglobal.h: provide prototype for zsendline_init().
+
+Mon Mar 10 23:13:59 MET 1997 Uwe Ohse <uwe@tirka.gun.de>
+
+	* updated to gettext-0.10.27
+
+	* updated to automake-1.1l (especially Makefiles and configure.in)
+
+	* check.lrzsz: small fixes.
+
+Sun Mar  9 10:29:39 MET 1997 Uwe Ohse
+
+	* src/lrz.c: Warnings and #ifdef O_SYNC around O_SYNC-Code.
+
 Sun Feb  2 12:52:01 MET 1997 Uwe Ohse <uwe@tirka.gun.de>
 
 	* Release 0.12.15

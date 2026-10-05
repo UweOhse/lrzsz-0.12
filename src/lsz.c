@@ -1,4 +1,6 @@
-/*  lsz.c cosmetic modifications by Matt Porter *  from the Public Domain version of sz.c by Chuck Forsberg,
+/*  lsz.c cosmetic modifications by Matt Porter 
+ * 
+ *  from the Public Domain version of sz.c by Chuck Forsberg,
  *  Omen Technology INC
  *
  *  A program for Linux to send files and commands to computers running
@@ -100,6 +102,9 @@ static void usage1 __P ((int exitcode));
 #else
 #define DO_SYSLOG(message) do { } while(0)
 #endif
+
+#define ZSDATA(x,y,z) \
+	do { if (Crc32t) {zsda32(x,y,z); } else {zsdata(x,y,z);}} while(0)
 
 int Filesleft;
 long Totalleft;
@@ -521,6 +526,12 @@ main(int argc, char **argv)
 			break;
 		}
 	}
+
+	if (getuid()!=geteuid() || getgid() != getegid()) {
+		error(1,0,
+		_("this program was never intended to be used set[ug]id\n"));
+	}
+	zsendline_init();
 
 	if (start_blklen==0) {
 		if (protocol == ZM_ZMODEM)
@@ -1316,9 +1327,9 @@ usage(int exitcode, const char *what)
 	fprintf(f,_("   or: %s [options] -{c|i} COMMAND\n"),program_name);
 	fputs(_("Send file(s) with ZMODEM/YMODEM/XMODEM protocol\n"),f);
 	fputs(_(
-		"    (X) = Option applies to XMODEM only\n"
-		"    (Y) = Option applies to YMODEM only\n"
-		"    (Z) = Option applies to ZMODEM only\n"
+		"    (X) = option applies to XMODEM only\n"
+		"    (Y) = option applies to YMODEM only\n"
+		"    (Z) = option applies to ZMODEM only\n"
 		),f);
 	fputs(_(
 "  -+, --append                append to existing destination file (Z)\n"
@@ -1486,7 +1497,7 @@ sendzsinit(void)
 		}
 		else
 			zsbhdr(ZSINIT, Txhdr);
-		zsdata(Myattn, 1+strlen(Myattn), ZCRCW);
+		ZSDATA(Myattn, 1+strlen(Myattn), ZCRCW);
 		c = zgethdr(Rxhdr, 1);
 		switch (c) {
 		case ZCAN:
@@ -1523,7 +1534,7 @@ zsendfile(struct zm_fileinfo *zi, const char *buf, int blen)
 		Txhdr[ZF2] = Lztrans;	/* file transport request */
 		Txhdr[ZF3] = 0;
 		zsbhdr(ZFILE, Txhdr);
-		zsdata(buf, blen, ZCRCW);
+		ZSDATA(buf, blen, ZCRCW);
 again:
 		c = zgethdr(Rxhdr, 1);
 		switch (c) {
@@ -1734,19 +1745,38 @@ zsendfdata (struct zm_fileinfo *zi)
 		} else
 #endif
 			n = zfilbuf (zi);
-		if (zi->eof_seen)
+		if (zi->eof_seen) {
 			e = ZCRCE;
-		else if (junkcount > 3)
+			if (Verbose>3)
+				fputs("e=ZCRCE/eof seen",stderr);
+		} else if (junkcount > 3) {
 			e = ZCRCW;
-		else if (bytcnt == Lastsync)
+			if (Verbose>3)
+				fputs("e=ZCRCW/junkcount > 3",stderr);
+		} else if (bytcnt == Lastsync) {
 			e = ZCRCW;
-		else if (Rxbuflen && (newcnt -= n) <= 0)
+			if (Verbose>3)
+				fprintf(stderr,"e=ZCRCW/bytcnt == Lastsync == %ld", (unsigned long) Lastsync);
+#if 0
+		/* what is this good for? Rxbuflen/newcnt normally are short - so after
+		 * a few KB ZCRCW will be used? (newcnt is never incremented)
+		 */
+		} else if (Rxbuflen && (newcnt -= n) <= 0) {
 			e = ZCRCW;
-		else if (Txwindow && (Txwcnt += n) >= Txwspac) {
+			if (Verbose>3)
+				fprintf(stderr,"e=ZCRCW/Rxbuflen(newcnt=%ld,n=%ld)", 
+					(unsigned long) newcnt,(unsigned long) n);
+#endif
+		} else if (Txwindow && (Txwcnt += n) >= Txwspac) {
 			Txwcnt = 0;
 			e = ZCRCQ;
-		} else
+			if (Verbose>3)
+				fputs("e=ZCRCQ/Window",stderr);
+		} else {
 			e = ZCRCG;
+			if (Verbose>3)
+				fputs("e=ZCRCG",stderr);
+		}
 		if ((Verbose > 1 || min_bps || stop_time)
 			&& (not_printed > (min_bps ? 3 : 7) 
 				|| zi->bytes_sent > last_bps / 2 + last_txpos)) {
@@ -1794,10 +1824,10 @@ zsendfdata (struct zm_fileinfo *zi)
 			not_printed++;
 #ifdef HAVE_MMAP
 		if (mm_addr)
-			zsdata (((char *) mm_addr) + zi->bytes_sent, n, e);
+			ZSDATA (((char *) mm_addr) + zi->bytes_sent, n, e);
 		else
 #endif
-			zsdata (txbuf, n, e);
+			ZSDATA (txbuf, n, e);
 		bytcnt = zi->bytes_sent += n;
 		if (e == ZCRCW)
 			goto waitack;
@@ -1822,7 +1852,7 @@ zsendfdata (struct zm_fileinfo *zi)
 				if (c == ZACK)
 					break;
 				/* zcrce - dinna wanna starta ping-pong game */
-				zsdata (txbuf, 0, ZCRCE);
+				ZSDATA (txbuf, 0, ZCRCE);
 				goto gotack;
 			case XOFF:			/* Wait a while for an XON */
 			case XOFF | 0200:
@@ -1837,10 +1867,10 @@ zsendfdata (struct zm_fileinfo *zi)
 			while ((tcount = zi->bytes_sent - Lrxpos) >= Txwindow) {
 				vfile ("%ld window >= %u", tcount, Txwindow);
 				if (e != ZCRCQ)
-					zsdata (txbuf, 0, e = ZCRCQ);
+					ZSDATA (txbuf, 0, e = ZCRCQ);
 				c = getinsync (zi, 1);
 				if (c != ZACK) {
-					zsdata (txbuf, 0, ZCRCE);
+					ZSDATA (txbuf, 0, ZCRCE);
 					goto gotack;
 				}
 			}
@@ -2103,7 +2133,7 @@ zsendcmd(const char *buf, int blen)
 		stohdr(cmdnum);
 		Txhdr[ZF0] = Cmdack1;
 		zsbhdr(ZCOMMAND, Txhdr);
-		zsdata(buf, blen, ZCRCW);
+		ZSDATA(buf, blen, ZCRCW);
 listen:
 		Rxtimeout = 100;		/* Ten second wait for resp. */
 		c = zgethdr(Rxhdr, 1);
