@@ -293,7 +293,7 @@ zshhdr(int type, char *hdr)
 	char s[30];
 	size_t len;
 
-	vfile("zshhdr: %s %lx", frametypes[type+FTOFFSET], rclhdr(hdr));
+	vfile("zshhdr: %s %lx", frametypes[(type & 0x7f)+FTOFFSET], rclhdr(hdr));
 	s[0]=ZPAD;
 	s[1]=ZPAD;
 	s[2]=ZDLE;

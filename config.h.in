@@ -217,6 +217,9 @@
 /* Define if you have the <sys/mman.h> header file.  */
 #undef HAVE_SYS_MMAN_H
 
+/* Define if you have the <sys/param.h> header file.  */
+#undef HAVE_SYS_PARAM_H
+
 /* Define if you have the <sys/syslog.h> header file.  */
 #undef HAVE_SYS_SYSLOG_H
 

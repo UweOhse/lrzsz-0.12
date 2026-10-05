@@ -18,36 +18,10 @@
 #include <setjmp.h>
 #include <ctype.h>
 #include <errno.h>
-#include <sys/stat.h>
 #include <getopt.h>
 
-#ifdef HAVE_LIMITS_H
-#  include <limits.h>
-#endif
-#if defined(ENABLE_TIMESYNC)
-#  ifdef TM_IN_SYS_TIME
-#    ifdef TIME_WITH_SYS_TIME
-#      include <sys/time.h>
-#      include <time.h>
-#    else
-#      ifdef HAVE_SYS_TIME_H
-#        include <sys/time.h>
-#      else
-#        include <time.h>
-#      endif
-#    endif
-#  else
-#    include <time.h>
-#  endif
-#endif
-#ifdef HAVE_UNISTD_H
-#  include <unistd.h>
-#endif
 #ifndef R_OK
 #  define R_OK 4
-#endif
-#ifndef PATH_MAX
-#  define PATH_MAX 1024
 #endif
 
 #if defined(HAVE_SYS_MMAN_H) && defined(HAVE_MMAP)
@@ -574,7 +548,7 @@ wcsend (int argc, char *argp[])
 	if (Rxflags2 & ZF1_TIMESYNC && enable_timesync) {
 		/* implement Peter Mandrellas extension */
 		/* yes, this *has* a minor race condition */
-		char tmp[PATH_MAX];
+		char *tmp;
 		const char *p;
 		FILE *f;
 		if (Verbose) {
@@ -586,6 +560,9 @@ wcsend (int argc, char *argp[])
 			p = getenv ("TMP");
 		if (!p)
 			p = "/tmp";
+		tmp=malloc(PATH_MAX+1);
+		if (!tmp)
+			error(1,0,_("out of memory"));
 		strcpy (tmp, p);
 		strcat (tmp, "/$time$.t");
 		f = fopen (tmp, "w");
@@ -626,6 +603,7 @@ wcsend (int argc, char *argp[])
 					 tmp, strerror (errno));
 			fputs ("\r\n", stderr);
 		}
+		free(tmp);
 	}
 #endif
 	Totsecs = 0;
@@ -660,7 +638,9 @@ wcsend (int argc, char *argp[])
 		saybibi ();
 	else if (protocol != ZM_XMODEM) {
 		struct zm_fileinfo zi;
-		char pa[PATH_MAX] = "";
+		char *pa;
+		pa=alloca(PATH_MAX+1);
+		*pa='\0';
 		zi.fname = pa;
 		zi.modtime = 0;
 		zi.mode = 0;
@@ -678,7 +658,7 @@ wcs(const char *oname)
 {
 	register c;
 	struct stat f;
-	char name[PATH_MAX];
+	char *name;
 	struct zm_fileinfo zi;
 #ifdef ENABLE_SYSLOG
 	const char *shortname;
@@ -689,6 +669,7 @@ wcs(const char *oname)
 		shortname=oname;
 #endif
 
+	name=alloca(PATH_MAX+1);
 	strcpy(name, oname);
 
 	if (Restricted) {
@@ -706,14 +687,15 @@ wcs(const char *oname)
 		}
 	}
 
-
 	if ((input_f=fopen(oname, "r"))==NULL) {
 		int e=errno;
 		error(0,e, _("cannot open %s"),name);
 		++errcnt;
 		return OK;	/* pass over it, there may be others */
 	}
+#ifdef HAVE_MMAP
 	if (!use_mmap)
+#endif
 	{
 		static char *s=NULL;
 		static size_t last_length=0;
@@ -832,8 +814,10 @@ static int
 wctxpn(struct zm_fileinfo *zi)
 {
 	register char *p, *q;
-	char name2[PATH_MAX];
+	char *name2;
 	struct stat f;
+
+	name2=alloca(PATH_MAX+1);
 
 	if (protocol==ZM_XMODEM) {
 		if (Verbose && *zi->fname && fstat(fileno(input_f), &f)!= -1) {

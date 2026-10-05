@@ -5,7 +5,21 @@ EXTRA_DIST = @README_ALPHA@ check.lrzsz COMPATABILITY
 check:
 	QUIET=-q $(srcdir)/check.lrzsz $(srcdir) `pwd`	
 vcheck:
-	$(srcdir)/check.lrzsz $(srcdir) `pwd`	
+	$(srcdir)/check.lrzsz $(srcdir) `pwd`
+vcheck-x:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd`	x
+vcheck-y:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd`	y
+vcheck-z:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` z
+vcheck-z8:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` z8
+vcheck-sz-r:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` sz-r
+vcheck-rz-r:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` rz-r
+vcheck-abuse:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` abuse
 
 # Tag before making distribution.  Also, don't make a distribution if
 # checks fail.  Also, make sure the NEWS file is up-to-date.

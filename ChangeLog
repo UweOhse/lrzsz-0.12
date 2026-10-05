@@ -1,3 +1,41 @@
+Thu Aug 22 19:48:16 1996  Uwe Ohse  <uwe@tirka.gun.de>
+		
+		* Release 0.12.7
+
+		* configure.in (VERSION): changed to 0.12.7
+
+Tue Aug 13 00:00:27 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+		* check.lrzsz: accepts third parameter (x,y,z,z8,sz-r,rz-r,abuse),
+		  to do one test.
+
+		* src/timing.c (timing): DST_NONE might be undefined.
+
+		* src/lsz.c: do not include unistd.h, limits.h.
+		  (wcsend): dynamically alloca tmp and pa variables (PATH_MAX).
+		  (wctxpn): dito.
+
+		* src/zglobal.h: get alloca.
+
+
+Mon Aug 12 21:46:09 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+		* src/lrz.c (procheader): dynamically allocate Pathname-String
+		  (PATH_MAX may be variable).
+		  (wcreceive): dynamically allocate Pathname.
+
+		* configure.in: check for sys/param.h
+
+		* src/rbsb.c:  don't include sys/stat.h, sys/types.h
+
+		* src/lsz.c: 
+		* src/lrz.c: don't include time-includes.
+		  do not include sys/stat.h, unistd.h
+
+		* src/zglobal.h: include time-includes.
+		  include sys/stat.h, sys/types.h
+		  #define PATH_MAX if needed.
+
 Sun Aug 11 07:39:37 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
 		* src/lrz.c (rzfile): instead of sending ZACK flush XON flush

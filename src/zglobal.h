@@ -2,7 +2,37 @@
 #define ZMODEM_GLOBAL_H
 
 #include "config.h"
+#include <sys/types.h>
+
+#ifdef __GNUC__
+# define alloca __builtin_alloca
+# define HAVE_ALLOCA 1
+#else
+# if defined HAVE_ALLOCA_H || defined _LIBC
+#  include <alloca.h>
+# else
+#  ifdef _AIX
+#pragma alloca
+#  else
+#   ifndef alloca
+ char *alloca ();
+#   endif
+#  endif
+# endif
+#endif
+
 #include <stdarg.h>
+
+#ifdef TIME_WITH_SYS_TIME
+#  include <sys/time.h>
+#  include <time.h>
+#else
+#  ifdef HAVE_SYS_TIME_H
+#    include <sys/time.h>
+#  else
+#    include <time.h>
+#  endif
+#endif
 
 #if STDC_HEADERS
 # include <string.h>
@@ -20,6 +50,8 @@ char *strchr (), *strrchr ();
 #  define memmove(d, s, n) bcopy ((s), (d), (n))
 # endif
 #endif
+
+#include <sys/stat.h>
 
 /* we need to decide whether readcheck is possible */
 #ifdef HAVE_FCNTL_H
@@ -112,6 +144,39 @@ long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 #else
 extern int enable_syslog;
 #endif
+
+#if defined HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+/* The following is from pathmax.h.  */
+/* Non-POSIX BSD systems might have gcc's limits.h, which doesn't define
+   PATH_MAX but might cause redefinition warnings when sys/param.h is
+   later included (as on MORE/BSD 4.3).  */
+#if defined(_POSIX_VERSION) || (defined(HAVE_LIMITS_H) && !defined(__GNUC__))
+# include <limits.h>
+#endif
+
+#ifndef _POSIX_PATH_MAX
+# define _POSIX_PATH_MAX 255
+#endif
+
+#if !defined(PATH_MAX) && defined(_PC_PATH_MAX)
+# define PATH_MAX (pathconf ("/", _PC_PATH_MAX) < 1 ? 1024 : pathconf ("/", _PC_PATH_MAX))
+#endif
+
+/* Don't include sys/param.h if it already has been.  */
+#if defined(HAVE_SYS_PARAM_H) && !defined(PATH_MAX) && !defined(MAXPATHLEN)
+# include <sys/param.h>
+#endif
+
+#if !defined(PATH_MAX) && defined(MAXPATHLEN)
+# define PATH_MAX MAXPATHLEN
+#endif
+
+#ifndef PATH_MAX
+# define PATH_MAX _POSIX_PATH_MAX
+#endif
+
 
 #define OK 0
 #define FALSE 0

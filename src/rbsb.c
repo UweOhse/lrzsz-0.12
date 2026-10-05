@@ -18,9 +18,6 @@
 #endif
 #include <stdio.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
-
 #ifdef USE_SGTTY
 #  ifdef LLITOUT
 long Locmode;		/* Saved "local mode" for 4.x BSD "new driver" */
@@ -50,10 +47,15 @@ from_cu(void)
 #ifdef HAVE_ST_RDEV
 	struct stat a, b;
 	a.st_rdev=b.st_rdev=0; /* in case fstat fails */
+	a.st_dev=b.st_dev=0; /* in case fstat fails */
 
 	fstat(1, &a); fstat(2, &b);
+	fprintf(stderr,"1.st_rdev=%ld\n",(long) a.st_rdev);
+	fprintf(stderr,"1.st_dev=%ld\n",(long) a.st_dev);
+	fprintf(stderr,"2.st_rdev=%ld\n",(long) b.st_rdev);
+	fprintf(stderr,"2.st_dev=%ld\n",(long) b.st_dev);
 
-	Fromcu = a.st_rdev != b.st_rdev;
+	Fromcu = (a.st_rdev != b.st_rdev) || (a.st_dev != b.st_dev);
 #else
 	Fromcu = 1; /* a bad guess .. */
 #endif

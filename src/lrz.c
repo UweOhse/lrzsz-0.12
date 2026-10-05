@@ -16,21 +16,9 @@
 #include <signal.h>
 #include <ctype.h>
 #include <errno.h>
-#include <unistd.h>
-#ifdef TIME_WITH_SYS_TIME
-#  include <sys/time.h>
-#  include <time.h>
-#else
-#  ifdef HAVE_SYS_TIME_H
-#    include <sys/time.h>
-#  else
-#    include <time.h>
-#  endif
-#endif
 #include <limits.h>
 #include <getopt.h>
 
-#include <sys/stat.h>
 #ifdef HAVE_UTIME_H
 #include <utime.h>
 #endif
@@ -76,7 +64,7 @@ int Restricted=1;	/* restricted; no /.. or ../ in filenames */
 int Readnum = HOWMANY;	/* Number of bytes to ask for in read() from modem */
 
 #define DEFBYTL 2000000000L	/* default rx file size */
-char Pathname[PATH_MAX];
+char *Pathname;
 const char *program_name;		/* the name by which we were called */
 
 int Topipe=0;
@@ -523,6 +511,14 @@ wcreceive(int argc, char **argp)
 			) 
 			timing(1);
 		procheader(dummy, &zi);
+
+		if (Pathname)
+			free(Pathname);
+		errno=0;
+		Pathname=malloc(PATH_MAX+1);
+		if (!Pathname)
+			error(1,0,_("out of memory"));
+
 		strcpy(Pathname, *argp);
 		checkpath(Pathname);
 #ifdef ENABLE_SYSLOG
@@ -891,6 +887,11 @@ procheader(char *name, struct zm_fileinfo *zi)
 	  && !(zi->mode&UNIXFILE))
 		uncaps(name);
 	if (Topipe > 0) {
+		if (Pathname)
+			free(Pathname);
+		Pathname=malloc((PATH_MAX)*2);
+		if (!Pathname)
+			error(1,0,_("out of memory"));
 		sprintf(Pathname, "%s %s", program_name+2, name);
 		if (Verbose) {
 			fprintf(stderr,  "%s: %s %s\n",
@@ -903,6 +904,11 @@ procheader(char *name, struct zm_fileinfo *zi)
 		if (protocol==ZM_XMODEM)
 			/* we don't have the filename yet */
 			return OK; /* dummy */
+		if (Pathname)
+			free(Pathname);
+		Pathname=malloc((PATH_MAX)*2);
+		if (!Pathname)
+			error(1,0,_("out of memory"));
 		strcpy(Pathname, name);
 		if (Verbose) {
 			putc('\r',stderr);

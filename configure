@@ -617,7 +617,7 @@ test "$program_transform_name" = "" && program_transform_name="s,x,x,"
 
 
 PACKAGE=lrzsz
-VERSION=0.12.6
+VERSION=0.12.7
 
 PACKAGE_VERSION="$PACKAGE-$VERSION"
 cat >> confdefs.h <<EOF
@@ -1445,7 +1445,7 @@ else
 fi
 done
 
-for ac_hdr in sys/mman.h utime.h syslog.h sys/syslog.h
+for ac_hdr in sys/mman.h utime.h syslog.h sys/syslog.h sys/param.h
 do
 ac_safe=`echo "$ac_hdr" | tr './\055' '___'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6

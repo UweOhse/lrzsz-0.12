@@ -26,7 +26,7 @@ AC_SUBST(host_cpu)
 AC_ARG_PROGRAM
 
 PACKAGE=lrzsz
-VERSION=0.12.6
+VERSION=0.12.7
 
 PACKAGE_VERSION="$PACKAGE-$VERSION"
 AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE")
@@ -124,7 +124,7 @@ dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h limits.h sys/ioctl.h sys/time.h unistd.h sys/times.h)
 AC_CHECK_HEADERS(termios.h sys/termios.h termio.h sys/termio.h sgtty.h)
-AC_CHECK_HEADERS(sys/mman.h utime.h syslog.h sys/syslog.h)
+AC_CHECK_HEADERS(sys/mman.h utime.h syslog.h sys/syslog.h sys/param.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T

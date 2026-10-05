@@ -13,6 +13,12 @@ if test $objdir = . ; then
 	objdir=`pwd`
 fi
 
+if test "x$3" = x ; then
+	mode=all
+else
+	mode=$3
+fi
+
 BUFSIZE="-B 524288"
 #BUFSIZE="-B 1048576"
 echo checking with srcdir = $1 and objdir = $2
@@ -53,129 +59,141 @@ rm -rf $testdir
 mkdir $testdir
 mkfifo $testdir/pipe || mknod $testdir/pipe p
 
-
 # test zmodem
-echo "testing ZMODEM"
-mkdir $testdir/zmodem
-failed=0
-($objdir/src/lsz -q  $BUFSIZE $z_test_files ) 2>/dev/null <$testdir/pipe | \
-	(cd $testdir/zmodem ; $objdir/src/lrz $BUFSIZE $QUIET >>../pipe )
-for i in $z_test_files ; do 
-	bn=`basename $i`
-	cmp $i $testdir/zmodem/$bn
-	if test $? -eq 0 ; then
-		rm -f $testdir/zmodem/$bn
-	else
-		failed=1
-	fi
-done
-rmdir $testdir/zmodem 2>/dev/null
-if test $failed = 1 ; then 
-	echo "ZMODEM test failed"
-	any_failure="$any_failure ZMODEM"
-fi
-
-# test zmodem8k
-# we test this only if we have something really large, because this is
-# we only case we can expect any differences
-if test "x$z8_test_files" = x ; then
-	:
-else
-	echo "testing ZMODEM8K"
-	mkdir $testdir/zmodem8k
+if test "$mode" = all -o "$mode" = z ; then
+	echo "testing ZMODEM"
+	mkdir $testdir/zmodem
 	failed=0
-	$objdir/src/lsz -q88O $BUFSIZE $z8_test_files <$testdir/pipe | \
-		(cd $testdir/zmodem8k ; $objdir/src/lrz -O $BUFSIZE $QUIET >>../pipe )
-	for i in $z8_test_files ; do 
+	($objdir/src/lsz -q  $BUFSIZE $z_test_files ) 2>/dev/null <$testdir/pipe | \
+		(cd $testdir/zmodem ; exec $objdir/src/lrz $BUFSIZE $QUIET >>../pipe 2>/tmp/x77)
+	for i in $z_test_files ; do 
 		bn=`basename $i`
-		cmp $i $testdir/zmodem8k/$bn
+		cmp $i $testdir/zmodem/$bn
 		if test $? -eq 0 ; then
-			rm -f $testdir/zmodem8k/$bn
+			rm -f $testdir/zmodem/$bn
 		else
 			failed=1
 		fi
 	done
+	rmdir $testdir/zmodem 2>/dev/null
 	if test $failed = 1 ; then 
-		echo "ZMODEM8k test failed"
-		any_failure="$any_failure ZMODEM8k"
+		echo "ZMODEM test failed"
+		any_failure="$any_failure ZMODEM"
 	fi
-	rmdir $testdir/zmodem8k 2>/dev/null
+fi
+
+# test zmodem8k
+if test "$mode" = all -o "$mode" = z8 ; then
+	# we test this only if we have something really large, because this is
+	# we only case we can expect any differences
+	if test "x$z8_test_files" = x ; then
+		:
+	else
+		echo "testing ZMODEM8K"
+		mkdir $testdir/zmodem8k
+		failed=0
+		$objdir/src/lsz -q88O $BUFSIZE $z8_test_files <$testdir/pipe | \
+			(cd $testdir/zmodem8k ; $objdir/src/lrz -O $BUFSIZE $QUIET >>../pipe )
+		for i in $z8_test_files ; do 
+			bn=`basename $i`
+			cmp $i $testdir/zmodem8k/$bn
+			if test $? -eq 0 ; then
+				rm -f $testdir/zmodem8k/$bn
+			else
+				failed=1
+			fi
+		done
+		if test $failed = 1 ; then 
+			echo "ZMODEM8k test failed"
+			any_failure="$any_failure ZMODEM8k"
+		fi
+		rmdir $testdir/zmodem8k 2>/dev/null
+	fi
 fi
 
 # test ymodem
-echo "testing YMODEM"
-mkdir $testdir/ymodem
-failed=0
-$objdir/src/lsz --ymodem -q $y_test_files <$testdir/pipe | \
-	(cd $testdir/ymodem ; $objdir/src/lrz $QUIET --ymodem >>../pipe)
-for i in $y_test_files ; do 
-	bn=`basename $i`
-	cmp $i $testdir/ymodem/$bn
-	if test $? -eq 0 ; then
-		rm -f $testdir/ymodem/$bn
-	else
-		failed=1
+if test "$mode" = all -o "$mode" = y ; then
+	echo "testing YMODEM"
+	mkdir $testdir/ymodem
+	failed=0
+	$objdir/src/lsz --ymodem -q $y_test_files <$testdir/pipe | \
+		(cd $testdir/ymodem ; $objdir/src/lrz $QUIET --ymodem >>../pipe)
+	for i in $y_test_files ; do 
+		bn=`basename $i`
+		cmp $i $testdir/ymodem/$bn
+		if test $? -eq 0 ; then
+			rm -f $testdir/ymodem/$bn
+		else
+			failed=1
+		fi
+	done
+	rmdir $testdir/ymodem 2>/dev/null
+	if test $failed = 1 ; then 
+		echo "YMODEM test failed"
+		any_failure="$any_failure YMODEM"
 	fi
-done
-rmdir $testdir/ymodem 2>/dev/null
-if test $failed = 1 ; then 
-	echo "YMODEM test failed"
-	any_failure="$any_failure YMODEM"
 fi
 
-echo "testing XMODEM"
-mkdir $testdir/xmodem
-failed=0
-for i in $x_test_files; do
-	bn=`basename $i`
-	$objdir/src/lsz --xmodem -qa $i <$testdir/pipe | \
-		(cd $testdir/xmodem ; $objdir/src/lrz $QUIET -a --xmodem $bn >>../pipe)
-	cmp $i $testdir/xmodem/$bn
-	if test $? -eq 0 ; then
-		rm -f $testdir/xmodem/$bn
-	else
-		failed=1
+if test "$mode" = all -o "$mode" = x ; then
+	echo "testing XMODEM"
+	mkdir $testdir/xmodem
+	failed=0
+	for i in $x_test_files; do
+		bn=`basename $i`
+		$objdir/src/lsz --xmodem -qa $i <$testdir/pipe | \
+			(cd $testdir/xmodem ; $objdir/src/lrz $QUIET -a --xmodem $bn >>../pipe)
+		cmp $i $testdir/xmodem/$bn
+		if test $? -eq 0 ; then
+			rm -f $testdir/xmodem/$bn
+		else
+			failed=1
+		fi
+	done
+	rmdir $testdir/xmodem 2>/dev/null
+	if test $failed = 1 ; then 
+		echo "XMODEM test failed"
+		any_failure="$any_failure XMODEM"
 	fi
-done
-rmdir $testdir/xmodem 2>/dev/null
-if test $failed = 1 ; then 
-	echo "XMODEM test failed"
-	any_failure="$any_failure XMODEM"
 fi
 
 # resume -r 
-mkdir $testdir/resume
-echo "testing ZMODEM resume (sz -r)"
-dd if=$objdir/src/lsz.c of=$testdir/resume/lsz bs=256 count=96 2>/dev/null
-($objdir/src/lsz -r $objdir/src/lsz 2>out.sz) <$testdir/pipe | \
-	(cd $testdir/resume ; $objdir/src/lrz $QUIET >>../pipe )
-if cmp $objdir/src/lsz $testdir/resume/lsz >/dev/null ; then
-	echo "receiver did not resume, but file is ok"
-	any_failure="$any_failure ZMODEM-resume"
-else
-	dd if=$objdir/src/lsz conv=notrunc of=$testdir/resume/lsz bs=256 count=96 2>/dev/null
-	if cmp $objdir/src/lsz $testdir/resume/lsz ; then
-		:
+if test "$mode" = all -o "$mode" = sz-r ; then
+	mkdir $testdir/resume
+	echo "testing ZMODEM resume (sz -r)"
+	dd if=$srcdir/src/lsz.c of=$testdir/resume/lsz bs=256 count=96 2>/dev/null
+	($objdir/src/lsz -r $objdir/src/lsz 2>out.sz) <$testdir/pipe | \
+		(cd $testdir/resume ; $objdir/src/lrz $QUIET >>../pipe )
+	if cmp $objdir/src/lsz $testdir/resume/lsz >/dev/null ; then
+		echo "receiver did not resume, but file is ok"
+		any_failure="$any_failure ZMODEM-resume/sz"
 	else
-		echo "sender resumed, but files differ. This is really bad"
-		any_failure="$any_failure ZMODEM-resumei/su"
+		dd if=$objdir/src/lsz conv=notrunc of=$testdir/resume/lsz bs=256 count=96 2>/dev/null
+		if cmp $objdir/src/lsz $testdir/resume/lsz ; then
+			:
+		else
+			echo "sender resumed, but files differ. This is really bad"
+			any_failure="$any_failure ZMODEM-resume/sz"
+		fi
 	fi
 fi
 
-echo "testing ZMODEM resume (rz -r)"
-dd if=$objdir/src/lsz.c of=$testdir/resume/lsz bs=256 count=96 2>/dev/null
-($objdir/src/lsz $objdir/src/lsz 2>out.sz) <$testdir/pipe | \
-	(cd $testdir/resume ; $objdir/src/lrz -r $QUIET >>../pipe )
-if cmp $objdir/src/lsz $testdir/resume/lsz >/dev/null ; then
-	echo "receiver did not resume, but file is ok"
-	any_failure="$any_failure ZMODEM-resume"
-else
-	dd if=$objdir/src/lsz conv=notrunc of=$testdir/resume/lsz bs=256 count=96 2>/dev/null
-	if cmp $objdir/src/lsz $testdir/resume/lsz ; then
-		:
-	else
-		echo "sender resumed, but files differ. This is really bad"
+if test "$mode" = all -o "$mode" = rz-r ; then
+    echo "testing ZMODEM resume (rz -r)"
+	mkdir $testdir/resume 2>/dev/null
+	dd if=$srcdir/src/lsz.c of=$testdir/resume/lsz bs=256 count=96 2>/dev/null
+	($objdir/src/lsz $objdir/src/lsz 2>out.sz) <$testdir/pipe | \
+		(cd $testdir/resume ; $objdir/src/lrz -r $QUIET >>../pipe )
+	if cmp $objdir/src/lsz $testdir/resume/lsz >/dev/null ; then
+		echo "receiver did not resume, but file is ok"
 		any_failure="$any_failure ZMODEM-resume/rz"
+	else
+		dd if=$objdir/src/lsz conv=notrunc of=$testdir/resume/lsz bs=256 count=96 2>/dev/null
+		if cmp $objdir/src/lsz $testdir/resume/lsz ; then
+			:
+		else
+			echo "sender resumed, but files differ. This is really bad"
+			any_failure="$any_failure ZMODEM-resume/rz"
+		fi
 	fi
 fi
 
@@ -189,18 +207,20 @@ else
 fi
 
 echo "All tests OK."
-echo
-echo "going to tests misuse. Errors are ok, hangs are not!"
+if test "$mode" = all -o "$mode" = abuse ; then
+	echo
+	echo "going to tests misuse. Errors are ok, hangs are not!"
 
-echo
-echo "both sides sending:"
-$objdir/src/lsz -q $z_test_files <$testdir/pipe | \
-	($objdir/src/lsz $z_test_files >>$testdir/pipe )
+	echo
+	echo "both sides sending:"
+	$objdir/src/lsz -q $z_test_files <$testdir/pipe | \
+		($objdir/src/lsz $z_test_files >>$testdir/pipe )
 
-echo
-echo "both sides receiving:"
-$objdir/src/lrz -q <$testdir/pipe | \
-	( $objdir/src/lrz >>$testdir/pipe )
+	echo
+	echo "both sides receiving:"
+	$objdir/src/lrz -q <$testdir/pipe | \
+		( $objdir/src/lrz >>$testdir/pipe )
+fi
 
 rm -rf $testdir
 exit 0

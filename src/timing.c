@@ -17,15 +17,9 @@
 #include <limits.h>
 #endif
 
-#ifdef TIME_WITH_SYS_TIME
-#  include <time.h>
-#  include <sys/time.h>
-#elif defined(HAVE_SYS_TIME_H)
-#  include <sys/time.h>
-#else
+#if !defined(TIME_WITH_SYS_TIME) && !defined(HAVE_SYS_TIME_H)
    /* can't use gettimeofday without struct timeval */
 #  undef HAVE_GETTIMEOFDAY
-#  include <time.h>
 #endif
 
 /* Prefer gettimeofday to ftime to times.  */
@@ -82,7 +76,11 @@ timing (int reset)
   struct timeval tv;
   struct timezone tz;
 
+#ifdef DST_NONE
   tz.tz_dsttime = DST_NONE;
+#else
+  tz.tz_dsttime = 0;
+#endif
   gettimeofday (&tv, &tz);
   yet=tv.tv_sec + tv.tv_usec/1000000.0;
 #undef NEED_TIME

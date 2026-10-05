@@ -1,3 +1,7 @@
+Version 0.12.7 - August 1996, Uwe Ohse
+
+* portability enhancements. compiles and runs under hurd.
+
 Version 0.12.6 - August 1996, Uwe Ohse
 
 * some portability enhancements (phdm@info.ucl.ac.be)

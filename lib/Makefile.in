@@ -190,10 +190,10 @@ distdir: $(DEP_DISTFILES)
 	  || cp -p $(srcdir)/$$file $(distdir)/$$file; \
 	done
 alloca$o: alloca.c ../config.h
-ansi2knr$o: ansi2knr.c
 error$o: error.c
 getopt$o: getopt.c
 getopt1$o: getopt1.c getopt.h
+long-options$o: long-options.c long-options.h
 mkdir$o: mkdir.c
 strdup$o: strdup.c ../config.h
 strerror$o: strerror.c
