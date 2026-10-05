@@ -195,9 +195,13 @@ getopt$o: getopt.c
 getopt1$o: getopt1.c getopt.h
 long-options$o: long-options.c long-options.h
 mkdir$o: mkdir.c
+stpcpy$o: stpcpy.c
 strdup$o: strdup.c ../config.h
 strerror$o: strerror.c
+strpbrk$o: strpbrk.c
 strstr$o: strstr.c
+strtol$o: strtol.c
+strtoul$o: strtoul.c
 xstrtol$o: xstrtol.c xstrtol.h
 xstrtoul$o: xstrtoul.c xstrtol.c xstrtol.h
 

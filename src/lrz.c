@@ -169,7 +169,7 @@ static struct option const long_options[] =
 	{"min-bps-time", required_argument, NULL, 'M'},
 	{"protect", no_argument, NULL, 'p'},
 	{"resume", no_argument, NULL, 'r'},
-	{"restriced", no_argument, NULL, 'R'},
+	{"restricted", no_argument, NULL, 'R'},
 	{"quiet", no_argument, NULL, 'q'},
 	{"timesync", no_argument, NULL, 'S'},
 	{"timeout", required_argument, NULL, 't'},
@@ -615,7 +615,7 @@ fubar:
 	if (fout)
 		fclose(fout);
 
-	if (Restricted) {
+	if (Restricted && Pathname) {
 		unlink(Pathname);
 		fprintf(stderr, _("\r\n%s: %s removed.\r\n"), program_name, Pathname);
 	}
@@ -883,11 +883,11 @@ procheader(char *name, struct zm_fileinfo *zi)
 		}
 		/* try to rename */
 		tmpname=alloca(strlen(name+5));
-		strcpy(tmpname,name);
-		ptr=tmpname+strlen(tmpname);
+		ptr=stpcpy(tmpname,name);
+		*ptr++='.';
 		i=0;
 		do {
-			sprintf(ptr,".%d",i++);
+			sprintf(ptr,"%d",i++);
 		} while (i<1000 && stat(tmpname,&sta)==0);
 		if (i==1000)
 			return ERROR;

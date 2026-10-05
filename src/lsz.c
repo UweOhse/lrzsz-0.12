@@ -86,16 +86,16 @@ static void usage1(int exitcode);
         const char *shortname; \
         if (!zi->fname) \
             shortname="no.name"; \
-									 else { \
+		else { \
             shortname=strrchr(zi->fname,'/'); \
             if (!shortname) \
                 shortname=zi->fname; \
             else \
                 shortname++; \
-								 } \
+		} \
         syslog message ; \
-							 } \
-								   } while(0)
+	 } \
+  } while(0)
 #else
 #define DO_SYSLOG(message) do { } while(0)
 #endif
@@ -187,13 +187,16 @@ jmp_buf intrjmp;	/* For the interrupt on RX CAN */
 static long min_bps;
 static long min_bps_time;
 
+static int io_mode_fd=0;
+static int zrqinits_sent=0;
+
 /* called by signal interrupt or terminate to clean things up */
 RETSIGTYPE
 bibi (int n)
 {
 	canit ();
 	fflush (stdout);
-	io_mode (0,0);
+	io_mode (io_mode_fd,0);
 	if (n == 99)
 		error (0, 0, _ ("io_mode(,2) in rbsb.c not implemented\n"));
 	else
@@ -246,7 +249,7 @@ static struct option const long_options[] =
   {"disable-timeout", no_argument, NULL, 'O'}, /* i can't get it right */
   {"protect", no_argument, NULL, 'p'},
   {"resume", no_argument, NULL, 'r'},
-  {"restriced", no_argument, NULL, 'R'},
+  {"restricted", no_argument, NULL, 'R'},
   {"quiet", no_argument, NULL, 'q'},
   {"syslog", optional_argument, NULL , 2},
   {"timesync", no_argument, NULL, 'S'},
@@ -270,6 +273,8 @@ main(int argc, char **argv)
 	register char *cp;
 	register npats;
 	int dm;
+	int i;
+	int stdin_files;
 	char **patts;
 	int c;
 	const char *Cmdstr=NULL;		/* Pointer to the command string */
@@ -508,8 +513,18 @@ main(int argc, char **argv)
 	}
 	blklen=start_blklen;
 
-	io_mode(0,1);
-	readline_setup(0, 128, 256);
+	for (i=optind,stdin_files=0;i<argc;i++) {
+		if (0==strcmp(argv[i],"-"))
+			stdin_files++;
+	}
+
+	if (stdin_files>1) {
+		usage(1,_("can read only one file from stdin"));
+	} else if (stdin_files==1) {
+		io_mode_fd=1;
+	}
+	io_mode(io_mode_fd,1);
+	readline_setup(io_mode_fd, 128, 256);
 
 #ifndef linux
 	if (signal(SIGINT, bibi) == SIG_IGN) {
@@ -534,7 +549,7 @@ main(int argc, char **argv)
 			 * might be useful if the receiver has already died or
 			 * if there is dirt left if the line 
 			 */
-			purgeline(0);
+			purgeline(io_mode_fd);
 			{
 				struct timeval t;
 				fd_set f;
@@ -544,18 +559,19 @@ main(int argc, char **argv)
 				t.tv_usec = 0;
 				
 				FD_ZERO(&f);
-				FD_SET(0,&f);
+				FD_SET(io_mode_fd,&f);
 				
 				while (select(1,&f,NULL,NULL,&t)) {
-					if (0==read(0,&c,1)) /* EOF ... */
+					if (0==read(io_mode_fd,&c,1)) /* EOF ... */
 						break;
 				}
 			}
-			purgeline(0);
+			purgeline(io_mode_fd);
 			stohdr(0L);
 			if (command_mode)
 				Txhdr[ZF0] = ZCOMMAND;
 			zshhdr(ZRQINIT, Txhdr);
+			zrqinits_sent++;
 #if defined(ENABLE_TIMESYNC)
 			if (Rxflags2 != ZF1_TIMESYNC)
 				/* disable timesync if there are any flags we don't know.
@@ -582,7 +598,7 @@ main(int argc, char **argv)
 		canit();
 	}
 	fflush(stdout);
-	io_mode(0,0);
+	io_mode(io_mode_fd,0);
 	if (Exitcode)
 		dm=Exitcode;
 	else if (errcnt)
@@ -633,8 +649,9 @@ wcsend (int argc, char *argp[])
 		tmp=malloc(PATH_MAX+1);
 		if (!tmp)
 			error(1,0,_("out of memory"));
-		strcpy (tmp, p);
-		strcat (tmp, "/$time$.t");
+		
+		strcpy(stpcpy(tmp,p),"/$time$.t");
+
 		f = fopen (tmp, "w");
 		if (f) {
 			char buf[30];
@@ -730,6 +747,9 @@ wcs(const char *oname)
 	struct stat f;
 	char *name;
 	struct zm_fileinfo zi;
+#ifdef HAVE_MMAP
+	int dont_mmap_this=0;
+#endif
 #ifdef ENABLE_SYSLOG
 	const char *shortname;
 	shortname=strrchr(oname,'/');
@@ -739,32 +759,43 @@ wcs(const char *oname)
 		shortname=oname;
 #endif
 
-	name=alloca(PATH_MAX+1);
-	strcpy(name, oname);
 
 	if (Restricted) {
 		/* restrict pathnames to current tree or uucppublic */
-		if ( strstr(name, "../")
+		if ( strstr(oname, "../")
 #ifdef PUBDIR
-		 || (name[0]== '/' && strncmp(name, MK_STRING(PUBDIR),
+		 || (oname[0]== '/' && strncmp(oname, MK_STRING(PUBDIR),
 		 	strlen(MK_STRING(PUBDIR))))
 #endif
 		) {
 			canit();
 			putc('\r',stderr);
 			error(1,0,
-				_("security violation: not allowed to upload from %s"),name);
+				_("security violation: not allowed to upload from %s"),oname);
 		}
 	}
-
-	if ((input_f=fopen(oname, "r"))==NULL) {
+	
+	if (0==strcmp(oname,"-")) {
+		char *p=getenv("ONAME");
+		name=alloca(PATH_MAX+1);
+		if (p) {
+			strcpy(name, p);
+		} else {
+			sprintf(name, "s%d.lsz", getpid());
+		}
+		input_f=stdin;
+		dont_mmap_this=1;
+	} else if ((input_f=fopen(oname, "r"))==NULL) {
 		int e=errno;
-		error(0,e, _("cannot open %s"),name);
+		error(0,e, _("cannot open %s"),oname);
 		++errcnt;
 		return OK;	/* pass over it, there may be others */
+	} else {
+		name=alloca(PATH_MAX+1);
+		strcpy(name, oname);
 	}
 #ifdef HAVE_MMAP
-	if (!use_mmap)
+	if (!use_mmap || dont_mmap_this)
 #endif
 	{
 		static char *s=NULL;
@@ -962,20 +993,34 @@ static int
 getnak(void)
 {
 	register firstch;
+	int tries=0;
 
 	Lastrx = 0;
 	for (;;) {
-		switch (firstch = readline(800)) {
+		tries++;
+		switch (firstch = readline(100)) {
 		case ZPAD:
 			if (getzrxinit())
 				return ERROR;
 			Ascii = 0;	/* Receiver does the conversion */
 			return FALSE;
 		case TIMEOUT:
-			zperr(_("Timeout on pathname"));
-			return TRUE;
+			/* 60 seconds are enough */
+			if (tries==6) {
+				zperr(_("Timeout on pathname"));
+				return TRUE;
+			}
+			if (zrqinits_sent>0 && zrqinits_sent<4) {
+				/* if we already sent a ZRQINIT we are using zmodem
+				 * protocol and may send further ZRQINITs 
+				 */
+				stohdr(0L);
+				zshhdr(ZRQINIT, Txhdr);
+				zrqinits_sent++;
+			}
+			continue;
 		case WANTG:
-			io_mode(0,2);	/* Set cbreak, XON/XOFF, etc. */
+			io_mode(io_mode_fd,2);	/* Set cbreak, XON/XOFF, etc. */
 			Optiong = TRUE;
 			blklen=1024;
 		case WANTCRC:
@@ -1026,7 +1071,7 @@ wctx(struct zm_fileinfo *zi)
 	fclose(input_f);
 	attempts=0;
 	do {
-		purgeline(0);
+		purgeline(io_mode_fd);
 		sendline(EOT);
 		flushmo();
 		++attempts;
@@ -1177,7 +1222,7 @@ canit (void)
 
 	printf (canistr);
 	flushmo ();
-	purgeline(0);
+	purgeline(io_mode_fd);
 }
 
 static void
@@ -1262,10 +1307,22 @@ usage(int exitcode, const char *what)
 static int 
 getzrxinit(void)
 {
+	int old_timeout=Rxtimeout;
 	register n;
 	struct stat f;
 
+	Rxtimeout=100; /* 10 seconds */
+
 	for (n=10; --n>=0; ) {
+		/* we might need to send another zrqinit in case the first is 
+		 * lost. But *not* if getting here for the first time - in
+		 * this case we might just right a ZRINIT for our first ZRQINIT 
+		 */
+		if (zrqinits_sent<10 && n!=10 && zrqinits_sent < 4) {
+			zrqinits_sent++;
+			stohdr(0L);
+			zshhdr(ZRQINIT, Txhdr);
+		}
 		
 		switch (zgethdr(Rxhdr, 1)) {
 		case ZCHALLENGE:	/* Echo receiver's challenge numbr */
@@ -1273,8 +1330,7 @@ getzrxinit(void)
 			zshhdr(ZACK, Txhdr);
 			continue;
 		case ZCOMMAND:		/* They didn't see out ZRQINIT */
-			stohdr(0L);
-			zshhdr(ZRQINIT, Txhdr);
+			/* ??? Since when does a receiver send ZCOMMAND?  -- uwe */
 			continue;
 		case ZRINIT:
 			Rxflags = 0377 & Rxhdr[ZF0];
@@ -1287,7 +1343,7 @@ getzrxinit(void)
 			vfile("Rxbuflen=%d Tframlen=%d", Rxbuflen, Tframlen);
 			if ( !Fromcu)
 				signal(SIGINT, SIG_IGN);
-			io_mode(0,2);	/* Set cbreak, XON/XOFF, etc. */
+			io_mode(io_mode_fd,2);	/* Set cbreak, XON/XOFF, etc. */
 #ifndef READCHECK
 			/* Use MAX_BLOCK byte frames if no sample/interrupt */
 			if (Rxbuflen < 32 || Rxbuflen > MAX_BLOCK) {
@@ -1333,7 +1389,7 @@ getzrxinit(void)
 				blklen = blkopt;
 			vfile("Rxbuflen=%d blklen=%d", Rxbuflen, blklen);
 			vfile("Txwindow = %u Txwspac = %d", Txwindow, Txwspac);
-
+			Rxtimeout=old_timeout;
 			return (sendzsinit());
 		case ZCAN:
 		case TIMEOUT:
@@ -1557,7 +1613,7 @@ zsendfdata (struct zm_fileinfo *zi)
 		 *  sent by the receiver, in place of setjmp/longjmp
 		 *  rdchk(fdes) returns non 0 if a character is available
 		 */
-		while (rdchk (0)) {
+		while (rdchk (io_mode_fd)) {
 #ifdef READCHECK_READS
 			switch (checked)
 #else
@@ -1673,7 +1729,7 @@ zsendfdata (struct zm_fileinfo *zi)
 		 *  rdchk(fdes) returns non 0 if a character is available
 		 */
 		fflush (stdout);
-		while (rdchk (0)) {
+		while (rdchk (io_mode_fd)) {
 #ifdef READCHECK_READS
 			switch (checked)
 #else
@@ -1886,7 +1942,8 @@ getinsync(struct zm_fileinfo *zi, int flag)
 			/*  If sending to a buffered modem, you  */
 			/*   might send a break at this point to */
 			/*   dump the modem's buffer.		 */
-			clearerr(input_f);	/* In case file EOF seen */
+			if (input_f)
+				clearerr(input_f);	/* In case file EOF seen */
 #ifdef HAVE_MMAP
 			if (!mm_addr)
 #endif

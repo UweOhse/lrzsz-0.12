@@ -1,3 +1,14 @@
+Version 0.12.10 - September 1996, Uwe Ohse
+
+* lsz resends init string if it doesn't receive rz's init.
+
+* improved "make check". (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+
+* `sz -' should work again (but i cannot test it). Anyway, this will not
+  work if sz cannot read from stdout.
+
+* portability enhancements by (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+
 Version 0.12.9 - September 1996, Uwe Ohse
 
 * new options --min-bps N and --min-bps-time M: If BPS rate falls under N

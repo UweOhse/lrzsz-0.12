@@ -61,15 +61,16 @@ fi
 
 rm -rf $testdir
 mkdir $testdir
-mkfifo $testdir/pipe || mknod $testdir/pipe p
+exec 5>$testdir/error.log
+(mkfifo $testdir/pipe || mknod $testdir/pipe p) 2>&5
 
 # test zmodem
 if test "$mode" = all -o "$mode" = z ; then
 	echo "testing ZMODEM"
 	mkdir $testdir/zmodem
 	failed=0
-	($SZ $BUFSIZE $z_test_files) 2>/dev/null <$testdir/pipe | \
-		(cd $testdir/zmodem ; exec $RZ $BUFSIZE $QUIET >>../pipe)
+	($SZ -q $BUFSIZE $z_test_files ) <$testdir/pipe | \
+		(cd $testdir/zmodem ; exec $RZ $BUFSIZE $QUIET >>../pipe )
 	for i in $z_test_files ; do 
 		bn=`basename $i`
 		cmp $i $testdir/zmodem/$bn
@@ -79,7 +80,7 @@ if test "$mode" = all -o "$mode" = z ; then
 			failed=1
 		fi
 	done
-	rmdir $testdir/zmodem 2>/dev/null
+	rmdir $testdir/zmodem 2>&5
 	if test $failed = 1 ; then 
 		echo "ZMODEM test failed"
 		any_failure="$any_failure ZMODEM"
@@ -111,7 +112,7 @@ if test "$mode" = all -o "$mode" = z8 ; then
 			echo "ZMODEM8k test failed"
 			any_failure="$any_failure ZMODEM8k"
 		fi
-		rmdir $testdir/zmodem8k 2>/dev/null
+		rmdir $testdir/zmodem8k 2>&5
 	fi
 fi
 
@@ -139,7 +140,7 @@ if test "$mode" = error ; then
 			echo "error test failed"
 			any_failure="$any_failure error.lsz"
 		fi
-		rmdir $testdir/error.lsz 2>/dev/null
+		rmdir $testdir/error.lsz 2>&5
 
 		# omen zmodem has a really bad error behaviour. it gets so slow
 		# that you wouldn't believe it ...
@@ -161,7 +162,7 @@ if test "$mode" = error ; then
 			echo "error.omen test failed"
 			any_failure="$any_failure error.omen"
 		fi
-		rmdir $testdir/error.omen 2>/dev/null
+		rmdir $testdir/error.omen 2>&5
 
 		echo "testing error, zm.sz"
 		mkdir $testdir/error.zm
@@ -181,7 +182,7 @@ if test "$mode" = error ; then
 			echo "error.zm test failed"
 			any_failure="$any_failure error.zm"
 		fi
-		rmdir $testdir/error.zm 2>/dev/null
+		rmdir $testdir/error.zm 2>&5
 	fi
 fi
 
@@ -202,7 +203,7 @@ if test "$mode" = all -o "$mode" = y ; then
 			failed=1
 		fi
 	done
-	rmdir $testdir/ymodem 2>/dev/null
+	rmdir $testdir/ymodem 2>&5
 	if test $failed = 1 ; then 
 		echo "YMODEM test failed"
 		any_failure="$any_failure YMODEM"
@@ -224,7 +225,7 @@ if test "$mode" = all -o "$mode" = x ; then
 			failed=1
 		fi
 	done
-	rmdir $testdir/xmodem 2>/dev/null
+	rmdir $testdir/xmodem 2>&5
 	if test $failed = 1 ; then 
 		echo "XMODEM test failed"
 		any_failure="$any_failure XMODEM"
@@ -232,12 +233,13 @@ if test "$mode" = all -o "$mode" = x ; then
 fi
 
 if test "$mode" = all -o "$mode" = manage ; then
-	echo "testing file managment, appending"
+	echo "testing file management, appending"
 	mkdir $testdir/manag.append
 	failed=0
 	$SZ -q --append $srcdir/src/lsz.c $srcdir/src/lsz.c <$testdir/pipe | \
 		(cd $testdir/manag.append ; $RZ $QUIET >>../pipe)
-	cp -f $srcdir/src/lsz.c $testdir/manag.append/compare
+	rm -f $testdir/manag.append/compare
+	cp $srcdir/src/lsz.c $testdir/manag.append/compare
 	cat $srcdir/src/lsz.c >>$testdir/manag.append/compare
 	cmp $testdir/manag.append/compare $testdir/manag.append/lsz.c
 	if test $? -eq 0 ; then
@@ -246,16 +248,17 @@ if test "$mode" = all -o "$mode" = manage ; then
 	else
 		failed=1
 	fi
-	rmdir $testdir/manag.append 2>/dev/null
+	rmdir $testdir/manag.append 2>&5
 	if test $failed = 1 ; then 
-		echo "managment/append test failed"
+		echo "management/append test failed"
 		any_failure="$any_failure XMODEM"
 	fi
 
-	echo "testing file managment, renaming"
+	echo "testing file management, renaming"
 	mkdir $testdir/manag.rename
 	failed=0
-	cp -f $srcdir/src/lsz.c $testdir/manag.rename/
+	rm -f $testdir/manag.rename/lsz.c
+	cp $srcdir/src/lsz.c $testdir/manag.rename/
 	$SZ -q --rename $srcdir/src/lsz.c $srcdir/src/lsz.c <$testdir/pipe | \
 		(cd $testdir/manag.rename ; $RZ $QUIET >>../pipe)
 	cmp $testdir/manag.rename/lsz.c $srcdir/src/lsz.c
@@ -277,9 +280,9 @@ if test "$mode" = all -o "$mode" = manage ; then
 		rm -f $testdir/manag.rename/lsz.c.0
 		rm -f $testdir/manag.rename/lsz.c.1
 	fi
-	rmdir $testdir/manag.rename 2>/dev/null
+	rmdir $testdir/manag.rename 2>&5
 	if test $failed = 1 ; then 
-		echo "managment/rename test failed"
+		echo "management/rename test failed"
 		any_failure="$any_failure XMODEM"
 	fi
 fi
@@ -289,16 +292,16 @@ fi
 if test "$mode" = all -o "$mode" = sz-r ; then
 	mkdir $testdir/resume
 	echo "testing ZMODEM resume (sz -r)"
-	dd if=$srcdir/src/lsz.c of=$testdir/resume/lsz.c bs=1024 count=12 2>/dev/null
-	dd if=/dev/zero of=$testdir/resume/lsz.c bs=256 count=5 2>/dev/null
+	dd if=$SZ of=$testdir/resume/lsz.c bs=256 count=5 2>&5
 	($SZ -rq $srcdir/src/lsz.c) <$testdir/pipe | \
 		(cd $testdir/resume ; $RZ $QUIET >>../pipe )
-	if cmp $srcdir/src/lsz.c $testdir/resume/lsz.c >/dev/null ; then
+	if cmp $srcdir/src/lsz.c $testdir/resume/lsz.c >&5 ; then
 		echo "receiver did not resume, but file is ok"
 		any_failure="$any_failure ZMODEM-resume/sz"
 	else
-		dd if=$srcdir/src/lsz.c conv=notrunc of=$testdir/resume/lsz.c bs=256 count=5 2>/dev/null
-		if cmp $srcdir/src/lsz.c $testdir/resume/lsz.c ; then
+		dd if=$srcdir/src/lsz.c of=$testdir/resume/lsz.c1 bs=256 count=5 2>&5
+		dd if=$testdir/resume/lsz.c bs=256 skip=5 >>$testdir/resume/lsz.c1 2>&5
+		if cmp $srcdir/src/lsz.c $testdir/resume/lsz.c1 ; then
 			:
 		else
 			echo "sender resumed, but files differ. This is really bad"
@@ -309,17 +312,17 @@ fi
 
 if test "$mode" = all -o "$mode" = rz-r ; then
     echo "testing ZMODEM resume (rz -r)"
-	mkdir $testdir/resume 2>/dev/null
-	dd if=$srcdir/src/lsz.c of=$testdir/resume/lsz.c bs=1024 count=12 2>/dev/null
-	dd if=/dev/zero of=$testdir/resume/lsz.c bs=256 count=5 2>/dev/null
+	mkdir $testdir/resume 2>&5
+	dd if=$SZ of=$testdir/resume/lsz.c bs=256 count=5 2>&5
 	($SZ $srcdir/src/lsz.c -q) <$testdir/pipe | \
 		(cd $testdir/resume ; $RZ -r $QUIET >>../pipe )
-	if cmp $srcdir/src/lsz.c $testdir/resume/lsz.c >/dev/null ; then
+	if cmp $srcdir/src/lsz.c $testdir/resume/lsz.c >&5 ; then
 		echo "receiver did not resume, but file is ok"
 		any_failure="$any_failure ZMODEM-resume/rz"
 	else
-		dd if=$srcdir/src/lsz.c conv=notrunc of=$testdir/resume/lsz.c bs=256 count=5 2>/dev/null
-		if cmp $srcdir/src/lsz.c $testdir/resume/lsz.c ; then
+		dd if=$srcdir/src/lsz.c of=$testdir/resume/lsz.c1 bs=256 count=5 2>&5
+		dd if=$testdir/resume/lsz.c bs=256 skip=5 >>$testdir/resume/lsz.c1 2>&5
+		if cmp $srcdir/src/lsz.c $testdir/resume/lsz.c1 ; then
 			:
 		else
 			echo "sender resumed, but files differ. This is really bad"
@@ -335,6 +338,29 @@ if test "$mode" = orig-rz ; then
 	failed=0
 	($SZ -q  $BUFSIZE $z_test_files ) 2>/dev/null <$testdir/pipe | \
 		(cd $testdir/zmodem ; exec omen.rz $QUIET >>../pipe)
+	for i in $z_test_files ; do 
+		bn=`basename $i`
+		cmp $i $testdir/zmodem/$bn
+		if test $? -eq 0 ; then
+			rm -f $testdir/zmodem/$bn
+		else
+			failed=1
+		fi
+	done
+	rmdir $testdir/zmodem 2>&5
+	if test $failed = 1 ; then 
+		echo "orig-rz test failed"
+		any_failure="$any_failure orig-rz"
+	fi
+fi
+
+# test "echo something | lsz -"
+if test "$mode" = orig-rz ; then
+	echo "testing ZMODEM"
+	mkdir $testdir/zmodem
+	failed=0
+	(echo something | $SZ -q -) 2>/dev/null <$testdir/pipe | \
+		(cd $testdir/zmodem ; exec $RZ $QUIET >>../pipe)
 	for i in $z_test_files ; do 
 		bn=`basename $i`
 		cmp $i $testdir/zmodem/$bn
@@ -367,7 +393,7 @@ if test "$mode" = orig-sz ; then
 			failed=1
 		fi
 	done
-	rmdir $testdir/zmodem 2>/dev/null
+	rmdir $testdir/zmodem 2>&5
 	if test $failed = 1 ; then 
 		echo "orig-sz test failed"
 		any_failure="$any_failure orig-sz"
@@ -398,7 +424,7 @@ if test "$mode" = orig-kombi ; then
 			failed=1
 		fi
 	done
-	rmdir $testdir/zmodem 2>/dev/null
+	rmdir $testdir/zmodem 2>&5
 	if test $failed = 1 ; then 
 		echo "orig-kombi test failed"
 		any_failure="$any_failure orig-kombi"
@@ -421,7 +447,7 @@ if test "$mode" = zm-rz ; then
 			failed=1
 		fi
 	done
-	rmdir $testdir/zmodem 2>/dev/null
+	rmdir $testdir/zmodem 2>&5
 	if test $failed = 1 ; then 
 		echo "orig-rz test failed"
 		any_failure="$any_failure zm-rz"
@@ -444,7 +470,7 @@ if test "$mode" = zm-sz ; then
 			failed=1
 		fi
 	done
-	rmdir $testdir/zmodem 2>/dev/null
+	rmdir $testdir/zmodem 2>&5
 	if test $failed = 1 ; then 
 		echo "orig-sz test failed"
 		any_failure="$any_failure zm-sz"
@@ -467,7 +493,7 @@ if test "$mode" = turbo ; then
 			failed=1
 		fi
 	done
-	rmdir $testdir/turbo.zmrx 2>/dev/null
+	rmdir $testdir/turbo.zmrx 2>&5
 	if test $failed = 1 ; then 
 		echo "turbo-zmrx test failed"
 		any_failure="$any_failure turbo-zmrx"
@@ -487,7 +513,7 @@ if test "$mode" = turbo ; then
 			failed=1
 		fi
 	done
-	rmdir $testdir/turbo.omen.rz 2>/dev/null
+	rmdir $testdir/turbo.omen.rz 2>&5
 	if test $failed = 1 ; then 
 		echo "turbo-omen.rz test failed"
 		any_failure="$any_failure turbo-omen.rz"
@@ -507,7 +533,7 @@ if test "$mode" = turbo ; then
 			failed=1
 		fi
 	done
-	rmdir $testdir/turbo.omen.rz 2>/dev/null
+	rmdir $testdir/turbo.omen.rz 2>&5
 	if test $failed = 1 ; then 
 		echo "turbo-lrz test failed"
 		any_failure="$any_failure turbo-lrz"

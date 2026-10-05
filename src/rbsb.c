@@ -13,9 +13,6 @@
  */
 #include "zglobal.h"
 
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
 #include <stdio.h>
 #include <errno.h>
 extern int errno;

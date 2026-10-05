@@ -4,8 +4,6 @@
   system), and what is the max value?
   Anyway - we don't *need* it. It just reduced system load (but that's
   not a real problem - zmodem over a ISDN/modem link is not much load).
-- an option to stop transmission if BPS falls under a certain rate
-  would be nice (possibly like this: "if BPS < N for M minutes").
 - an option to stop transmission at a certain time.
 - look into freebsd changes to rzsz3.37 - there are some nonobvious
   changes, which i don't really understand, but which make sense.

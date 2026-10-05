@@ -26,8 +26,12 @@ Boston, MA 02111-1307, USA.  */
 #endif
 #include <ctype.h>
 
+#include <sys/types.h> /* for size_t-less stdlib.h, or stdlib.h-less systems */
 #if defined STDC_HEADERS || defined _LIBC
 # include <stdlib.h>
+#endif
+#ifndef NULL
+# define NULL 0
 #endif
 
 #if defined HAVE_STRING_H || defined _LIBC

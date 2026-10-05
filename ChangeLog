@@ -1,3 +1,70 @@
+Sat Sep 14 10:02:41 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+	* configure.in (VERSION): change to 0.12.10
+
+	* src/lrz.c (wcreceive): unlink Pathname only if not NULL.
+
+	* src/lsz.c (getzrxinit): resend ZRQINIT if we don't get a
+	  ZRINIT. This is needed to ensure that a receiver which
+	  starts up late, looses ZRQINIT and doesn't send a ZRINIT
+	  by default gets the ZRQINIT it needs. [resending ZRQINIT
+	  is documented in zmodem.doc, but unix zmodem doesn't do
+	  it. Well, this is not the only missing feature.]
+	  (getnak): resend ZRQINIT if getting a timeout.
+	  (zrqinits_sent): new variable. counts number of sent zrqinits.
+	  Need to do this because unix rz cancels transmission if getting
+	  more than 5 ZRQINITS.
+
+Thu Sep  5 21:22:32 1996  Uwe Ohse  <uwe@tirka.gun.de>
+	
+		* src/lsz.c (wcsend): use stpcpy instead of strcpy + strcat.
+
+		* src/lrz.c (procheader): use stpcpy instead of strcpy + strlen.
+
+		* lib/stpcpy.c: new file.
+
+		* configure.in: Replace strtol, strpbrk, stpcpy if needed.
+
+		* check.lrzsz: Redirect all error messages to $testdir/error.log.
+		  Modified to avoid 'cp -f', dd conv=notrunc, /dev/zero.
+		  Typo : management, not managment.
+		  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+
+		* configure.in: check for mode_t, replace strtoul if needed.
+		  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+
+		* src/rbsb.c: Do not include fcntl.h twice.
+		  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+		
+		* src/lrz.c (long_options): 
+		* src/lsz.c (long_options): fix typo (restriced -> restricted)
+		  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+		
+		* intl/l10nflist.c, intl/explodename.c (stdlib.h): Include 
+		  sys/types.h and define NULL for size_t-less or missing stdlib.h.
+		  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+
+Wed Sep  4 20:21:56 1996  Uwe Ohse  <uwe@tirka.gun.de>
+		
+		* src/zglobal.h: include <sys/select.h> if it exists.
+		  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+
+		* configure.in: check for sys/select.h 
+		  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+
+		* src/lsz.c (getinsync): clearerr(input_f) is a bad idea
+		  if (input_f == NULL).
+
+Tue Sep  3 21:55:30 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+		* src/lsz.c (wcs): oops, use name where oname should have
+		  been printed in error message. if sending file "-" treat
+		  it special.
+		  (main): replace `0' with io_mode_fd, set io_mode_fd to
+		  1 if sending file "-".
+		  (wctx): replace `0' with io_mode_fd.
+		  (zsendfdata): rdchk(io_fd) instead of rdchk(0).
+
 Sun Sep  1 10:12:42 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
 		* configure.in (VERSION): changed to 0.12.9

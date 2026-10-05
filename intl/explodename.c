@@ -17,7 +17,14 @@ License along with the GNU C Library; see the file COPYING.LIB.  If
 not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
-#include <stdlib.h>
+#include <sys/types.h>
+#if defined STDC_HEADERS || defined _LIBC
+# include <stdlib.h>
+#endif
+#ifndef NULL
+# define NULL 0
+#endif
+
 #include <string.h>
 
 #include "loadinfo.h"
