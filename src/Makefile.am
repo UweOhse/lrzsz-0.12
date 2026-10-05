@@ -13,13 +13,17 @@ DEFS = -DLOCALEDIR=\"$(localedir)\" -DOS=\"@host_os@\" -DCPU=\"@host_cpu@\" \
 	-DNFGVMIN @DEFS@
 
 install-exec-local:
-	ln -sf $(bindir)/`echo lsz |sed -e '$(transform)'` \
+	rm -f $(bindir)/`echo lsb | sed -e '$(transform)'`
+	ln $(bindir)/`echo lsz |sed -e '$(transform)'` \
 		$(bindir)/`echo lsb |sed -e '$(transform)'` 
-	ln -sf $(bindir)/`echo lsz |sed -e '$(transform)'` \
+	rm -f $(bindir)/`echo lsx | sed -e '$(transform)'`
+	ln $(bindir)/`echo lsz |sed -e '$(transform)'` \
 		$(bindir)/`echo lsx |sed -e '$(transform)'` 
-	ln -sf $(bindir)/`echo lrz |sed -e '$(transform)'` \
+	rm -f $(bindir)/`echo lrb | sed -e '$(transform)'`
+	ln $(bindir)/`echo lrz |sed -e '$(transform)'` \
 		$(bindir)/`echo lrb |sed -e '$(transform)'` 
-	ln -sf $(bindir)/`echo lrz |sed -e '$(transform)'` \
+	rm -f $(bindir)/`echo lrx | sed -e '$(transform)'`
+	ln $(bindir)/`echo lrz |sed -e '$(transform)'` \
 		$(bindir)/`echo lrx |sed -e '$(transform)'` 
 
 uninstall-local:

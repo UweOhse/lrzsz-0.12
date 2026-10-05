@@ -1,4 +1,5 @@
 /* lrz.c cosmetic modifications by Matt Porter
+ * many changes by Uwe Ohse
  * from rz.c By Chuck Forsberg
  * 
  *  A program for Linux to receive files and commands from computers running
@@ -38,6 +39,12 @@
 #include "long-options.h"
 #include "xstrtoul.h"
 #include "error.h"
+
+#ifndef STRICT_PROTOTYPES
+extern time_t time();
+extern char *strerror();
+extern char *strstr();
+#endif
 
 extern int errno;
 
@@ -124,6 +131,8 @@ static int sys2(const char *s);
 static void zmputs(const char *s);
 static long getfree(void);
 
+static long buffersize=32768;
+
 char Lzmanag;		/* Local file management request */
 char zconv;		/* ZMODEM file conversion request */
 char zmanag;		/* ZMODEM file management request */
@@ -158,6 +167,7 @@ static struct option const long_options[] =
 	{"append", no_argument, NULL, '+'},
 	{"ascii", no_argument, NULL, 'a'},
 	{"binary", no_argument, NULL, 'b'},
+	{"bufsize", required_argument, NULL, 'B'},
 	{"allow-commands", no_argument, NULL, 'C'},
 	{"allow-remote-commands", no_argument, NULL, 'C'},
 	{"escape", no_argument, NULL, 'e'},
@@ -214,7 +224,7 @@ main(int argc, char *argv[])
     parse_long_options (argc, argv, program_name, PACKAGE_VERSION, usage1);
 
 	while ((c = getopt_long (argc, argv, 
-		"a+bcCDehOpqrRSt:w:uUvy",
+		"a+bB:cCDehOpqrRSt:w:uUvy",
 		long_options, (int *) 0)) != EOF)
 	{
 		unsigned long int tmp;
@@ -227,6 +237,12 @@ main(int argc, char *argv[])
 		case '+': Lzmanag = ZMAPND; break;
 		case 'a': Rxascii=TRUE;  break;
 		case 'b': Rxbinary=TRUE; break;
+		case 'B': 
+			if (strcmp(optarg,"auto")==0) 
+				buffersize=-1;
+			else
+				buffersize=strtol(optarg,NULL,10);
+			break;
 		case 'c': Crcflg=TRUE; break;
 		case 'C': allow_remote_commands=TRUE; break;
 		case 'D': Nflag = TRUE; break;
@@ -379,6 +395,7 @@ usage(int exitcode, const char *what)
 "  -+, --append                append to existing files\n"
 "  -a, --ascii                 ASCII transfer (change CR/LF to LF)\n"
 "  -b, --binary                binary transfer\n"
+"  -B, --bufsize N             buffer N bytes (N==auto: buffer whole file)\n"
 "  -c, --with-crc              Use 16 bit CRC (X)\n"
 "  -C, --allow-remote-commands allow execution of remote commands (Z)\n"
 "  -D, --null                  write all received data to /dev/null\n"
@@ -483,11 +500,9 @@ wcreceive(int argc, char **argp)
 					bps=(zi.bytes_received-zi.bytes_skipped)/d;
 
 					if (Verbose>1) {
-						putc('\r',stderr);
 						fprintf(stderr,
-							_("Bytes Received: %7ld/%7ld   BPS:%-6ld                "),
+							_("\rBytes received: %7ld/%7ld   BPS:%-6ld                \r\n"),
 							zi.bytes_received, zi.bytes_total, bps);
-						fputs("\r\n",stderr);
 					}
 #ifdef ENABLE_SYSLOG
 					if (enable_syslog)
@@ -544,11 +559,9 @@ wcreceive(int argc, char **argp)
 				d=0.5; /* can happen if timing uses time() */
 			bps=(zi.bytes_received-zi.bytes_skipped)/d;
 			if (Verbose) {
-				putc('\r',stderr);
 				fprintf(stderr,
-					_("Bytes Received: %7ld   BPS:%-6ld                "),
+					_("\rBytes received: %7ld   BPS:%-6ld                \r\n"),
 					zi.bytes_received, bps);
-				fputs("\r\n",stderr);
 			}
 #ifdef ENABLE_SYSLOG
 			if (enable_syslog)
@@ -572,9 +585,7 @@ fubar:
 		fclose(fout);
 	if (Restricted) {
 		unlink(Pathname);
-		fputs("\r\n",stderr);
-		fprintf(stderr, _("%s: %s removed."), program_name, Pathname);
-		fputs("\r\n",stderr);
+		fprintf(stderr, _("\r\n%s: %s removed.\r\n"), program_name, Pathname);
 	}
 	return ERROR;
 }
@@ -953,18 +964,36 @@ procheader(char *name, struct zm_fileinfo *zi)
 buffer_it:
 	if (Topipe == 0) {
 		static char *s=NULL;
-		if (!s) {
-			s=malloc(32768);
+		static size_t last_length=0;
+		if (buffersize==-1 && s) {
+			if (zi->bytes_total>last_length) {
+				free(s);
+				s=NULL;
+				last_length=0;
+			}
+		}
+		if (!s && buffersize) {
+			last_length=32768;
+			if (buffersize==-1) {
+				if (zi->bytes_total>0)
+					last_length=zi->bytes_total;
+			} else 
+				last_length=buffersize;
+			/* buffer `4096' bytes pages */
+			last_length=(last_length+4095)&0xfffff000;
+			s=malloc(last_length);
 			if (!s) {
 				zpfatal(_("out of memory"));
 				exit(1);
 			}
 		}
+		if (s) {
 #ifdef SETVBUF_REVERSED
-		setvbuf(fout,_IOFBF,s,32768);
+			setvbuf(fout,_IOFBF,s,last_length);
 #else
-		setvbuf(fout,s,_IOFBF,32768);
+			setvbuf(fout,s,_IOFBF,last_length);
 #endif
+		}
 	}
 	zi->bytes_received=zi->bytes_skipped;
 
@@ -1339,12 +1368,10 @@ rzfiles(struct zm_fileinfo *zi)
 				if (d==0)
 					d=0.5; /* can happen if timing uses time() */
 				bps=(zi->bytes_received-zi->bytes_skipped)/d;
-				putc('\r',stderr);
 				if (Verbose > 1) {
 					fprintf(stderr,
-						_("Bytes Received: %7ld/%7ld   BPS:%-6ld                "),
+						_("\rBytes received: %7ld/%7ld   BPS:%-6ld                \r\n"),
 						zi->bytes_received, zi->bytes_total, bps);
-					fputs("\r\n",stderr);
 				}
 #ifdef ENABLE_SYSLOG
 				if (enable_syslog)
@@ -1491,9 +1518,9 @@ moredata:
 					minleft =  (R_BYTESLEFT(zi))/last_bps/60;
 					secleft =  ((R_BYTESLEFT(zi))/last_bps)%60;
 				}
-				putc('\r',stderr);
+
 				fprintf(stderr,
-					_("Bytes Received: %7ld/%7ld   BPS:%-6ld ETA %02d:%02d  "),
+					_("\rBytes received: %7ld/%7ld   BPS:%-6ld ETA %02d:%02d  "),
 					zi->bytes_received, zi->bytes_total, last_bps, minleft, secleft);
 				last_rxbytes=zi->bytes_received;
 				not_printed=0;
@@ -1548,9 +1575,7 @@ moredata:
 #endif
 				zi->bytes_received += Rxcount;
 				stohdr(zi->bytes_received);
-				zshhdr(ZACK, Txhdr);
-				sendline(XON);
-				flushmo();
+				zshhdr(ZACK | 0x80, Txhdr);
 				goto nxthdr;
 			case GOTCRCQ:
 				n = 20;

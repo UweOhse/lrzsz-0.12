@@ -69,6 +69,7 @@ const struct _msg_ent _msg_tbl[] = {
       --start-8k              start with 8K blocksize\n\
   -a, --ascii                 ASCII transfer (change CR/LF to LF)\n\
   -b, --binary                binary transfer\n\
+  -B, --bufsize N             buffer N bytes (N==auto: buffer whole file)\n\
   -c, --command COMMAND       execute remote command COMMAND (Z)\n\
   -C, --command-tries N       try N times to execute a command (Z)\n\
   -d, --dot-to-slash          change '.' to '/' in pathnames (Y/Z)\n\
@@ -118,6 +119,7 @@ short options use the same arguments as the long ones\n", 53},
   -+, --append                append to existing files\n\
   -a, --ascii                 ASCII transfer (change CR/LF to LF)\n\
   -b, --binary                binary transfer\n\
+  -B, --bufsize N             buffer N bytes (N==auto: buffer whole file)\n\
   -c, --with-crc              Use 16 bit CRC (X)\n\
   -C, --allow-remote-commands allow execution of remote commands (Z)\n\
   -D, --null                  write all received data to /dev/null\n\
@@ -142,10 +144,12 @@ short options use the same arguments as the long ones\n", 53},
 \n\
 short options use the same arguments as the long ones\n", 70},
   {"%s waiting to receive.", 71},
-  {"Bytes Received: %7ld/%7ld   BPS:%-6ld                ", 72},
+  {"\rBytes received: %7ld/%7ld   BPS:%-6ld                \r\n", 72},
   {"%s: ready to receive %s", 73},
-  {"Bytes Received: %7ld   BPS:%-6ld                ", 74},
-  {"%s: %s removed.", 75},
+  {"\rBytes received: %7ld   BPS:%-6ld                \r\n", 74},
+  {"\
+\r\n\
+%s: %s removed.\r\n", 75},
   {"Pathname fetch returned EOT", 76},
   {"Received dup Sector", 77},
   {"Sync Error", 78},
@@ -165,7 +169,7 @@ short options use the same arguments as the long ones\n", 70},
   {"not executed", 92},
   {"got ZRINIT", 93},
   {"Skipped", 94},
-  {"Bytes Received: %7ld/%7ld   BPS:%-6ld ETA %02d:%02d  ", 95},
+  {"\rBytes received: %7ld/%7ld   BPS:%-6ld ETA %02d:%02d  ", 95},
   {"file close error", 96},
 };
 

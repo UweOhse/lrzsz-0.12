@@ -298,11 +298,11 @@ zshhdr(int type, char *hdr)
 	s[1]=ZPAD;
 	s[2]=ZDLE;
 	s[3]=ZHEX;
-	zputhex(type,s+4);
+	zputhex(type & 0x7f ,s+4);
 	len=6;
 	Crc32t = 0;
 
-	crc = updcrc(type, 0);
+	crc = updcrc((type & 0x7f), 0);
 	for (n=4; --n >= 0; ++hdr) {
 		zputhex(*hdr,s+len); 
 		len += 2;
@@ -384,6 +384,62 @@ zsda32(const char *buf, int length, int frameend)
 	}
 }
 
+#if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ <= 4)
+#  undef DEBUG_BLOCKSIZE
+#endif
+
+#ifdef DEBUG_BLOCKSIZE
+struct debug_blocksize {
+	int size;
+	long count;
+};
+struct debug_blocksize blocksizes[]={
+	{32,0},
+	{64,0},
+	{128,0},
+	{256,0},
+	{512,0},
+	{1024,0},
+	{2048,0},
+	{4096,0},
+	{8192,0},
+	{0,0}
+};
+static inline void
+count_blk(int size)
+{
+	int i;
+	for (i=0;blocksizes[i].size;i++) {
+		if (blocksizes[i].size==size) {
+			blocksizes[i].count++;
+			return;
+		}
+	}
+	blocksizes[i].count++;
+}
+
+static void printout_blocksizes(void) __attribute__((__destructor__));
+#include <syslog.h>
+static void 
+printout_blocksizes(void) 
+{
+	int i;
+	for (i=0;blocksizes[i].size;i++) {
+		if (blocksizes[i].count) {
+			syslog(LOG_DEBUG,"%4d byte: %ld blocks\n",
+				   blocksizes[i].size,blocksizes[i].count);
+		}
+	}
+	if (blocksizes[i].count) {
+		syslog(LOG_DEBUG,"unk. byte: %ld blocks",
+			   blocksizes[i].count);
+	}
+}
+#define COUNT_BLK(x) count_blk(x)
+#else
+#define COUNT_BLK(x)
+#endif
+
 /*
  * Receive array buf of max length with ending ZDLE sequence
  *  and CRC.  Returns the ending character or error code.
@@ -424,6 +480,7 @@ crcfoo:
 						return ERROR;
 					}
 					Rxcount = length - (end - buf);
+					COUNT_BLK(Rxcount);
 					vfile("zrdata: %d  %s", Rxcount, Zendnames[(d-GOTCRCE)&3]);
 					return d;
 				}
@@ -483,6 +540,7 @@ crcfoo:
 					return ERROR;
 				}
 				Rxcount = length - (end - buf);
+				COUNT_BLK(Rxcount);
 				vfile("zrdat32: %d %s", Rxcount, Zendnames[(d-GOTCRCE)&3]);
 				return d;
 			case GOTCAN:

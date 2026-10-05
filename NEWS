@@ -1,3 +1,11 @@
+Version 0.12.6 - August 1996, Uwe Ohse
+
+* some portability enhancements (phdm@info.ucl.ac.be)
+* sz and rz now have a new option -B NNN. NNN stands for the
+  size of the disk buffer to use (in Bytes). NNN == auto buffers
+  the whole file. Use it if you get crc errors while accessing
+  the disk.
+
 Version 0.12.5 - August 1996, Uwe Ohse
 
 * some portability enhancements (getopt.c)

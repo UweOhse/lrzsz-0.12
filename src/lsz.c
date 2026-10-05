@@ -62,6 +62,12 @@ void *mm_addr=NULL;
 #include "xstrtoul.h"
 #include "error.h"
 
+#ifndef STRICT_PROTOTYPES
+extern time_t time();
+extern char *strerror();
+extern char *strstr();
+#endif
+
 extern int errno;
 
 unsigned Baudrate=2400;	/* Default, should be set by first mode() call */
@@ -101,6 +107,10 @@ static void usage1(int exitcode);
 
 int Filesleft;
 long Totalleft;
+size_t buffersize=16384;
+#ifdef HAVE_MMAP
+int use_mmap=1;
+#endif
 
 /*
  * Attention string to be executed by receiver to interrupt streaming data
@@ -217,6 +227,7 @@ static struct option const long_options[] =
   {"start-8k", no_argument, NULL, '9'},
   {"ascii", no_argument, NULL, 'a'},
   {"binary", no_argument, NULL, 'b'},
+  {"bufsize", required_argument, NULL, 'B'},
   {"cmdtries", required_argument, NULL, 'C'},
   {"command", required_argument, NULL, 'c'},
   {"immediate-command", required_argument, NULL, 'c'},
@@ -287,7 +298,7 @@ main(int argc, char **argv)
 	Rxtimeout = 600;
 
 	while ((c = getopt_long (argc, argv, 
-		"2+8abC:c:dfehi:kL:l:NnOopRrqSt:Uuvw:XYy",
+		"2+8abB:C:c:dfehi:kL:l:NnOopRrqSt:Uuvw:XYy",
 		long_options, (int *) 0))!=EOF)
 	{
 		unsigned long int tmp;
@@ -311,6 +322,15 @@ main(int argc, char **argv)
 			break;
 		case 'a': Lzconv = ZCNL; Ascii = TRUE; break;
 		case 'b': Lzconv = ZCBIN; break;
+		case 'B':
+			if (0==strcmp(optarg,"auto"))
+				buffersize=-1;
+			else
+				buffersize=strtol(optarg,NULL,10);
+#ifdef HAVE_MMAP
+			use_mmap=0;
+#endif
+			break;
 		case 'C': 
 			s_err = xstrtoul (optarg, NULL, 0, &tmp, NULL);
 			Cmdtries = tmp;
@@ -693,20 +713,42 @@ wcs(const char *oname)
 		++errcnt;
 		return OK;	/* pass over it, there may be others */
 	}
+	if (!use_mmap)
 	{
 		static char *s=NULL;
-		if (!s) {
-			s=malloc(16384);
+		static size_t last_length=0;
+		struct stat st;
+		if (fstat(fileno(input_f),&st)==-1)
+			st.st_size=1024*1024;
+		if (buffersize==-1 && s) {
+			if (st.st_size > last_length) {
+				free(s);
+				s=NULL;
+				last_length=0;
+			}
+		}
+		if (!s && buffersize) {
+			last_length=16384;
+			if (buffersize==-1) {
+				if (st.st_size>0)
+					last_length=st.st_size;
+			} else
+				last_length=buffersize;
+			/* buffer whole pages */
+			last_length=(last_length+4095)&0xfffff000;
+			s=malloc(last_length);
 			if (!s) {
-				zperr(_("out of memory"));
+				zpfatal(_("out of memory"));
 				exit(1);
 			}
 		}
+		if (s) {
 #ifdef SETVBUF_REVERSED
-		setvbuf(input_f,_IOFBF,s,16384);
+			setvbuf(input_f,_IOFBF,s,last_length);
 #else
-		setvbuf(input_f,s,_IOFBF,16384);
+			setvbuf(input_f,s,_IOFBF,last_length);
 #endif
+		}
 	}
 	timing(1);
 	vpos = 0;
@@ -1115,6 +1157,7 @@ usage(int exitcode, const char *what)
 "      --start-8k              start with 8K blocksize\n"
 "  -a, --ascii                 ASCII transfer (change CR/LF to LF)\n"
 "  -b, --binary                binary transfer\n"
+"  -B, --bufsize N             buffer N bytes (N==auto: buffer whole file)\n"
 "  -c, --command COMMAND       execute remote command COMMAND (Z)\n"
 "  -C, --command-tries N       try N times to execute a command (Z)\n"
 "  -d, --dot-to-slash          change '.' to '/' in pathnames (Y/Z)\n"
@@ -1370,6 +1413,7 @@ zsendfdata (struct zm_fileinfo *zi)
 	static long total_sent = 0;
 
 #ifdef HAVE_MMAP
+	if (use_mmap)
 	{
 		struct stat st;
 		if (fstat (fileno (input_f), &st) == 0) {

@@ -204,6 +204,23 @@ for ZMODEM.
 .B "-b, --binary"
 (ZMODEM) Binary override: transfer file without any translation.
 .TP
+.B "-B NUMBER, --bufsize NUMBER"
+Use a readbuffer of 
+.B NUMBER
+bytes. Default ist 16384, which should be enough
+for most situations. If you have a slow machine or a bad disk interface
+or suffer from other hardware problems you might want to increase
+the buffersize.
+.B -1
+or
+.B auto
+use a buffer large enough to buffer the whole file. Be careful with this
+option - things normally get worse, not better, if the machine starts
+to swap.
+
+Using this option turns of memory mapping of the input file. This
+increases memory and cpu usage.
+.TP
 .B "-c COMMAND, --command COMMAND"
 Send COMMAND to the receiver for execution, return with COMMAND\'s exit status.
 .TP

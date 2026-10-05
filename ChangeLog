@@ -1,3 +1,70 @@
+Sun Aug 11 07:39:37 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+		* src/lrz.c (rzfile): instead of sending ZACK flush XON flush
+		  send (ZACK | 0x80) to remote. This removes on write operation.
+
+		* src/zm.c (zshhdr): use a mask of 0x7f for frametype (see change
+		  to lrz.c above).
+
+		* configure.in (VERSION): increased version number to 0.12.6
+
+		* src/lsz.c: buffersize, use_mmap: new variables.
+		  (long_options): add --bufsize aka -B option.
+		  (wcs): added support for variable buffer size (input file).
+		  (zsendfdata): use mmap only if use_mmap != 0.
+		  (usage): show -B option.
+
+		* po/de.po: added translation for -B option.
+
+		* src/lrz.c (usage): show -B option.
+
+		* man/lsz.1: 
+		* man/lrz.1: documented -B option.
+
+		* src/lsz.c: 
+		* src/lrz.c: added extern declarations for time(), strerror()
+		  and strstr(), if not STRICT_PROTOTYPES. (phdm@info.ucl.ac.be)
+		
+		* src/lrz.c: (procheader): use variable size FILE buffer.
+		  buffersize: new variable
+		  (main): added -B-Option to set buffersize.
+		  (long_options): new option --bufsize aka -B.
+
+		* acconfig.h: #undef STRICT PROTOTYPES
+
+		* configure.in: remove AC_PROG_LN_S (not used anymore).
+		  moved "test $prefix = NONE && prefix=/usr" to local part
+		  (if host == tirka.gun.de). (phdm@info.ucl.ac.be)
+		  if -Wstrict-prototypes in CFLAGS then
+		  AC_DEFINES(STRICT_PROTOTYPES).
+
+		* src/Makefile.am (install-exec-local): used ln, not ln -s.
+		  don't use -f option to ln (unportable). (phdm@info.ucl.ac.be)
+
+		* check.lrzsz (z_test_files): try mknod if mkfifo failed.
+		  (phdm@info.ucl.ac.be)
+
+		* src/rbsb.c: sys/types.h and sys/stat.h included twice.
+		  (phdm@info.ucl.ac.be)
+		
+		* config.guess, config.sub: replaced by autoconf-2.10 version.
+		  (phdm@info.ucl.ac.be)
+
+Tue Aug  6 11:16:12 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+		* src/zm.c (count_blk) (printout_blocksizes): neuer Code.
+		  wenn DEBUG_BLOCKSIZE definiert ist und gcc verwendet wird,
+		  wird am Ende der Übertragung eine Statistik der Blockgrößen
+		  mit syslog(LOG_DEBUG) ausgegeben.
+
+		* src/zglobal.h (CANBREAK): nun hier definiert.
+		  (USE_SGTTY,USE_*TERMIO*): nun hier definiert, includes finden
+		  hier statt.
+
+		* src/rbsb.c: einen Teil der Includes nach zglobal.h verlegt
+		  (lrz.c benötigt CANBREAK).
+		  (sendbrk): #define CANBREAK nach zglobal.h verlagert.
+
 Sat Aug  3 16:14:47 1996  Uwe Ohse
 
 		* configure.in: change version number to 0.12.5

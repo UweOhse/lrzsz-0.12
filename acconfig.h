@@ -55,4 +55,8 @@
 /* define to 1. we have a replacement function for it. */
 #undef HAVE_STRERROR
 
+/* define to 1 if you want strict ANSI prototypes. will remove some 
+   extern x(); declarations. */
+#undef STRICT_PROTOTYPES
+
 

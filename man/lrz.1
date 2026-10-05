@@ -169,6 +169,20 @@ Binary
 (tell it like it is)
 file transfer override.
 .TP
+.B "-B NUMBER, --bufsize NUMBER"
+Buffer 
+.B NUMBER
+bytes before writing to disk. Default ist 32768, which should be enough
+for most situations. If you have a slow machine or a bad disk interface
+or suffer from other hardware problems you might want to increase
+the buffersize.
+.B -1
+or
+.B auto
+use a buffer large enough to buffer the whole file. Be careful with this
+options - things normally get worse, not better, if the machine starts
+to swap.
+.TP
 .B "-c, --with-crc"
 XMODEM only. Use 16 bit CRC (normally a one byte checksum is used).
 .TP

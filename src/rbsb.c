@@ -21,34 +21,16 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef HAVE_TERMIO_H
-#  include <termios.h>
-#  define USE_TERMIOS
-#elif defined(HAVE_SYS_TERMIOS_H)
-#  include <sys/termios.h>
-#  define USE_TERMIOS
-#elif defined(HAVE_TERMIO_H)
-#  include <termio.h>
-#  define USE_TERMIO
-#elif defined(HAVE_SYS_TERMIO_H)
-#  include <sys/termio.h>
-#  define USE_TERMIO
-#elif defined(HAVE_SGTTY_H)
-#  include <sgtty.h>
-#  define USE_SGTTY
+#ifdef USE_SGTTY
 #  ifdef LLITOUT
 long Locmode;		/* Saved "local mode" for 4.x BSD "new driver" */
 long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 #  endif
-#else
-#  error neither termio.h nor sgtty.h found. Cannot continue.
 #endif
 
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
-#include <sys/types.h>
-#include <sys/stat.h>
 
 #if HOWMANY  > 255
 #ifndef NFGVMIN
@@ -428,7 +410,6 @@ sendbrk(int fd)
 {
 #ifdef USE_SGTTY
 #ifdef TIOCSBRK
-#define CANBREAK
 	sleep(1);
 	ioctl(fd, TIOCSBRK, 0);
 	sleep(1);
@@ -436,7 +417,6 @@ sendbrk(int fd)
 #endif
 #endif
 #ifdef USE_TERMIO
-#define CANBREAK
 	ioctl(fd, TCSBRK, 0);
 #endif
 }

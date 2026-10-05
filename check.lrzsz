@@ -12,6 +12,9 @@ objdir="$2"
 if test $objdir = . ; then
 	objdir=`pwd`
 fi
+
+BUFSIZE="-B 524288"
+#BUFSIZE="-B 1048576"
 echo checking with srcdir = $1 and objdir = $2
 
 # z_test_files: files to test zmodem with.
@@ -48,16 +51,15 @@ fi
 
 rm -rf $testdir
 mkdir $testdir
-mkfifo $testdir/pipe
-
+mkfifo $testdir/pipe || mknod $testdir/pipe p
 
 
 # test zmodem
 echo "testing ZMODEM"
 mkdir $testdir/zmodem
 failed=0
-($objdir/src/lsz -q $z_test_files ) <$testdir/pipe | \
-	(cd $testdir/zmodem ; $objdir/src/lrz $QUIET >>../pipe )
+($objdir/src/lsz -q  $BUFSIZE $z_test_files ) 2>/dev/null <$testdir/pipe | \
+	(cd $testdir/zmodem ; $objdir/src/lrz $BUFSIZE $QUIET >>../pipe )
 for i in $z_test_files ; do 
 	bn=`basename $i`
 	cmp $i $testdir/zmodem/$bn
@@ -82,8 +84,8 @@ else
 	echo "testing ZMODEM8K"
 	mkdir $testdir/zmodem8k
 	failed=0
-	$objdir/src/lsz -q88O $z8_test_files <$testdir/pipe | \
-		(cd $testdir/zmodem8k ; $objdir/src/lrz -O $QUIET >>../pipe )
+	$objdir/src/lsz -q88O $BUFSIZE $z8_test_files <$testdir/pipe | \
+		(cd $testdir/zmodem8k ; $objdir/src/lrz -O $BUFSIZE $QUIET >>../pipe )
 	for i in $z8_test_files ; do 
 		bn=`basename $i`
 		cmp $i $testdir/zmodem8k/$bn
