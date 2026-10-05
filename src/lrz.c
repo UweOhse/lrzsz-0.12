@@ -179,14 +179,13 @@ static struct option const long_options[] =
 	{"unrestrict", no_argument, NULL, 'U'},
 	{"verbose", no_argument, NULL, 'v'},
 	{"windowsize", required_argument, NULL, 'w'},
-	{"with-crc", required_argument, NULL, 'c'},
+	{"with-crc", no_argument, NULL, 'c'},
 	{"xmodem", no_argument, NULL, 'X'},
 	{"ymodem", no_argument, NULL, 1},
 	{"zmodem", no_argument, NULL, 'Z'},
 	{"overwrite", no_argument, NULL, 'y'},
 	{"null", no_argument, NULL, 'D'},
 	{"syslog", optional_argument, NULL , 2},
-
 	{"delay-startup", required_argument, NULL, 4},
 	{NULL,0,NULL,0}
 };
@@ -223,7 +222,7 @@ main(int argc, char *argv[])
     parse_long_options (argc, argv, program_name, PACKAGE_VERSION, usage1);
 
 	while ((c = getopt_long (argc, argv, 
-		"a+bB:cCDeEghm:M:OpqrRsSt:w:uUvy",
+		"a+bB:cCDeEhm:M:OprRqs:St:uUvw:XZy",
 		long_options, (int *) 0)) != EOF)
 	{
 		unsigned long int tmp;
@@ -1374,7 +1373,7 @@ again:
 		switch (zgethdr(Rxhdr, 0)) {
 		case ZRQINIT:
 			/* getting one ZRQINIT is totally ok. Normally a ZFILE follows 
-			 * (and might be in out buffer, so don't purge it). But if we
+			 * (and might be in our buffer, so don't purge it). But if we
 			 * get more ZRQINITs than the sender has started up before us
 			 * and sent ZRQINITs while waiting. 
 			 */

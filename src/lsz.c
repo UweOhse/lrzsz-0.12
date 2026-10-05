@@ -166,7 +166,7 @@ int Beenhereb4;		/* How many times we've been ZRPOS'd same place */
 
 int no_timeout=FALSE;
 int max_blklen=1024;
-int start_blklen=1024;
+int start_blklen=0;
 int zmodem_requested;
 time_t stop_time=0;
 
@@ -520,6 +520,13 @@ main(int argc, char **argv)
 			usage (2,NULL);
 			break;
 		}
+	}
+
+	if (start_blklen==0) {
+		if (protocol == ZM_ZMODEM)
+			start_blklen=1024;
+		else
+			start_blklen=128;
 	}
 
 	if (argc<2)
@@ -1018,7 +1025,7 @@ wctxpn(struct zm_fileinfo *zi)
 		sprintf(p, "%lu %lo %o 0 %d %ld", (long) f.st_size, f.st_mtime,
 		  f.st_mode, Filesleft, Totalleft);
 	if (Verbose)
-		fprintf(stderr, _("Sending: %s\n"),zi->fname);
+		fprintf(stderr, _("Sending: %s\n"),txbuf);
 	Totalleft -= f.st_size;
 	if (--Filesleft <= 0)
 		Totalleft = 0;
@@ -1499,6 +1506,11 @@ zsendfile(struct zm_fileinfo *zi, const char *buf, int blen)
 	register c;
 	register unsigned long crc;
 
+	/* we are going to send a ZFILE. There cannot be much useful
+	 * stuff in the line right now (*except* ZCAN?). 
+	 */
+	purgeline(io_mode_fd); /* might possibly fix stefan glasers problems */
+
 	for (;;) {
 		Txhdr[ZF0] = Lzconv;	/* file conversion request */
 		Txhdr[ZF1] = Lzmanag;	/* file management request */
@@ -1628,11 +1640,16 @@ zsendfdata (struct zm_fileinfo *zi)
 	}
 #endif
 
+	if (play_with_sigint)
+		signal (SIGINT, onintr);
+
 	Lrxpos = 0;
 	junkcount = 0;
 	Beenhereb4 = 0;
   somemore:
 	if (setjmp (intrjmp)) {
+	  if (play_with_sigint)
+		  signal (SIGINT, onintr);
 	  waitack:
 		junkcount = 0;
 		c = getinsync (zi, 0);
@@ -1689,8 +1706,6 @@ zsendfdata (struct zm_fileinfo *zi)
 		}
 #endif
 	}
-	if (play_with_sigint)
-		signal (SIGINT, onintr);
 
 	newcnt = Rxbuflen;
 	Txwcnt = 0;
@@ -2148,7 +2163,6 @@ chkinvok (const char *s)
 		protocol = ZM_XMODEM;
 	if (s[0] == 's' && (s[1] == 'b' || s[1] == 'y')) {
 		protocol = ZM_YMODEM;
-		blklen = 1024;
 	}
 }
 

@@ -1,3 +1,39 @@
+Wed Dec 18 22:44:55 1996  Uwe Ohse	<uwe@tirka.gun.de>
+
+	* src/lsz.c: start_blklen changed to 0.
+	  (chkinvoc): don't change blklen to 1024 for YMODEM. 
+	    [use -k if you want better performance, worse
+	    interoperatibility]
+	  (main): if start_blklen is 0 after processing arguments
+	  change it to 1024 (zmodem) or 128 (x/y).
+	  (zsendfile): call purgeline() once - hopefully fixed
+	  stefan glasers problem.
+
+	* configure.in: remove AC_C_CROSS
+
+Sat Nov  9 16:34:09 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+	* src/lrz.c (long_options): --with-crc doesn't require an 
+	  argument.
+	  (main): shortopts-string given to getopt() wasn't up-to-date.
+
+Tue Nov  5 00:05:36 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+	* src/lsz.c (zsendfdata): moved SIGINT-activation to the beginning
+	  of the file's transfer (no need to activate if before every
+	  write).
+
+	* src/zm.c (bttyout): removed.
+	  (zgethdr): don't call bttyout, write directly to stderr.
+
+Thu Oct 10 15:31:54 1996  Philippe De Muyter  <phdm@info.ucl.ac.be>	
+
+	* configure.in: Replace mktime if needed.
+
+	* lib/Makefile.am (EXTRA_DIST): Distribute mktime.c
+
+	* lib/mktime.c: new file, replacement function for mktime().
+	
 Mon Oct  7 22:57:09 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
 	* src/lsz.c (usage): 
@@ -32,22 +68,24 @@ Sun Oct  6 20:45:20 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
 Thu Oct  3 09:22:26 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
-	* src/lrz.c (tryz): don't return FALSE to early if getting to many ZRQINITs.
+	* src/lrz.c (tryz): don't return FALSE to early if getting to many 
+	  ZRQINITs.
 
 	* src/lsz.c (main): tell library to interrupt system calls if we get an
-	  SIGALRM (stupid BSD people - why did they make restarting systems calls
-	  the *default*)?
+	  SIGALRM (stupid BSD people - why did they make restarting systems 
+	  calls the *default*)?
 
 	* configure.in (ALL_LINGUAS): check for siginterrupt().
 
-	* src/lrz.c (ecgetsec): read at max 1000 bytes after we got an bad header.
-	  (was endless loop, if sender didn't time out).
+	* src/lrz.c (ecgetsec): read at max 1000 bytes after we got an bad 
+	  header.  (was endless loop, if sender didn't time out).
 
 	* src/lrz.c (main): 
 	* src/lsz.c (main): new option --delay-startup N: makes program sleep
 	  for N seconds before sarting transactions (for debugging).
 
-	* lib/Makefile.am (zmodem_SOURCES): remove duplicate zmodem_SOURCES line.
+	* lib/Makefile.am (zmodem_SOURCES): remove duplicate zmodem_SOURCES 
+	  line.
 
 Wed Sep 18 20:27:00 1996  Uwe Ohse  <uwe@tirka.gun.de>
 
@@ -105,29 +143,29 @@ Thu Sep  5 21:22:32 1996  Uwe Ohse  <uwe@tirka.gun.de>
 	* check.lrzsz: Redirect all error messages to $testdir/error.log.
 	  Modified to avoid 'cp -f', dd conv=notrunc, /dev/zero.
 	  Typo : management, not managment.
-	  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+	  (Philippe De Muyter <phdm@info.ucl.ac.be>)
 
 	* configure.in: check for mode_t, replace strtoul if needed.
-	  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+	  (Philippe De Muyter <phdm@info.ucl.ac.be>)
 
 	* src/rbsb.c: Do not include fcntl.h twice.
-	  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+	  (Philippe De Muyter <phdm@info.ucl.ac.be>)
 	
 	* src/lrz.c (long_options): 
 	* src/lsz.c (long_options): fix typo (restriced -> restricted)
-	  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+	  (Philippe De Muyter <phdm@info.ucl.ac.be>)
 	
 	* intl/l10nflist.c, intl/explodename.c (stdlib.h): Include 
 	  sys/types.h and define NULL for size_t-less or missing stdlib.h.
-	  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+	  (Philippe De Muyter <phdm@info.ucl.ac.be>)
 
 Wed Sep  4 20:21:56 1996  Uwe Ohse  <uwe@tirka.gun.de>
 	
 	* src/zglobal.h: include <sys/select.h> if it exists.
-	  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+	  (Philippe De Muyter <phdm@info.ucl.ac.be>)
 
 	* configure.in: check for sys/select.h 
-	  (Philippe De Muyter <phdm@labauto1.ulb.ac.be>)
+	  (Philippe De Muyter <phdm@info.ucl.ac.be>)
 
 	* src/lsz.c (getinsync): clearerr(input_f) is a bad idea
 	  if (input_f == NULL).
@@ -159,10 +197,10 @@ Sun Sep  1 10:12:42 1996  Uwe Ohse  <uwe@tirka.gun.de>
 	  (usage): document --min-bps and --min-bps-time.
 
 	* src/lrz.c (main): support -m/--min-bps M option.
-	(rzfile): support --min-bps-Option, --min-bps-time.
-	(main): support --min-bps-time/-M option.
-	(rzfiles): does print error messages to syslog (rzfiles did 
-	just say "error", rzfiles can tell *what* error happened).
+	  (rzfile): support --min-bps-Option, --min-bps-time.
+	  (main): support --min-bps-time/-M option.
+	  (rzfiles): does print error messages to syslog (rzfiles did 
+	  just say "error", rzfiles can tell *what* error happened).
 	  (usage): document min-bps and min-bps-time. document --error.
 
 Wed Aug 28 11:23:01 1996  Uwe Ohse  <uwe@tirka.gun.de>
@@ -187,7 +225,7 @@ Tue Aug 27 10:53:43 1996  Uwe Ohse  <uwe@tirka.gun.de>
 	* configure.in (VERSION): changed to 0.12.8
 
 	* src/lrz.c (rzfile): added missing error message.
-	(rzfile): buffer packets we received out-of-sync, and try to
+	  (rzfile): buffer packets we received out-of-sync, and try to
 	  reuse them later.
 
 	* src/lsz.c: (whole file): renamed flags.
@@ -195,11 +233,11 @@ Tue Aug 27 10:53:43 1996  Uwe Ohse  <uwe@tirka.gun.de>
 	  (long_options): new option --rename.
 
 	* src/lrz.c: (whole file) renamed flags.
-	(procheader): implement ZF1_ZMCHNG (change name if target exists).
-	(main): new option -E --rename: change name if target exists.
-	(long_options): new option --rename.
-	(procheader): fix --append-Option (ZF1_ZMAPND). Will now work
-	even on binary files (why not send wtmp?).
+	  (procheader): implement ZF1_ZMCHNG (change name if target exists).
+	  (main): new option -E --rename: change name if target exists.
+	  (long_options): new option --rename.
+	  (procheader): fix --append-Option (ZF1_ZMAPND). Will now work
+	  even on binary files (why not send wtmp?).
 
 	* src/zmodem.h (ZF1_ZMCHNG): new flag. change filename if 
 	  destination exists.

@@ -23,6 +23,8 @@ BUFSIZE="-B 524288"
 
 SZ=$objdir/src/lsz
 RZ=$objdir/src/lrz
+#SZ=/usr/bin/lsz
+#RZ=/usr/bin/lrz
 
 #BUFSIZE="-B 1048576"
 echo checking with srcdir = $1 and objdir = $2
@@ -97,8 +99,9 @@ if test "$mode" = all -o "$mode" = z8 ; then
 		echo "testing ZMODEM8K"
 		mkdir $testdir/zmodem8k
 		failed=0
-		$SZ -q8OT $BUFSIZE $z8_test_files <$testdir/pipe | \
-			(cd $testdir/zmodem8k ; $RZ -O $BUFSIZE $QUIET >>../pipe )
+#		$SZ -q8OT $BUFSIZE $z8_test_files <$testdir/pipe | \
+		strace -v -o out.xxx -T -tt $SZ -q8OT $z8_test_files <$testdir/pipe | \
+			(cd $testdir/zmodem8k ; $RZ -O $QUIET >>../pipe )
 		for i in $z8_test_files ; do 
 			bn=`basename $i`
 			cmp $i $testdir/zmodem8k/$bn
@@ -713,6 +716,6 @@ if test "$mode" = all -o "$mode" = abuse ; then
 		( $RZ >>$testdir/pipe )
 fi
 
-rm -rf $testdir
+#rm -rf $testdir
 exit 0
 

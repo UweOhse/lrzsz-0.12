@@ -563,15 +563,6 @@ crcfoo:
 	return ERROR;
 }
 
-/* Local screen character display function */
-static void 
-bttyout(int c)
-{
-	if (Verbose)
-		putc(c, stderr);
-}
-
-
 /*
  * Read a ZMODEM header to hdr, either binary or hex.
  *  eflag controls local display of non zmodem characters:
@@ -626,10 +617,10 @@ agn2:
 			zperr(_("Garbage count exceeded"));
 			return(ERROR);
 		}
-		if (eflag && ((c &= 0177) & 0140))
-			bttyout(c);
-		else if (eflag > 1)
-			bttyout(c);
+		if (eflag && ((c &= 0177) & 0140) && Verbose)
+			putc(c, stderr);
+		else if (eflag > 1 && Verbose)
+			putc(c, stderr);
 #ifdef UNIX
 		fflush(stderr);
 #endif
