@@ -1,4 +1,15 @@
-Version 0.12.17 - June 1997, Uwe Ohse
+Version 0.12.18 - November 1997, Uwe Ohse
+
+* syslog output now includes user name.
+
+* new script lrzszbug, to be used for bugreports (untested)
+
+* lots of compiler warnings (egcs -Wparanoia [many -W]) removed.
+
+* new options --tcp-server and --tcp-client ADDRESS:PORT for
+  both programs.
+
+Version 0.12.17 - August 1997, Uwe Ohse
 
 * internal cleanup.
 
@@ -9,6 +20,8 @@ Version 0.12.17 - June 1997, Uwe Ohse
   tcp connection to transmit all other files. [this should help you,
   Peter]
   That _might_ be useful if your telnetd is really stupid.
+
+  (was _not_put on ftp/http server)
 
 Version 0.12.16 - March 1997, Uwe Ohse
 

@@ -37,14 +37,14 @@
 /* Ward Christensen / CP/M parameters - Don't change these! */
 #define TIMEOUT (-2)
 
-static int readline_readnum;
+static size_t readline_readnum;
 static int readline_fd;
 static char *readline_buffer;
 int readline_left=0;
 char *readline_ptr;
 
 static RETSIGTYPE
-zreadline_alarm_handler(int dummy)
+zreadline_alarm_handler(int dummy LRZSZ_ATTRIB_UNUSED)
 {
 	/* doesn't need to do anything */
 }
@@ -56,21 +56,12 @@ zreadline_alarm_handler(int dummy)
  * timeout is in tenths of seconds
  */
 int 
-readline(int timeout)
+readline_internal(unsigned int timeout)
 {
-	register n;
-#ifndef READLINE_PF
-	static char *readline_ptr;	/* pointer for removing chars from linbuf */
-#endif
-	if (--readline_left >= 0) {
-		if (Verbose > 8) {
-			vstringf("%02x ", *readline_ptr&0377);
-		}
-		return (*readline_ptr++ & 0377);
-	}
 
 	if (!no_timeout)
 	{
+		unsigned int n;
 		n = timeout/10;
 		if (n < 2 && timeout!=1)
 			n = 3;
@@ -79,7 +70,8 @@ readline(int timeout)
 		if (Verbose > 5)
 			vstringf("Calling read: alarm=%d  Readnum=%d ",
 			  n, readline_readnum);
-		signal(SIGALRM, zreadline_alarm_handler); alarm(n);
+		signal(SIGALRM, zreadline_alarm_handler); 
+		alarm(n);
 	}
 	else if (Verbose > 5)
 		vstringf("Calling read: Readnum=%d ",
@@ -120,16 +112,13 @@ readline(int timeout)
 	if (readline_left < 1)
 		return TIMEOUT;
 	--readline_left;
-	if (Verbose > 8) {
-		vstringf("%02x ", *readline_ptr&0377);
-	}
 	return (*readline_ptr++ & 0377);
 }
 
 
 
 void
-readline_setup(int fd, int readnum, int bufsize)
+readline_setup(int fd, size_t readnum, size_t bufsize)
 {
 	readline_fd=fd;
 	readline_readnum=readnum;

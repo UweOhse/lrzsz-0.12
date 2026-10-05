@@ -35,11 +35,10 @@ static struct option const long_options[] =
 /* Process long options --help and --version, but only if argc == 2.
    Be careful not to gobble up `--'.  */
 void
-parse_long_options (argc, argv, command_name, version_string, usage)
+parse_long_options (argc, argv,version, usage)
      int argc;
      char **argv;
-     const char *command_name;
-     const char *version_string;
+     void (*version)();
      void (*usage)();
 {
   int c;
@@ -61,7 +60,8 @@ parse_long_options (argc, argv, command_name, version_string, usage)
 	  (*usage) (0);
 
 	case 'v':
-	  printf ("%s - %s\n", command_name, version_string);
+	  (*version) (0);
+	  /* printf ("%s (%s) %s\n", command_name, package, version_string); */
 	  exit (0);
 
 	default:

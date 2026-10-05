@@ -6,6 +6,66 @@ AC_DEFUN(AC_REPLACE_GNU_GETOPT,
 AC_SUBST(LIBOBJS)dnl
 ])
 
+dnl
+dnl taken from taylor uucp
+AC_DEFUN(LRZSZ_ERRNO_DECL,[
+AC_MSG_CHECKING(for errno declaration)
+AC_CACHE_VAL(lrzsz_cv_decl_errno,
+[AC_TRY_COMPILE([#include <errno.h>], [int i = errno; errno = 1;],
+lrzsz_cv_decl_errno=yes, lrzsz_cv_decl_errno=no)])
+AC_MSG_RESULT($lrzsz_cv_decl_errno)
+if test $lrzsz_cv_decl_errno = yes; then
+  AC_DEFINE([HAVE_ERRNO_DECLARATION])
+fi
+])
+
+dnl for ease of use
+AC_DEFUN([LRZSZ_HEADERS_TERM_IO],[
+AC_CHECK_HEADERS(termios.h sys/termios.h termio.h sys/termio.h sgtty.h)dnl
+])
+
+dnl LRZSZ_TYPE_SPEED_T
+AC_DEFUN(LRZSZ_TYPE_SPEED_T,[
+AC_REQUIRE([AC_HEADER_STDC])dnl
+AC_REQUIRE([LRZSZ_HEADERS_TERM_IO])dnl
+AC_MSG_CHECKING(for speed_t)
+AC_CACHE_VAL(ac_cv_type_speed_t,
+[AC_EGREP_CPP(dnl
+changequote(<<,>>)dnl
+<<$1[^a-zA-Z_0-9]>>dnl
+changequote([,]), [#include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>
+#else
+#if defined(HAVE_SYS_TERMIOS_H)
+#include <sys/termios.h>
+#else
+#if defined(HAVE_TERMIO_H)
+#include <termio.h>
+#else
+#if defined(HAVE_SYS_TERMIO_H)
+#include <sys/termio.h>
+#else
+#if defined(HAVE_SGTTY_H)
+#include <sgtty.h>
+#else
+#error neither termio.h nor sgtty.h found. Cannot continue. */
+#endif
+#endif
+#endif
+#endif
+#endif
+], ac_cv_type_speed_t=yes, ac_cv_type_speed_t=no)])dnl
+AC_MSG_RESULT($ac_cv_type_speed_t)
+if test $ac_cv_type_speed_t = no; then
+  AC_DEFINE([speed_t],long)
+fi
+])
+
 
 # Do all the work for Automake.  This macro actually does too much --
 # some checks are only needed if your package does certain things.
@@ -207,8 +267,13 @@ esac
 
 # Macro to add for using GNU gettext.
 # Ulrich Drepper <drepper@cygnus.com>, 1995.
+#
+# This file file be copied and used freely without restrictions.  It can
+# be used in projects which are not available under the GNU Public License
+# but which still want to provide support for the GNU gettext functionality.
+# Please note that the actual code is *not* freely available.
 
-# serial 2
+# serial 3
 
 AC_DEFUN(AM_WITH_NLS,
   [AC_MSG_CHECKING([whether NLS is requested])
@@ -302,7 +367,7 @@ AC_DEFUN(AM_WITH_NLS,
 		 CATOBJEXT=.cat
 		 INSTOBJEXT=.cat
 		 DATADIRNAME=lib
-		 INTLDEPS="../intl/libintl.a"
+		 INTLDEPS='$(top_builddir)/intl/libintl.a'
 		 INTLLIBS=$INTLDEPS
 		 LIBS=`echo $LIBS | sed -e 's/-lintl//'`
 		 nls_cv_header_intl=intl/libintl.h
@@ -331,7 +396,7 @@ AC_DEFUN(AM_WITH_NLS,
         CATOBJEXT=.gmo
         INSTOBJEXT=.mo
         DATADIRNAME=share
-	INTLDEPS="../intl/libintl.a"
+	INTLDEPS='$(top_builddir)/intl/libintl.a'
 	INTLLIBS=$INTLDEPS
 	LIBS=`echo $LIBS | sed -e 's/-lintl//'`
         nls_cv_header_intl=intl/libintl.h
@@ -391,6 +456,7 @@ AC_DEFUN(AM_WITH_NLS,
 AC_DEFUN(AM_GNU_GETTEXT,
   [AC_REQUIRE([AC_PROG_MAKE_SET])dnl
    AC_REQUIRE([AC_PROG_CC])dnl
+   AC_REQUIRE([AC_PROG_RANLIB])dnl
    AC_REQUIRE([AC_ISC_POSIX])dnl
    AC_REQUIRE([AC_HEADER_STDC])dnl
    AC_REQUIRE([AC_C_CONST])dnl
@@ -401,7 +467,7 @@ AC_DEFUN(AM_GNU_GETTEXT,
    AC_REQUIRE([AC_FUNC_MMAP])dnl
 
    AC_CHECK_HEADERS([argz.h limits.h locale.h nl_types.h malloc.h string.h \
-unistd.h values.h])
+unistd.h values.h sys/param.h])
    AC_CHECK_FUNCS([getcwd munmap putenv setenv setlocale strchr strcasecmp \
 __argz_count __argz_stringify __argz_next])
 
@@ -436,6 +502,17 @@ __argz_count __argz_stringify __argz_next])
      fi
    fi
 
+   dnl The reference to <locale.h> in the installed <libintl.h> file
+   dnl must be resolved because we cannot expect the users of this
+   dnl to define HAVE_LOCALE_H.
+   if test $ac_cv_header_locale_h = yes; then
+     INCLUDE_LOCALE_H="#include <locale.h>"
+   else
+     INCLUDE_LOCALE_H="\
+/* The system does not provide the header <locale.h>.  Take care yourself.  */"
+   fi
+   AC_SUBST(INCLUDE_LOCALE_H)
+
    dnl Determine which catalog format we have (if any is needed)
    dnl For now we know about two different formats:
    dnl   Linux libc-5 and the normal X/Open format
@@ -468,10 +545,10 @@ __argz_count __argz_stringify __argz_next])
    dnl find the mkinstalldirs script in another subdir but ($top_srcdir).
    dnl Try to locate is.
    MKINSTALLDIRS=
-   if test $ac_aux_dir; then
+   if test -n "$ac_aux_dir"; then
      MKINSTALLDIRS="$ac_aux_dir/mkinstalldirs"
    fi
-   if test -z $MKINSTALLDIRS; then
+   if test -z "$MKINSTALLDIRS"; then
      MKINSTALLDIRS="\$(top_srcdir)/mkinstalldirs"
    fi
    AC_SUBST(MKINSTALLDIRS)
@@ -492,12 +569,18 @@ __argz_count __argz_stringify __argz_next])
    else
      posrcprefix="../"
    fi
+   rm -f po/POTFILES
    sed -e "/^#/d" -e "/^\$/d" -e "s,.*,	$posrcprefix& \\\\," -e "\$s/\(.*\) \\\\/\1/" \
 	< $srcdir/po/POTFILES.in > po/POTFILES
   ])
 
 # Search path for a program which passes the given test.
 # Ulrich Drepper <drepper@cygnus.com>, 1996.
+#
+# This file file be copied and used freely without restrictions.  It can
+# be used in projects which are not available under the GNU Public License
+# but which still want to provide support for the GNU gettext functionality.
+# Please note that the actual code is *not* freely available.
 
 # serial 1
 
@@ -541,6 +624,11 @@ AC_SUBST($1)dnl
 
 # Check whether LC_MESSAGES is available in <locale.h>.
 # Ulrich Drepper <drepper@cygnus.com>, 1995.
+#
+# This file file be copied and used freely without restrictions.  It can
+# be used in projects which are not available under the GNU Public License
+# but which still want to provide support for the GNU gettext functionality.
+# Please note that the actual code is *not* freely available.
 
 # serial 1
 

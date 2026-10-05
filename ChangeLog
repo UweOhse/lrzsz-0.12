@@ -1,3 +1,126 @@
+1997-11-07  Uwe Ohse  <uwe@ohse.de>
+
+    * src/rbsb.c (rdchk, reading version): return 0 if read returns
+      an error.
+
+    * src/tcp.c (tcp_connect): #define INADDR_NONE to -1 if it's
+      undefined.
+
+    * updated to gettext-0.10.32
+
+    * src/lsz.c (main):
+    * src/lrz.c (main): changed call to parse_long_options.
+      (show_version): new function.
+      (usage): "Report bugs to ..."
+
+    * src/lrz.c (wcreceive): changed a %m to %s strerror(errno).
+    
+    * lib/long-options.h: updated prototype vor parse_long_options
+
+    * lib/long-options.c (parse_long_options): slightly rewrote it to confirm
+      with newer GNU coding standards.
+
+
+    * src/zm.c: remove #include <syslog.h>
+      (zgethdr): removed warnings.
+      (noxrd7,tgeth1, zgethex): reordered to help
+      gcc inline them.
+
+    * src/lsz.c (main): removed unused variable `s'.
+
+    * src/zglobal.h: remove define for syslog().
+    
+    * src/zm.c (printout_blocksizes): 
+    * src/lrz.c (wcreceive): (DO_SYSLOG): (rzfile): 
+    * src/lsz.c (DO_SYSLOG): (wcs): 
+      use lsyslog instead of syslog.
+
+    * src/Makefile.am (lsz_SOURCES and lrz_SOURCES): include lsyslog.c.
+
+    * configure.in (AC_REPLACE_FUNCS): check for vasprintf.c
+      (elsewhere): changed tirka.gun.de hacks to tirka.ohse.de.
+      changed version number to 0.12.18.
+      check for libnsl (Solaris).
+
+    * lib/Makefile.am (EXTRA_DIST): include vasprintf.c
+
+    * src/lsyslog.c (lsyslog): new file.
+
+Sun Sep 14 08:07:52 MET DST 1997
+
+	* Makefile.am: add lrzszbug to DISTCLEAN_FILES
+
+	* src/zreadline.c (readline): 
+	  optimize for calling from READLINE_PF.
+	  get rid of some vprintf.
+	  rename to readline_internal (should only be called 
+	  from READLINE_PF).
+
+	* src/zglobal.h: rename readline to readline_internal.
+
+	* src/zm.c (noxrd7): use READLINE_PF, not readline.
+	  (zgethdr) likewise. 
+	  (zrhhdr): likewise.
+
+	* src/lrz.c (wcrxpn): use READLINE_PF, not readline.
+	  (wcgetsec): likewise.
+	  (ackbibi): likewise.
+	  (global) (main): implement --tcp-server and --tcp-client addr:port.
+
+	* src/lsz.c (getnak): use READLINE_PF, not readline.
+	  (wctx): likewise.
+	  (wcputsec): likewise.
+	  (zsendfile): likewise.
+	  (zsendfdata): likewise.
+	  (global) (main): implement --tcp-server and --tcp-client addr:port.
+
+	* src/tcp.c: fix some byteorder problems.
+	  (tcp_connect): accept hostnames.
+
+
+Sat Sep 13 20:04:56 MET DST 1997
+
+	* src/zmodem.h: #ifdef out some declarations already found in 
+	  zglobal.h.
+
+	* acinclude.m4: new macro LRZSZ_ERRNO_DECL, checks for declaration
+	  of errno, taken from taylor uucp.
+
+	* configure.in: use LRZSZ_ERRNO_DECL
+
+	* src/lrz.c: remove lots of egcs -Wparanoia warnings.
+	  zrdata needs new parameter. Rxcount isn't global anymore.
+	  many int or long -> signed or size_t changes.
+
+	* src/zm.c: zrdata get's new argument, pointer to size_t to
+	  store number of bytes read into.
+	  Remove Not8bit, wasn't used.
+	  remove lots of egcs -Wparanoia warnings.
+	  zgethdr gets a new argument, pointer to size_t.
+	  Remove global variable Rxpos.
+
+	* rbsb.c:
+	  remove lots of egcs -Wparanoia warnings.
+	  sendbrk sends break now in posix termios mode, too.
+
+	* src/lsz.c: remove lots of egcs -Wparanoia warnings.
+	  many int or long -> signed or size_t changes.
+	  Rxcount and Rxpos removed.
+
+	* src/zreadline.c: remove egcs -Wparanoia warnings.
+
+Mon Sep  1 00:02:27 MET DST 1997
+
+	* src/lrzszbug.in: new script.
+
+	* src/Makefile.am: distribute lrzszbug.in
+
+	* configure.in: generate lrzszbug.
+
+Sun Aug 31 18:00:00 MET DST 1997
+
+	* Release 0.12.17
+
 Sat Aug 23 22:54:12 MET DST 1997
 
 	* src/lrz.c (closeit): use S_ISREG instead of (mode&S_IFMT)==...

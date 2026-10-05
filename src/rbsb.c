@@ -30,7 +30,10 @@
 
 #include <stdio.h>
 #include <errno.h>
+
+#ifndef HAVE_ERRNO_DECLARATION
 extern int errno;
+#endif
 
 #ifdef USE_SGTTY
 #  ifdef LLITOUT
@@ -51,11 +54,14 @@ long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 # endif
 #endif
 
-#if HOWMANY  > 255
+#if defined(HOWMANY) && HOWMANY  > 255
 #ifndef NFGVMIN
 Howmany must be 255 or less
 #endif
 #endif
+
+
+static unsigned getspeed(speed_t);
 
 /*
  * return 1 if stdout and stderr are different devices
@@ -100,7 +106,7 @@ from_cu(void)
 
 static struct {
 	unsigned baudr;
-	int speedcode;
+	speed_t speedcode;
 } speeds[] = {
 	{110,	B110},
 	{300,	B300},
@@ -167,15 +173,15 @@ rdchk(int fd)
 	fcntl(fd, F_SETFL, savestat | O_NDELAY) ;
 	lf = read(fd, &checked, 1) ;
 	fcntl(fd, F_SETFL, savestat) ;
-	return(lf) ;
+	return(lf==-1 ? 0 : lf) ;
 }
 #endif
 
 
 static unsigned
-getspeed(int code)
+getspeed(speed_t code)
 {
-	register n;
+	int n;
 
 	for (n=0; speeds[n].baudr; ++n)
 		if (speeds[n].speedcode == code)
@@ -207,7 +213,7 @@ struct tchars oldtch, tch;
 int 
 io_mode(int fd, int n)
 {
-	static did0 = FALSE;
+	static int did0 = FALSE;
 
 	vfile("mode:%d", n);
 
@@ -237,7 +243,14 @@ io_mode(int fd, int n)
 		tty.c_lflag = 0;
 		tty.c_cc[VINTR] = protocol==ZM_ZMODEM ? 03 : 030;	/* Interrupt char */
 #endif
-		tty.c_cc[VQUIT] = -1;			/* Quit char */
+#if defined(_POSIX_VDISABLE)
+		/* that strange construction help on netbsd/mips where
+		 * _POSIX_VDISABLE is defined but empty ...
+		 */
+		tty.c_cc[VQUIT] = _POSIX_VDISABLE + 0;                  /* Quit char */
+#else
+		tty.c_cc[VQUIT] = 0xff;                 /* Quit char */
+#endif
 #ifdef NFGVMIN
 		tty.c_cc[VMIN] = 1;
 #else
@@ -437,6 +450,12 @@ io_mode(int fd, int n)
 void
 sendbrk(int fd)
 {
+#ifdef USE_TERMIOS
+	tcsendbreak(fd,0);
+#endif
+#ifdef USE_TERMIO
+	ioctl(fd, TCSBRK, 0);
+#endif
 #ifdef USE_SGTTY
 #ifdef TIOCSBRK
 	sleep(1);
@@ -444,9 +463,6 @@ sendbrk(int fd)
 	sleep(1);
 	ioctl(fd, TIOCCBRK, 0);
 #endif
-#endif
-#ifdef USE_TERMIO
-	ioctl(fd, TCSBRK, 0);
 #endif
 }
 

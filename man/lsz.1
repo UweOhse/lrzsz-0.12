@@ -368,6 +368,55 @@ Do not escape certain characters (^P, ^P|0x80, telenet escape sequence
 hurt in the normal case (but be careful - ^P might be useful if connected
 through a terminal server).
 .TP
+.B "--tcp"
+Try to initiate a TCP/IP connection. lsz will ask the receiving zmodem
+to open a TCP/IP connection. All handshaking (which address / port to
+use) will be done by the zmodem programs.
+
+You will normally not want to use this option as lrzsz is the only
+zmodem which understands what to do (private extension). You might
+want to use this option if the two programs are connected
+(stdin/out) over a slow or bad (not 8bit clean) network connection.
+
+Use of this option imposes a security risk, somebody else could connect
+to the port in between. See
+.B SECURITY
+for details.
+.TP
+.B "--tcp-client ADDRESS:PORT"
+Act as a tcp/ip client: Connect to the given port.
+
+See
+.B "--tcp-server"
+for more information.
+
+.TP
+.B "--tcp-server"
+Act as a server: Open a socket, print out what to do, wait for connection.
+
+You will normally not want to use this option as lrzsz is the only
+zmodem which understands what to do (private extension). You might
+want to use this if you have to use zmodem (for which reason whatever),
+and cannot use the
+.B --tcp
+option of
+.I lsz
+(perhaps because your telnet doesn't allow to spawn a local program
+with stdin/stdout connected to the remote side).
+
+If you use this option you have to start
+.I lsz
+with the
+.B --tcp-client ADDRESS:PORT
+option.
+.I lrz will print the address and port on startup.
+
+Use of this option imposes a security risk, somebody else could connect
+to the port in between. See
+.B SECURITY
+for details.
+
+.TP
 .B "-u"
 Unlink the file after successful transmission.
 .TP
@@ -414,6 +463,17 @@ shell or if the environment variable ZMODEM_RESTRICTED is found.
 Restricted mode can be turned of with the 
 .B U
 option if not running under a restricted shell.
+
+.TP
+Use of the
+.B --tcp-client
+or
+.B --tcp-server
+options imposes a security risk, as somebody else could connect to
+the port before you do it, and grab your data. If there's strong
+demand for a more secure mode i might introduce some sort of
+password challenge.
+
 
 .SH ENVIRONMENT
 .TP

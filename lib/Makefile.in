@@ -61,6 +61,7 @@ GMOFILES = @GMOFILES@
 GMSGFMT = @GMSGFMT@
 GT_NO = @GT_NO@
 GT_YES = @GT_YES@
+INCLUDE_LOCALE_H = @INCLUDE_LOCALE_H@
 INSTOBJEXT = @INSTOBJEXT@
 INTLDEPS = @INTLDEPS@
 INTLLIBS = @INTLLIBS@
@@ -90,7 +91,7 @@ CFLAGS=@CFLAGS@
 EXTRA_DIST = alloca.c ansi2knr.1 ansi2knr.c \
 	getopt.c getopt1.c mkdir.c mktime.c \
 	strdup.c strerror.c strstr.c strpbrk.c strtol.c strtoul.c stpcpy.c \
-	strftime.c 
+	strftime.c vasprintf.c
 
 libzmodem_a_SOURCES = long-options.c xstrtol.c xstrtoul.c error.c
 libzmodem_a_LIBADD  = @LIBOBJS@ @ALLOCA@
@@ -113,7 +114,7 @@ HEADERS =  $(noinst_HEADERS)
 
 DIST_COMMON =  Makefile.am Makefile.in alloca.c ansi2knr.1 ansi2knr.c \
 getopt.c getopt1.c mkdir.c mktime.c stpcpy.c strdup.c strerror.c \
-strftime.c strpbrk.c strstr.c strtol.c strtoul.c
+strftime.c strpbrk.c strstr.c strtol.c strtoul.c vasprintf.c
 
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
@@ -194,22 +195,24 @@ distdir: $(DISTFILES)
 	  || cp -p $$d/$$file $(distdir)/$$file; \
 	done
 alloca.o alloca.lo: alloca.c ../config.h
-error$o: error.c
-getopt$o: getopt.c
-getopt1$o: getopt1.c getopt.h
-long-options$o: long-options.c long-options.h
-mkdir$o: mkdir.c
-mktime$o: mktime.c
-stpcpy$o: stpcpy.c
-strdup$o: strdup.c ../config.h
-strerror$o: strerror.c
-strftime$o: strftime.c ../config.h
-strpbrk$o: strpbrk.c
-strstr$o: strstr.c
-strtol$o: strtol.c
-strtoul$o: strtoul.c
-xstrtol$o: xstrtol.c xstrtol.h
-xstrtoul$o: xstrtoul.c xstrtol.c xstrtol.h
+error.o error.lo: error.c ../config.h
+getopt.o getopt.lo: getopt.c ../config.h
+getopt1.o getopt1.lo: getopt1.c ../config.h getopt.h
+long-options.o long-options.lo: long-options.c ../config.h getopt.h \
+	long-options.h
+mkdir.o mkdir.lo: mkdir.c ../config.h
+mktime.o mktime.lo: mktime.c ../config.h
+stpcpy.o stpcpy.lo: stpcpy.c ../config.h
+strdup.o strdup.lo: strdup.c ../config.h
+strerror.o strerror.lo: strerror.c
+strftime.o strftime.lo: strftime.c ../config.h
+strpbrk.o strpbrk.lo: strpbrk.c ../config.h
+strstr.o strstr.lo: strstr.c
+strtol.o strtol.lo: strtol.c ../config.h
+strtoul.o strtoul.lo: strtoul.c strtol.c ../config.h
+vasprintf.o vasprintf.lo: vasprintf.c ../config.h
+xstrtol.o xstrtol.lo: xstrtol.c ../config.h xstrtol.h
+xstrtoul.o xstrtoul.lo: xstrtoul.c xstrtol.c ../config.h xstrtol.h
 
 info:
 dvi:

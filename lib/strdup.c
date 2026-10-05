@@ -1,6 +1,6 @@
-/* strdup.c : still no description */
+/* strdup.c : replacement function for missing strdup(). */
 /*
-    Copyright (C) 1994 1995 1996 Frank Baumgart, Uwe Ohse
+    Copyright (C) 1996 1997 Uwe Ohse
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,16 +16,12 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-    Contact: uwe@tirka.gun.de, Uwe Ohse @ DU3 (mausnet)
+    Contact: uwe@ohse.de, Uwe Ohse @ DU3 (mausnet)
        Snail Mail (don't expect me to answer):
              Uwe Ohse
              Drosselstraﬂe 2
              47055 Duisburg
              Germany
-    Contact2: godot@uni-paderborn.de, Frank Baumgart @ PB3 (mausnet)
-       (might be the wrong person except for offline)
-
-    Contact3: MausNet Newsgroups Quark & Q-Sysops.
 */
 #include "config.h"
 

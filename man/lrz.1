@@ -237,7 +237,8 @@ experience errors due to lost interrupts if update (or bdflush or
 whoever this daemon is called on your system) writes the buffers to the
 disk.
 
-This option is silently ignored if your systems doesn't support O_SYNC.
+This option is ignored and a warning is printed if your systems 
+doesn't support O_SYNC.
 .TP
 .B "-p, --protect"
 (ZMODEM) Protect: skip file if destination file exists.
@@ -291,6 +292,39 @@ through the
 .B O 
 option.
 .TP
+.B "--tcp-client ADDRESS:PORT"
+Act as a tcp/ip client: Connect to the given port.
+
+See 
+.B "--tcp-server"
+for more information.
+
+.TP
+.B "--tcp-server"
+Act as a server: Open a socket, print out what to do, wait for connection.
+
+You will normally not want to use this option as lrzsz is the only 
+zmodem which understands what to do (private extension). You might
+want to use this if you have to use zmodem (for which reason whatever),
+and cannot use the 
+.B --tcp
+option of
+.I lsz
+(perhaps because your telnet doesn't allow to spawn a local program
+with stdin/stdout connected to the remote side).
+
+If you use this option you have to start 
+.I lsz 
+with the
+.B --tcp-client ADDRESS:PORT
+option. 
+.I lrz will print the address and port on startup.
+
+Use of this option imposes a security risk, somebody else could connect
+to the port in between. See
+.B SECURITY 
+for details.
+.TP
 .B "-U, --unrestrict"
 turn off restricted mode (this is not possible if running under
 a restricted shell).
@@ -337,6 +371,16 @@ files.
 Restricted mode may be turned off with the
 .B U 
 option, unless lrz runs under a restricted shell.
+
+.TP
+Use of the 
+.B --tcp-client 
+or 
+.B --tcp-server 
+options imposes a security risk, as somebody else could connect to
+the port before you do it, and grab your data. If there's strong
+demand for a more secure mode i might introduce some sort of
+password challenge.
 
 .SH ENVIRONMENT
 lrz uses the following environment variables:

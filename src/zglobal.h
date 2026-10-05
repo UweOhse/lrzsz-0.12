@@ -192,7 +192,6 @@ char *strchr (), *strrchr ();
 #ifndef ENABLE_SYSLOG
 #  define openlog(name,pid,facility) /* void it */
 #  define setlogmask(x) /* void it */
-#  define syslog(x,y) /* void it */
 #else
 extern int enable_syslog;
 #endif
@@ -232,6 +231,60 @@ extern int enable_syslog;
 #ifndef PATH_MAX
 # define PATH_MAX _POSIX_PATH_MAX
 #endif
+
+#ifdef __GNUC__
+
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 5)
+# define LRZSZ_ATTRIB_SECTION(x) __attribute__((section(#x)))
+#endif
+
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 4)
+# define LRZSZ_ATTRIB_CONST  __attribute__((__const__))
+#endif
+
+    /* gcc.info sagt, noreturn wäre ab 2.5 verfügbar. HPUX-gcc 2.5.8
+     * kann es noch nicht - what's this?
+     */
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 5)
+# define LRZSZ_ATTRIB_NORET  __attribute__((__noreturn__))
+#endif
+
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 5)
+# define LRZSZ_ATTRIB_PRINTF(formatnr,firstargnr)  \
+    __attribute__((__format__ (printf,formatnr,firstargnr)))
+#endif
+
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 6)
+#define LRZSZ_ATTRIB_UNUSED __attribute__((__unused__))
+#endif
+
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
+# define LRZSZ_ATTRIB_REGPARM(n)  \
+    __attribute__((__regparm__ (n)))
+#endif
+#endif /* __GNUC__ */
+#ifndef LRZSZ_ATTRIB_REGPARM
+#define LRZSZ_ATTRIB_REGPARM(n)
+#endif
+#ifndef LRZSZ_ATTRIB_UNUSED
+#define LRZSZ_ATTRIB_UNUSED
+#endif
+#ifndef LRZSZ_ATTRIB_NORET
+#define LRZSZ_ATTRIB_NORET
+#endif
+#ifndef LRZSZ_ATTRIB_CONST
+#define LRZSZ_ATTRIB_CONST
+#endif
+#ifndef LRZSZ_ATTRIB_PRINTF
+#define LRZSZ_ATTRIB_PRINTF(x,y)
+#endif
+#ifndef LRZSZ_ATTRIB_SECTION
+#define LRZSZ_ATTRIB_SECTION(n)
+#endif
+#undef LRZSZ_ATTRIB_SECTION
+#define LRZSZ_ATTRIB_SECTION(x)
+#undef LRZSZ_ATTRIB_REGPARM
+#define LRZSZ_ATTRIB_REGPARM(x)
 
 
 #define OK 0
@@ -299,11 +352,12 @@ RETSIGTYPE bibi __P ((int n));
 extern char *readline_ptr; /* pointer for removing chars from linbuf */
 extern int readline_left; /* number of buffered chars left to read */
 #define READLINE_PF(timeout) \
-    (--readline_left >= 0? (*readline_ptr++ & 0377) : readline(timeout))
+    (--readline_left >= 0? (*readline_ptr++ & 0377) : readline_internal(timeout))
 
-int readline __P ((int timeout));
+int readline_internal __P ((unsigned int timeout));
 void readline_purge __P ((void));
-void readline_setup __P ((int fd, int readnum, int buffer_size));
+void readline_setup __P ((int fd, size_t readnum, 
+	size_t buffer_size)) LRZSZ_ATTRIB_SECTION(lrzsz_rare);
 
 
 /* rbsb.c */
@@ -329,11 +383,13 @@ void vfile __P ((const char *format, ...));
 #ifndef vstringf
 void vstringf __P ((const char *format, ...));
 #endif
+#define VPRINTF(level,format_args) do {if ((Verbose)>=(level)) \
+	vstringf format_args ; } while(0)
 
 /* rbsb.c */
-int from_cu __P ((void));
+int from_cu __P ((void)) LRZSZ_ATTRIB_SECTION(lrzsz_rare);
 int rdchk __P ((int fd));
-int io_mode __P ((int fd, int n));
+int io_mode __P ((int fd, int n)) LRZSZ_ATTRIB_SECTION(lrzsz_rare);
 void sendbrk __P ((int fd));
 #define flushmo() fflush(stdout)
 void purgeline __P ((int fd));
@@ -347,16 +403,16 @@ extern long cr3tab[];
 
 /* zm.c */
 #include "zmodem.h"
-extern int Rxtimeout;        /* Tenths of seconds to wait for something */
+extern unsigned int Rxtimeout;        /* Tenths of seconds to wait for something */
 extern int bytes_per_error;  /* generate one error around every x bytes */
 
 /* Globals used by ZMODEM functions */
 extern int Rxframeind;     /* ZBIN ZBIN32, or ZHEX type of frame received */
 extern int Rxtype;     /* Type of header received */
-extern int Rxcount;        /* Count of data bytes received */
+extern int Zrwindow;       /* RX window size (controls garbage count) */
+/* extern int Rxcount; */       /* Count of data bytes received */
 extern char Rxhdr[4];      /* Received header */
 extern char Txhdr[4];      /* Transmitted header */
-extern long Rxpos;     /* Received file position */
 extern long Txpos;     /* Transmitted file position */
 extern int Txfcs32;        /* TURE means send binary frames with 32 bit FCS */
 extern int Crc32t;     /* Display flag indicating 32 bit CRC being sent */
@@ -365,22 +421,25 @@ extern int Znulls;     /* Number of nulls to send at beginning of ZDATA hdr */
 extern char Attn[ZATTNLEN+1];  /* Attention string rx sends to tx on err */
 
 extern void zsendline __P ((int c));
-extern void zsendline_init __P ((void));
+extern void zsendline_init __P ((void)) LRZSZ_ATTRIB_SECTION(lrzsz_rare);
 void zsbhdr __P ((int type, char *hdr));
 void zshhdr __P ((int type, char *hdr));
-void zsdata __P ((const char *buf, int length, int frameend));
-void zsda32 __P ((const char *buf, int length, int frameend));
-int zrdata __P ((char *buf, int length));
-int zgethdr __P ((char *hdr, int eflag));
-void stohdr __P ((long pos));
-long rclhdr __P ((char *hdr));
+void zsdata __P ((const char *buf, size_t length, int frameend));
+void zsda32 __P ((const char *buf, size_t length, int frameend));
+int zrdata __P ((char *buf, int length, size_t *received));
+int zgethdr __P ((char *hdr, int eflag, size_t *));
+void stohdr __P ((size_t pos)) LRZSZ_ATTRIB_REGPARM(1);
+long rclhdr __P ((char *hdr)) LRZSZ_ATTRIB_REGPARM(1);
 
-int tcp_server __P ((char *buf));
-int tcp_connect __P ((char *buf));
-int tcp_accept __P ((int d));
+int tcp_server __P ((char *buf)) LRZSZ_ATTRIB_SECTION(lrzsz_rare);
+int tcp_connect __P ((char *buf)) LRZSZ_ATTRIB_SECTION(lrzsz_rare);
+int tcp_accept __P ((int d)) LRZSZ_ATTRIB_SECTION(lrzsz_rare);
 
 
-const char * protname __P ((void));
+const char * protname __P ((void)) LRZSZ_ATTRIB_SECTION(lrzsz_rare);
+void lsyslog __P ((int, const char *,...));
+
+
 
 
 #endif

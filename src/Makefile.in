@@ -16,6 +16,7 @@ exec_prefix = @exec_prefix@
 bindir = @bindir@
 sbindir = @sbindir@
 libexecdir = @libexecdir@
+datadir = @datadir@
 sysconfdir = @sysconfdir@
 sharedstatedir = @sharedstatedir@
 localstatedir = @localstatedir@
@@ -60,6 +61,7 @@ GMOFILES = @GMOFILES@
 GMSGFMT = @GMSGFMT@
 GT_NO = @GT_NO@
 GT_YES = @GT_YES@
+INCLUDE_LOCALE_H = @INCLUDE_LOCALE_H@
 INSTOBJEXT = @INSTOBJEXT@
 INTLDEPS = @INTLDEPS@
 INTLLIBS = @INTLLIBS@
@@ -84,33 +86,33 @@ host_os = @host_os@
 l = @l@
 
 bin_PROGRAMS=lrz lsz
-lrz_SOURCES=lrz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c tcp.c
-lsz_SOURCES=lsz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c tcp.c
+lrz_SOURCES=lrz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c tcp.c lsyslog.c
+lsz_SOURCES=lsz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c tcp.c lsyslog.c
 noinst_HEADERS = timing.h zglobal.h zmodem.h
-datadir = $(prefix)/@DATADIRNAME@
-localedir = $(datadir)/locale
+localedir = $(prefix)/@DATADIRNAME@/locale
 CFLAGS=@CFLAGS@
+DISTCLEAN_FILES=lrzszbug
 
 LDADD = ../lib/libzmodem.a @INTLLIBS@
 AUTOMAKE_OPTIONS=ansi2knr
-EXTRA_DIST = ansi2knr.1 ansi2knr.c
+EXTRA_DIST = ansi2knr.1 ansi2knr.c lrzszbug.in
 INCLUDES = -I.. -I$(srcdir) -I$(top_srcdir)/src -I../intl -I$(top_srcdir)/lib
 #DEFS = -DLOCALEDIR=\"$(localedir)\" -DOS=\"@host_os@\" -DCPU=\"@host_cpu@\"
-DEFS = -DNFGVMIN @DEFS@
+DEFS = -DNFGVMIN @DEFS@ -DLOCALEDIR=\"$(localedir)\"
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = ../config.h
-CONFIG_CLEAN_FILES = 
+CONFIG_CLEAN_FILES =  lrzszbug
 PROGRAMS =  $(bin_PROGRAMS)
 
 CPPFLAGS = @CPPFLAGS@
 ANSI2KNR = @ANSI2KNR@
 lrz_OBJECTS =  lrz$U.o timing$U.o zperr$U.o zreadline$U.o crctab$U.o \
-rbsb$U.o zm$U.o protname$U.o tcp$U.o
+rbsb$U.o zm$U.o protname$U.o tcp$U.o lsyslog$U.o
 lrz_LDADD = $(LDADD)
 lrz_DEPENDENCIES =  ../lib/libzmodem.a
 lrz_LDFLAGS = 
 lsz_OBJECTS =  lsz$U.o timing$U.o zperr$U.o zreadline$U.o crctab$U.o \
-rbsb$U.o zm$U.o protname$U.o tcp$U.o
+rbsb$U.o zm$U.o protname$U.o tcp$U.o lsyslog$U.o
 lsz_LDADD = $(LDADD)
 lsz_DEPENDENCIES =  ../lib/libzmodem.a
 lsz_LDFLAGS = 
@@ -118,7 +120,7 @@ COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
 LINK = $(CC) $(CFLAGS) $(LDFLAGS) -o $@
 HEADERS =  $(noinst_HEADERS)
 
-DIST_COMMON =  Makefile.am Makefile.in ansi2knr.1 ansi2knr.c
+DIST_COMMON =  Makefile.am Makefile.in ansi2knr.1 ansi2knr.c lrzszbug.in
 
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
@@ -139,6 +141,8 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
+lrzszbug: $(top_builddir)/config.status lrzszbug.in
+	cd $(top_builddir) && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= ./config.status
 
 mostlyclean-binPROGRAMS:
 
@@ -211,6 +215,8 @@ crctab_.c: crctab.c
 	$(ANSI2KNR) $< crctab_.c
 lrz_.c: lrz.c
 	$(ANSI2KNR) $< lrz_.c
+lsyslog_.c: lsyslog.c
+	$(ANSI2KNR) $< lsyslog_.c
 lsz_.c: lsz.c
 	$(ANSI2KNR) $< lsz_.c
 protname_.c: protname.c
@@ -227,8 +233,8 @@ zperr_.c: zperr.c
 	$(ANSI2KNR) $< zperr_.c
 zreadline_.c: zreadline.c
 	$(ANSI2KNR) $< zreadline_.c
-crctab_.o lrz_.o lsz_.o protname_.o rbsb_.o tcp_.o timing_.o zm_.o \
-zperr_.o zreadline_.o : $(ANSI2KNR)
+crctab_.o lrz_.o lsyslog_.o lsz_.o protname_.o rbsb_.o tcp_.o timing_.o \
+zm_.o zperr_.o zreadline_.o : $(ANSI2KNR)
 
 tags: TAGS
 
@@ -261,10 +267,11 @@ distdir: $(DISTFILES)
 	  || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 	  || cp -p $$d/$$file $(distdir)/$$file; \
 	done
-crctab.$o crctab.l$o: crctab.c
+crctab.o crctab.lo: crctab.c
 lrz.o lrz.lo: lrz.c zglobal.h ../config.h zmodem.h ../lib/getopt.h \
 	timing.h ../lib/long-options.h ../lib/xstrtoul.h \
 	../lib/xstrtol.h ../lib/error.h
+lsyslog.o lsyslog.lo: lsyslog.c ../config.h zglobal.h zmodem.h
 lsz.o lsz.lo: lsz.c zglobal.h ../config.h zmodem.h ../lib/getopt.h \
 	timing.h ../lib/long-options.h ../lib/xstrtoul.h \
 	../lib/xstrtol.h ../lib/error.h
@@ -358,12 +365,16 @@ install-exec-local:
 	rm -f $(bindir)/`echo lrx | sed -e '$(transform)'`
 	ln $(bindir)/`echo lrz |sed -e '$(transform)'` \
 		$(bindir)/`echo lrx |sed -e '$(transform)'` 
+#	rm -f $(bindir)/`echo lrzszbug | sed -e '$(transform)'`
+#	ln $(bindir)/`echo lrzszbug |sed -e '$(transform)'` \
+#		$(bindir)/`echo lrzszbug |sed -e '$(transform)'` 
 
 uninstall-local:
 	rm -f $(bindir)/`echo lsb |sed -e '$(transform)'` 
 	rm -f $(bindir)/`echo lsx |sed -e '$(transform)'` 
 	rm -f $(bindir)/`echo lrb |sed -e '$(transform)'` 
 	rm -f $(bindir)/`echo lrx |sed -e '$(transform)'` 
+#	rm -f $(bindir)/`echo lrzszbug |sed -e '$(transform)'` 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -48,7 +48,9 @@ extern char *strstr();
 extern char *stpcpy();
 #endif
 
+#ifndef HAVE_ERRNO_DECLARATION
 extern int errno;
+#endif
 
 #define MAX_BLOCK 8192
 
@@ -110,6 +112,9 @@ int in_timesync=0;
 int in_tcpsync=0;
 int tcpsync_flag=1;
 int tcp_socket=-1;
+int tcp_flag=0;
+char *tcp_server_address=NULL;
+
 char tcp_buf[256]="";
 #if defined(F_GETFD) && defined(F_SETFD) && defined(O_SYNC)
 static int o_sync = 0;
@@ -122,25 +127,26 @@ static void canit __P ((void));
 static void report __P ((int sct));
 static void uncaps __P ((char *s));
 static int IsAnyLower __P ((const char *s));
-static int putsec __P ((struct zm_fileinfo *zi, char *buf, int n));
+static int putsec __P ((struct zm_fileinfo *zi, char *buf, size_t n));
 static int make_dirs __P ((char *pathname));
 static int procheader __P ((char *name, struct zm_fileinfo *));
-static int wcgetsec __P ((int *Blklen, char *rxbuf, int maxtime));
+static int wcgetsec __P ((int *Blklen, char *rxbuf, unsigned int maxtime));
 static int wcrx __P ((struct zm_fileinfo *));
 static int wcrxpn __P ((struct zm_fileinfo *, char *rpn));
 static int wcreceive __P ((int argc, char **argp));
 static int rzfile __P ((struct zm_fileinfo *));
 static void usage __P ((int exitcode, const char *what));
 static void usage1 __P ((int exitcode));
+static void show_version __P ((void));
 static void exec2 __P ((const char *s));
 static int closeit __P ((struct zm_fileinfo *));
 static void ackbibi __P ((void));
 static int sys2 __P ((const char *s));
 static void zmputs __P ((const char *s));
-static long getfree __P ((void));
+static size_t getfree __P ((void));
 
 static long buffersize=32768;
-static long min_bps=0;
+static unsigned long min_bps=0;
 static long min_bps_time=120;
 
 char Lzmanag;		/* Local file management request */
@@ -209,6 +215,8 @@ static struct option const long_options[] =
 	{"delay-startup", required_argument, NULL, 4},
 	{"o-sync", no_argument, NULL, 5},
 	{"o_sync", no_argument, NULL, 5},
+	{"tcp-server", no_argument, NULL, 6},
+	{"tcp-client", required_argument, NULL, 7},
 	{NULL,0,NULL,0}
 };
 
@@ -216,11 +224,11 @@ int
 main(int argc, char *argv[])
 {
 	register char *cp;
-	register npats;
+	register int npats;
 	char **patts=NULL; /* keep compiler quiet */
 	int exitcode=0;
 	int c;
-	int startup_delay=0;
+	unsigned int startup_delay=0;
 
 	Rxtimeout = 100;
 	setbuf(stderr, NULL);
@@ -241,7 +249,7 @@ main(int argc, char *argv[])
 	bindtextdomain (PACKAGE, LOCALEDIR);
 	textdomain (PACKAGE);
 
-    parse_long_options (argc, argv, program_name, PACKAGE_VERSION, usage1);
+    parse_long_options (argc, argv, show_version, usage1);
 
 	while ((c = getopt_long (argc, argv, 
 		"a+bB:cCDeEhm:M:OprRqs:St:uUvw:XZy",
@@ -275,8 +283,6 @@ main(int argc, char *argv[])
 			min_bps = tmp;
 			if (s_err != LONGINT_OK)
 				STRTOL_FATAL_ERROR (optarg, _("min_bps"), s_err);
-			if (min_bps<0)
-				usage(2,_("min_bps must be >= 0"));
 			break;
 		case 'M':
 			s_err = xstrtoul (optarg, NULL, 0, &tmp, NULL);
@@ -407,6 +413,15 @@ main(int argc, char *argv[])
 			error(0,0, _("O_SYNC not supported by the kernel"));
 #endif
 			break;
+		case 6:
+			tcp_flag=2;
+			break;
+		case 7:
+			tcp_flag=3;
+			tcp_server_address=(char *)strdup(optarg);
+			if (!tcp_server_address)
+				error(1,0,_("out of memory"));
+			break;
 		default:
 			usage(2,NULL);
 		}
@@ -438,7 +453,54 @@ main(int argc, char *argv[])
 		if (Verbose == 0)
 			Verbose = 2;
 	}
+
 	vfile("%s %s for %s-%s\n", program_name, VERSION, CPU, OS);
+
+	if (tcp_flag==2) {
+		char buf[256];
+#ifdef MAXHOSTNAMELEN
+		char hn[MAXHOSTNAMELEN];
+#else
+		char hn[256];
+#endif
+		char *p,*q;
+		int d;
+
+		/* tell receiver to receive via tcp */
+		d=tcp_server(buf);
+		p=strchr(buf+1,'<');
+		p++;
+		q=strchr(p,'>');
+		*q=0;
+		if (gethostname(hn,sizeof(hn))==-1) {
+			error(1,0, _("hostname too long\n"));
+		}
+		fprintf(stdout,"connect with lrz --tcp-client \"%s:%s\"\n",hn,p);
+		fflush(stdout);
+		/* ok, now that this file is sent we can switch to tcp */
+
+		tcp_socket=tcp_accept(d);
+		dup2(tcp_socket,0);
+		dup2(tcp_socket,1);
+	}
+	if (tcp_flag==3) {
+		char buf[256];
+		char *p;
+		p=strchr(tcp_server_address,':');
+		if (!p)
+			error(1,0, _("illegal server address\n"));
+		*p++=0;
+		sprintf(buf,"[%s] <%s>\n",tcp_server_address,p);
+
+		fprintf(stdout,"connecting to %s\n",buf);
+		fflush(stdout);
+
+		/* we need to switch to tcp mode */
+		tcp_socket=tcp_connect(buf);
+		dup2(tcp_socket,0);
+		dup2(tcp_socket,1);
+	}
+
 	io_mode(0,1);
 	readline_setup(0, HOWMANY, MAX_BLOCK*2);
 	if (signal(SIGINT, bibi) == SIG_IGN) 
@@ -462,6 +524,19 @@ main(int argc, char *argv[])
 			fputs(_("Transfer complete\n"),stderr);
 	}
 	exit(exitcode);
+}
+
+static void
+show_version(void)
+{
+	printf("lrz (%s) %s\n",PACKAGE,VERSION);
+	printf(_("Copyright (C) until 1988 Chuck Forsberg (Omen Technology INC)\n"));
+	printf(_("Copyright (C) 1994 Matt Porter, Michael D. Black\n"));
+  	printf(_("Copyright (C) %s Uwe Ohse\n"),"1997");
+	printf(_("This is free software, redistributable under the terms of the\n"
+			 "GNU General Public License. There is NO warranty; not even for MERCHANTABILITY\n"
+			 "or FITNESS FOR A PARTICULAR PURPOSE. See COPYING for details.\n"));
+	exit(0);
 }
 
 static void
@@ -518,6 +593,9 @@ usage(int exitcode, const char *what)
 "  -s, --stop-at {HH:MM|+N}    stop transmission at HH:MM or in N seconds\n"
 "  -S, --timesync              request remote time (twice: set local time)\n"
 "      --syslog[=off]          turn syslog on or off, if possible\n"
+"      --tcp                   TCP-Verbindung zum Übertragen verwenden\n"
+"      --tcp-server            als TCP-Server arbeiten \n"
+"      --tcp-client IP:PORT    als TCP-Client für Server IP:PORT arbeiten\n"
 "  -t, --timeout N             set timeout to N tenths of a second\n"
 "  -u, --keep-uppercase        keep upper case filenames\n"
 "  -U, --unrestrict            disable restricted mode (if allowed to)\n"
@@ -530,6 +608,7 @@ usage(int exitcode, const char *what)
 "\n"
 "short options use the same arguments as the long ones\n"
 	),f);
+	fputs("Report bugs to bugs@ohse.de, using the lrzszbug script if possible\n",f);
 	exit(exitcode);
 }
 
@@ -616,7 +695,7 @@ wcreceive(int argc, char **argp)
 					}
 #ifdef ENABLE_SYSLOG
 					if (enable_syslog)
-						syslog(LOG_INFO,"%s/%s: %ld Bytes, %ld BPS",
+						lsyslog(LOG_INFO,"%s/%s: %ld Bytes, %ld BPS",
 							shortname,protname(),zi.bytes_received, bps);
 #endif
 				}
@@ -659,8 +738,8 @@ wcreceive(int argc, char **argp)
 		if ((fout=fopen(Pathname, "w")) == NULL) {
 #ifdef ENABLE_SYSLOG
 			if (enable_syslog)
-				syslog(LOG_ERR,"%s/%s: cannot open: %m",
-					shortname,protname());
+				lsyslog(LOG_ERR,"%s/%s: cannot open: %s",
+					shortname,protname(),strerror(errno));
 #endif
 			return ERROR;
 		}
@@ -685,7 +764,7 @@ wcreceive(int argc, char **argp)
 			}
 #ifdef ENABLE_SYSLOG
 			if (enable_syslog)
-				syslog(LOG_INFO,"%s/%s: %ld Bytes, %ld BPS",
+				lsyslog(LOG_INFO,"%s/%s: %ld Bytes, %ld BPS",
 					shortname,protname(),zi.bytes_received, bps);
 #endif
 		}
@@ -694,7 +773,7 @@ wcreceive(int argc, char **argp)
 fubar:
 #ifdef ENABLE_SYSLOG
 	if (enable_syslog)
-		syslog(LOG_ERR,"%s/%s: got error", 
+		lsyslog(LOG_ERR,"%s/%s: got error", 
 			shortname ? shortname : "no.name", protname());
 #endif
 	canit();
@@ -720,11 +799,11 @@ fubar:
 static int 
 wcrxpn(struct zm_fileinfo *zi, char *rpn)
 {
-	register c;
+	register int c;
 	int Blklen=0;		/* record length of received packets */
 
 #ifdef NFGVMIN
-	readline(1);
+	READLINE_PF(1);
 #else
 	purgeline(0);
 #endif
@@ -741,7 +820,7 @@ et_tu:
 			sendline(ACK);
 			flushmo();
 			purgeline(0);	/* Do read next time ... */
-			readline(1);
+			READLINE_PF(1);
 			goto et_tu;
 		}
 		return ERROR;
@@ -760,7 +839,7 @@ wcrx(struct zm_fileinfo *zi)
 {
 	register int sectnum, sectcurr;
 	register char sendchar;
-	int Blklen;
+	size_t Blklen;
 
 	Firstsec=TRUE;sectnum=0; 
 	zi->eof_seen=FALSE;
@@ -770,7 +849,8 @@ wcrx(struct zm_fileinfo *zi)
 		sendline(sendchar);	/* send it now, we're ready! */
 		flushmo();
 		purgeline(0);	/* Do read next time ... */
-		sectcurr=wcgetsec(&Blklen, secbuf, (sectnum&0177)?50:130);
+		sectcurr=wcgetsec(&Blklen, secbuf, 
+			(unsigned int) ((sectnum&0177) ? 50 : 130));
 		report(sectcurr);
 		if (sectcurr==((sectnum+1) &0377)) {
 			sectnum++;
@@ -813,35 +893,35 @@ wcrx(struct zm_fileinfo *zi)
  *    (Caller must do that when he is good and ready to get next sector)
  */
 static int
-wcgetsec(int *Blklen, char *rxbuf, int maxtime)
+wcgetsec(int *Blklen, char *rxbuf, unsigned int maxtime)
 {
-	register checksum, wcj, firstch;
+	register int checksum, wcj, firstch;
 	register unsigned short oldcrc;
 	register char *p;
 	int sectcurr;
 
 	for (Lastrx=errors=0; errors<RETRYMAX; errors++) {
 
-		if ((firstch=readline(maxtime))==STX) {
+		if ((firstch=READLINE_PF(maxtime))==STX) {
 			*Blklen=1024; goto get2;
 		}
 		if (firstch==SOH) {
 			*Blklen=128;
 get2:
-			sectcurr=readline(1);
-			if ((sectcurr+(oldcrc=readline(1)))==0377) {
+			sectcurr=READLINE_PF(1);
+			if ((sectcurr+(oldcrc=READLINE_PF(1)))==0377) {
 				oldcrc=checksum=0;
 				for (p=rxbuf,wcj=*Blklen; --wcj>=0; ) {
-					if ((firstch=readline(1)) < 0)
+					if ((firstch=READLINE_PF(1)) < 0)
 						goto bilge;
 					oldcrc=updcrc(firstch, oldcrc);
 					checksum += (*p++ = firstch);
 				}
-				if ((firstch=readline(1)) < 0)
+				if ((firstch=READLINE_PF(1)) < 0)
 					goto bilge;
 				if (Crcflg) {
 					oldcrc=updcrc(firstch, oldcrc);
-					if ((firstch=readline(1)) < 0)
+					if ((firstch=READLINE_PF(1)) < 0)
 						goto bilge;
 					oldcrc=updcrc(firstch, oldcrc);
 					if (oldcrc & 0xFFFF)
@@ -863,10 +943,10 @@ get2:
 		}
 		/* make sure eot really is eot and not just mixmash */
 #ifdef NFGVMIN
-		else if (firstch==EOT && readline(1)==TIMEOUT)
+		else if (firstch==EOT && READLINE_PF(1)==TIMEOUT)
 			return WCEOT;
 #else
-		else if (firstch==EOT && readline_left>0)
+		else if (firstch==EOT && READLINE_PF>0)
 			return WCEOT;
 #endif
 		else if (firstch==CAN) {
@@ -891,7 +971,7 @@ humbug:
 		Lastrx=0;
 		{
 			int cnt=1000;
-			while(cnt-- && readline(1)!=TIMEOUT)
+			while(cnt-- && READLINE_PF(1)!=TIMEOUT)
 				;
 		}
 		if (Firstsec) {
@@ -1116,7 +1196,7 @@ procheader(char *name, struct zm_fileinfo *zi)
 				/* retransfer whole blocks */
 				zi->bytes_skipped = st.st_size & ~(1024);
 				if (zi->bytes_skipped < zi->bytes_total) {
-					if (fseek(fout, zi->bytes_skipped, SEEK_SET)) {
+					if (fseek(fout, (long) zi->bytes_skipped, SEEK_SET)) {
 						fclose(fout);
 						return ZFERR;
 					}
@@ -1246,7 +1326,7 @@ make_dirs(char *pathname)
  *  starting with CPMEOF are discarded.
  */
 static int 
-putsec(struct zm_fileinfo *zi, char *buf, int n)
+putsec(struct zm_fileinfo *zi, char *buf, size_t n)
 {
 	register char *p;
 
@@ -1259,7 +1339,7 @@ putsec(struct zm_fileinfo *zi, char *buf, int n)
 	else {
 		if (zi->eof_seen)
 			return OK;
-		for (p=buf; --n>=0; ++p ) {
+		for (p=buf; n>0; ++p,n-- ) {
 			if ( *p == '\r')
 				continue;
 			if (*p == CPMEOF) {
@@ -1403,9 +1483,10 @@ checkpath(const char *name)
 static int
 tryz(void)
 {
-	register c, n;
-	register cmdzack1flg;
+	register int c, n;
+	register int cmdzack1flg;
 	int zrqinits_received=0;
+	size_t bytes_in_block=0;
 
 	if (protocol!=ZM_ZMODEM)		/* Check for "rb" program name */
 		return 0;
@@ -1441,7 +1522,7 @@ tryz(void)
 		if (tryzhdrtype == ZSKIP)	/* Don't skip too far */
 			tryzhdrtype = ZRINIT;	/* CAF 8-21-87 */
 again:
-		switch (zgethdr(Rxhdr, 0)) {
+		switch (zgethdr(Rxhdr, 0, NULL)) {
 		case ZRQINIT:
 			/* getting one ZRQINIT is totally ok. Normally a ZFILE follows 
 			 * (and might be in our buffer, so don't purge it). But if we
@@ -1464,7 +1545,7 @@ again:
 			zmanag = Rxhdr[ZF1];
 			ztrans = Rxhdr[ZF2];
 			tryzhdrtype = ZRINIT;
-			c = zrdata(secbuf, MAX_BLOCK);
+			c = zrdata(secbuf, MAX_BLOCK,&bytes_in_block);
 			io_mode(0,3);
 			if (c == GOTCRCW)
 				return ZFILE;
@@ -1472,7 +1553,7 @@ again:
 			goto again;
 		case ZSINIT:
 			Zctlesc = TESCCTL & Rxhdr[ZF0];
-			if (zrdata(Attn, ZATTNLEN) == GOTCRCW) {
+			if (zrdata(Attn, ZATTNLEN,&bytes_in_block) == GOTCRCW) {
 				stohdr(1L);
 				zshhdr(ZACK, Txhdr);
 				goto again;
@@ -1485,7 +1566,7 @@ again:
 			goto again;
 		case ZCOMMAND:
 			cmdzack1flg = Rxhdr[ZF0];
-			if (zrdata(secbuf, MAX_BLOCK) == GOTCRCW) {
+			if (zrdata(secbuf, MAX_BLOCK,&bytes_in_block) == GOTCRCW) {
 				if (Verbose)
 				{
 					vstringf("%s: %s\n", program_name,
@@ -1503,12 +1584,12 @@ again:
 				if (cmdzack1flg & ZCACK1)
 					stohdr(0L);
 				else
-					stohdr((long)sys2(secbuf));
+					stohdr((size_t)sys2(secbuf));
 				purgeline(0);	/* dump impatient questions */
 				do {
 					zshhdr(ZCOMPL, Txhdr);
 				}
-				while (++errors<20 && zgethdr(Rxhdr,1) != ZFIN);
+				while (++errors<20 && zgethdr(Rxhdr,1, NULL) != ZFIN);
 				ackbibi();
 				if (cmdzack1flg & ZCACK1)
 					exec2(secbuf);
@@ -1549,7 +1630,7 @@ again:
 			else \
 				shortname++; \
 		} \
-        syslog message ; \
+        lsyslog message ; \
 	} \
 } while(0)
 #else
@@ -1562,7 +1643,7 @@ again:
 static int
 rzfiles(struct zm_fileinfo *zi)
 {
-	register c;
+	register int c;
 
 	for (;;) {
 		timing(1,NULL);
@@ -1622,7 +1703,7 @@ rzfiles(struct zm_fileinfo *zi)
 #ifdef SAVE_OOSB
 typedef struct oosb_t {
 	size_t pos;
-	long len;
+	size_t len;
 	char *data;
 	struct oosb_t *next;
 } oosb_t;
@@ -1636,11 +1717,12 @@ struct oosb_t *anker=NULL;
 static int
 rzfile(struct zm_fileinfo *zi)
 {
-	register c, n;
+	register int c, n;
 	long last_rxbytes=0;
-	long last_bps=0;
+	unsigned long last_bps=0;
 	long not_printed=0;
 	time_t low_bps=0;
+	size_t bytes_in_block=0;
 
 	zi->eof_seen=FALSE;
 
@@ -1687,7 +1769,7 @@ nxthdr:
 		}
 #endif
 	skip_oosb:
-		c = zgethdr(Rxhdr, 0);
+		c = zgethdr(Rxhdr, 0, NULL);
 		switch (c) {
 		default:
 			DO_SYSLOG((LOG_INFO, "%s/%s: error: zgethdr returned %d",shortname,
@@ -1707,14 +1789,14 @@ nxthdr:
 				return ERROR;
 			}
 		case ZFILE:
-			zrdata(secbuf, MAX_BLOCK);
+			zrdata(secbuf, MAX_BLOCK,&bytes_in_block);
 			continue;
 		case ZEOF:
 #ifdef SEGMENTS
 			putsec(secbuf, chinseg);
 			chinseg = 0;
 #endif
-			if (rclhdr(Rxhdr) != zi->bytes_received) {
+			if (rclhdr(Rxhdr) != (long) zi->bytes_received) {
 				/*
 				 * Ignore eof if it's at wrong place - force
 				 *  a timeout because the eof might have gone
@@ -1755,10 +1837,10 @@ nxthdr:
 			vfile("rzfile: Sender SKIPPED file");
 			return c;
 		case ZDATA:
-			if (rclhdr(Rxhdr) != zi->bytes_received) {
+			if (rclhdr(Rxhdr) != (long) zi->bytes_received) {
 #if defined(SAVE_OOSB)
 				oosb_t *neu;
-				long pos=rclhdr(Rxhdr);
+				size_t pos=rclhdr(Rxhdr);
 #endif
 				if ( --n < 0) {
 					vfile("rzfile: out of sync");
@@ -1767,7 +1849,7 @@ nxthdr:
 					return ERROR;
 				}
 #if defined(SAVE_OOSB)
-				switch (c = zrdata(secbuf, MAX_BLOCK))
+				switch (c = zrdata(secbuf, MAX_BLOCK,&bytes_in_block))
 				{
 				case GOTCRCW:
 				case GOTCRCG:
@@ -1776,19 +1858,19 @@ nxthdr:
 					if (pos>zi->bytes_received) {
 						neu=malloc(sizeof(oosb_t));
 						if (neu)
-							neu->data=malloc(Rxcount);
+							neu->data=malloc(bytes_in_block);
 						if (neu && neu->data) {
 #ifdef ENABLE_SYSLOG
 /* call syslog to tell me if this happens */
-							syslog(LOG_ERR, 
-								   "saving out-of-sync-block %lx, len %ld",
-								   pos, (long) Rxcount);
+							lsyslog(LOG_ERR, 
+								   "saving out-of-sync-block %lx, len %lu",
+								   pos, (unsigned long) bytes_in_block);
 #endif
-							vfile("saving out-of-sync-block %lx, len %ld",pos,
-								  (long) Rxcount);
-							memcpy(neu->data,secbuf,Rxcount);
+							vfile("saving out-of-sync-block %lx, len %lu",pos,
+								  (unsigned long) bytes_in_block);
+							memcpy(neu->data,secbuf,bytes_in_block);
 							neu->pos=pos;
-							neu->len=Rxcount;
+							neu->len=bytes_in_block;
 							neu->next=anker;
 							anker=neu;
 						}
@@ -1858,9 +1940,9 @@ moredata:
 				putsec(secbuf, chinseg);
 				chinseg = 0;
 			}
-			switch (c = zrdata(secbuf+chinseg, MAX_BLOCK))
+			switch (c = zrdata(secbuf+chinseg, MAX_BLOCK,&bytes_in_block))
 #else
-			switch (c = zrdata(secbuf, MAX_BLOCK))
+			switch (c = zrdata(secbuf, MAX_BLOCK,&bytes_in_block))
 #endif
 			{
 			case ZCAN:
@@ -1900,44 +1982,44 @@ moredata:
 			case GOTCRCW:
 				n = 20;
 #ifdef SEGMENTS
-				chinseg += Rxcount;
+				chinseg += bytes_in_block;
 				putsec(zi, secbuf, chinseg);
 				chinseg = 0;
 #else
-				putsec(zi, secbuf, Rxcount);
+				putsec(zi, secbuf, bytes_in_block);
 #endif
-				zi->bytes_received += Rxcount;
+				zi->bytes_received += bytes_in_block;
 				stohdr(zi->bytes_received);
 				zshhdr(ZACK | 0x80, Txhdr);
 				goto nxthdr;
 			case GOTCRCQ:
 				n = 20;
 #ifdef SEGMENTS
-				chinseg += Rxcount;
+				chinseg += bytes_in_block;
 #else
-				putsec(zi, secbuf, Rxcount);
+				putsec(zi, secbuf, bytes_in_block);
 #endif
-				zi->bytes_received += Rxcount;
+				zi->bytes_received += bytes_in_block;
 				stohdr(zi->bytes_received);
 				zshhdr(ZACK, Txhdr);
 				goto moredata;
 			case GOTCRCG:
 				n = 20;
 #ifdef SEGMENTS
-				chinseg += Rxcount;
+				chinseg += bytes_in_block;
 #else
-				putsec(zi, secbuf, Rxcount);
+				putsec(zi, secbuf, bytes_in_block);
 #endif
-				zi->bytes_received += Rxcount;
+				zi->bytes_received += bytes_in_block;
 				goto moredata;
 			case GOTCRCE:
 				n = 20;
 #ifdef SEGMENTS
-				chinseg += Rxcount;
+				chinseg += bytes_in_block;
 #else
-				putsec(zi, secbuf, Rxcount);
+				putsec(zi, secbuf, bytes_in_block);
 #endif
-				zi->bytes_received += Rxcount;
+				zi->bytes_received += bytes_in_block;
 				goto nxthdr;
 			}
 		}
@@ -1951,7 +2033,7 @@ moredata:
 static void
 zmputs(const char *s)
 {
-	char *p;
+	const char *p;
 
 	while (s && *s)
 	{
@@ -1963,7 +2045,7 @@ zmputs(const char *s)
 		}
 		if (p!=s)
 		{
-			write(1,s,p-s);
+			write(1,s,(size_t) (p-s));
 			s=p;
 		}
 		if (*p=='\336')
@@ -2039,7 +2121,7 @@ closeit(struct zm_fileinfo *zi)
 static void
 ackbibi(void)
 {
-	register n;
+	int n;
 
 	vfile("ackbibi:");
 	Readnum = 1;
@@ -2047,9 +2129,9 @@ ackbibi(void)
 	for (n=3; --n>=0; ) {
 		purgeline(0);
 		zshhdr(ZFIN, Txhdr);
-		switch (readline(100)) {
+		switch (READLINE_PF(100)) {
 		case 'O':
-			readline(1);	/* Discard 2nd 'O' */
+			READLINE_PF(1);	/* Discard 2nd 'O' */
 			vfile("ackbibi complete");
 			return;
 		case RCDO:
@@ -2090,10 +2172,10 @@ exec2(const char *s)
  * Routine to calculate the free bytes on the current file system
  *  ~0 means many free bytes (unknown)
  */
-static long 
+static size_t 
 getfree(void)
 {
-	return(~0L);	/* many free bytes ... */
+	return((size_t) (~0L));	/* many free bytes ... */
 }
 
 /* End of lrz.c */

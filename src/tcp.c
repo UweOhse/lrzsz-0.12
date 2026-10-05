@@ -28,10 +28,18 @@
 #include <errno.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <signal.h>
 
 #include "zglobal.h"
 #include <stdlib.h>
 #include "error.h"
+
+static RETSIGTYPE
+tcp_alarm_handler(int dummy LRZSZ_ATTRIB_UNUSED)
+{
+    /* doesn't need to do anything */
+}
+
 
 /* server/lsz:
  * Get a TCP socket, bind it, listen, figure out the port,
@@ -55,7 +63,7 @@ tcp_server (char *buf)
 	memset (&s, 0, sizeof (s));
 	s.sin_family = AF_INET;
 	s.sin_port=0; /* let system fill it in */
-	/* s.sin_addr=INADDR_ANY; */
+	s.sin_addr.s_addr=htonl(INADDR_ANY);
 	if (bind(sock, (struct sockaddr *)&s, sizeof (s)) < 0) {
 		error(1,errno,"bind");
 	}
@@ -63,11 +71,12 @@ tcp_server (char *buf)
 	if (getsockname (sock, (struct sockaddr *) &t, &len)) {
 		error(1,errno,"getsockname");
 	}
-	sprintf(buf,"[%s] <%d>\n",inet_ntoa(t.sin_addr),t.sin_port);
+	sprintf(buf,"[%s] <%d>\n",inet_ntoa(t.sin_addr),ntohs(t.sin_port));
 
 	if (listen(sock, 1) < 0) {
 		error(1,errno,"listen");
 	}
+	getsockname (sock, (struct sockaddr *) &t, &len);
 
 	return (sock);
 }
@@ -79,16 +88,22 @@ tcp_accept (int d)
 	int so;
 	struct  sockaddr_in s;
 	size_t namelen;
+	int num=0;
 
 	namelen = sizeof(s);
 	memset((char*)&s,0, namelen);
 
 retry:
+	signal(SIGALRM, tcp_alarm_handler);
+	alarm(30);
 	if ((so = accept(d, (struct sockaddr*)&s, &namelen)) < 0) {
-		if (errno == EINTR)
-			goto retry;
+		if (errno == EINTR) {
+			if (++num<=5)
+				goto retry;
+		}
 		error(1,errno,"accept");
 	}
+	alarm(0);
 	return so;
 }
 
@@ -117,8 +132,14 @@ tcp_connect (char *buf)
 	}
 	*p++=0;
 	s_in.sin_addr.s_addr=inet_addr(buf+1);
+#ifndef INADDR_NONE
+#define INADDR_NONE (-1)
+#endif
 	if (s_in.sin_addr.s_addr==INADDR_NONE) {
-		error(1,0,_("tcp_connect: illegal format3\n"));
+		struct hostent *h=gethostbyname(buf+1);
+		if (!h)
+			error(1,0,_("tcp_connect: illegal format3\n"));
+		memcpy(& s_in.sin_addr.s_addr,h->h_addr,h->h_length);
 	}
 	while (isspace(*p))
 		p++;
@@ -128,15 +149,17 @@ tcp_connect (char *buf)
 	q=strchr(p+1,'>');
 	if (!q)
 		error(1,0,_("tcp_connect: illegal format5\n"));
-	s_in.sin_port = strtol(p+1,NULL,10);
+	s_in.sin_port = htons(strtol(p+1,NULL,10));
 
 	if ((sock = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-		perror ("socket");
-		exit (1);
+		error(1,errno,"socket");
 	}
 
+	signal(SIGALRM, tcp_alarm_handler);
+	alarm(30);
 	if (connect (sock, (struct sockaddr *) &s_in, sizeof (s_in)) < 0) {
-		error(1,0,"connect");
+		error(1,errno,"connect");
 	}
+	alarm(0);
 	return (sock);
 }

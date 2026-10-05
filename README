@@ -1,16 +1,27 @@
-Lrz/Lsz is a cosmetically modified zmodem/ymodem/xmodem package built from the
-public-domain version of Chuck Forsberg's rzsz package.  This package contains
-NO code from later releases of rzsz which would preclude it from being released
-under the GPL.
-
-Lrz/Lsz was created to provide a working GNU copylefted zmodem solution for
-the Debian GNU/Linux distribution, although it will work for any Linux
-system.
+lrzsz is a X/Y/ZModem package built from the public-domain version of
+Chuck Forsberg´s rzsz package. This package contains NO code from later
+releases of rzsz which would preclude it from being released under the
+GPL.
+It has been heavily modified by me and others.
 
 Please note that credit should be given to Chuck Forsberg (rzsz) and Stephen
-Satchell/Satchell Evaluations (crc routines) for this package, any
-modifications by myself were minor and merely introduced to better mesh rzsz
-with the standard Linux communications programs.
+Satchell/Satchell Evaluations (crc routines) for this package. Any later
+modifications were minor and merely introduced to increase performance,
+reliability or compatability.
 
-lrzsz 0.11 4-17-94
-Matt Porter <porter+@osu.edu>
+I prefer to get bug reports sent using the `lrzszbug' shell script which
+you can find in the `src´ subdirectory (this script is not installed together
+with the programs because i don´t expect many bug reports). Nethertheless
+you can still send bug reports to <bugs@bulkmail.ohse.de> as normal
+electronic mails.
+Please note that any mails sent to this address are forwarded to the lrzsz
+mailinglist, <uwe-lrzsz@bulkmail.ohse.de>. To subscribe to this list send
+mail to <uwe-lrzsz-subscribe@bulkmail.ohse.de>.
+
+Please read:
+- INSTALL for installation instructions
+- NEWS for a list of major changes between the releases
+- ChangeLog for the list of minor changes.
+- AUTHORS and THANKS to see whom to thank for this package.
+
+Uwe Ohse

@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/crctab.c)
-AM_INIT_AUTOMAKE(lrzsz, 0.12.17)
+AM_INIT_AUTOMAKE(lrzsz, 0.12.18)
 AM_CONFIG_HEADER(config.h)
 
 
@@ -83,7 +83,7 @@ AC_ARG_ENABLE(syslog,
 		  fi
 	  	fi
 	  fi],[
-        if test `hostname` = tirka.gun.de ; then
+        if test `hostname` = tirka.ohse.de ; then
 		  AC_DEFINE(ENABLE_SYSLOG,LOG_UUCP)
 		  AC_DEFINE(ENABLE_SYSLOG_DEFAULT)
         fi
@@ -102,7 +102,7 @@ AM_C_PROTOTYPES
 AC_C_CONST
 AC_C_INLINE
 
-if test `hostname` = tirka.gun.de -a "$cross_compiling" = no ; then
+if test `hostname` = tirka.ohse.de -a "$cross_compiling" = no ; then
     test $prefix = NONE && prefix=/usr
 	if test -z "$CFLAGS" ; then 
 	    case "$CC" in 
@@ -127,9 +127,12 @@ dnl Checks for libraries.
 dnl SCO needs this.
 AC_CHECK_LIB(socket,syslog,,,-lc)
 
+AC_CHECK_LIB(nsl,inet_addr)
+
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h limits.h sys/ioctl.h sys/time.h unistd.h sys/times.h)
+LRZSZ_HEADERS_TERM_IO
 AC_CHECK_HEADERS(termios.h sys/termios.h termio.h sys/termio.h sgtty.h)
 AC_CHECK_HEADERS(sys/mman.h utime.h syslog.h sys/syslog.h sys/param.h)
 AC_CHECK_HEADERS(sys/select.h strings.h)
@@ -138,9 +141,11 @@ dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
 AC_TYPE_MODE_T
 AC_TYPE_OFF_T
+LRZSZ_TYPE_SPEED_T
 AC_STRUCT_ST_RDEV
 AC_HEADER_TIME
 AC_STRUCT_TM
+LRZSZ_ERRNO_DECL
 
 dnl Checks for library functions.
 if test $cross_compiling = no ; then
@@ -157,7 +162,7 @@ AC_CHECK_FUNCS(gettimeofday settimeofday)
 AC_CHECK_FUNCS(strchr memcpy select vprintf)
 AC_CHECK_FUNCS(times rdchk utime syslog siginterrupt)
 AC_REPLACE_FUNCS(mkdir mktime strerror strstr strdup strtoul strtol strpbrk)
-AC_REPLACE_FUNCS(stpcpy strftime)
+AC_REPLACE_FUNCS(stpcpy strftime vasprintf)
 
 AC_REPLACE_GNU_GETOPT
 
@@ -232,13 +237,14 @@ AC_SUBST(LIBS)
 
 AM_GNU_GETTEXT
 
-AC_DEFINE_UNQUOTED(LOCALEDIR,"$prefix/$DATADIRNAME")
+dnl AC_DEFINE_UNQUOTED(LOCALEDIR,"$prefix/$DATADIRNAME")
 AC_DEFINE_UNQUOTED(CPU,"$host_cpu")
 AC_DEFINE_UNQUOTED(OS,"$host_os")
 AC_LINK_FILES($nls_cv_header_libgt, $nls_cv_header_intl)
 
 AC_OUTPUT([Makefile intl/Makefile lib/Makefile \
-man/Makefile po/Makefile.in src/Makefile debian/rules],
+man/Makefile po/Makefile.in src/Makefile debian/rules \
+src/lrzszbug],
 [sed -e "/POTFILES =/r po/POTFILES" po/Makefile.in > po/Makefile; 
 chmod +x debian/rules;
 test -z "$CONFIG_HEADERS" || echo timestamp > stamp-h])

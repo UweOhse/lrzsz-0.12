@@ -1,19 +1,20 @@
-/* localealias.c -- handle aliases for locale names
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+/* Handle aliases for locale names
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Written by Ulrich Drepper <drepper@gnu.ai.mit.edu>, 1995.
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2, or (at your option)
-any later version.
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software Foundation,
+   Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -58,11 +59,13 @@ void free ();
 # include <string.h>
 #else
 # include <strings.h>
-# ifndef strchr
-#  define strchr index
-# endif
 # ifndef memcpy
 #  define memcpy(Dst, Src, Num) bcopy (Src, Dst, Num)
+# endif
+#endif
+#if !HAVE_STRCHR && !defined _LIBC
+# ifndef strchr
+#  define strchr index
 # endif
 #endif
 
@@ -294,7 +297,7 @@ read_alias_file (fname, fname_len)
 	    }
 	}
 
-      /* Possibily not the whole line fitted into the buffer.  Ignore
+      /* Possibly not the whole line fits into the buffer.  Ignore
 	 the rest of the line.  */
       while (strchr (cp, '\n') == NULL)
 	{
