@@ -60,16 +60,13 @@
 #undef STRICT_PROTOTYPES
 
 /* where the localedata hides */
-#undef LOCALEDIR
-
-/* which OS */
-#undef OS
-
-/* the CPU */
-#undef CPU
+/* #undef LOCALEDIR */
 
 /* do your system libraries declare errno? */
 #undef HAVE_ERRNO_DECLARATION
 
 /* define to type of speed_t (long?) */
 #undef speed_t
+
+/* define this if you headers conflict */
+#undef SYS_TIME_WITHOUT_SYS_SELECT

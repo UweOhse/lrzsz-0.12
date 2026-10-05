@@ -1,8 +1,14 @@
-# Makefile.in generated automatically by automake 1.2 from Makefile.am
+# Makefile.in generated automatically by automake 1.3 from Makefile.am
 
-# Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+# Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
-# gives unlimited permission to copy, distribute and modify it.
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
 
 
 SHELL = /bin/sh
@@ -26,6 +32,8 @@ mandir = @mandir@
 includedir = @includedir@
 oldincludedir = /usr/include
 
+DISTDIR =
+
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -43,17 +51,16 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 transform = @program_transform_name@
 
-NORMAL_INSTALL = true
-PRE_INSTALL = true
-POST_INSTALL = true
-NORMAL_UNINSTALL = true
-PRE_UNINSTALL = true
-POST_UNINSTALL = true
-host_alias = @host_alias@
-host_triplet = @host@
+NORMAL_INSTALL = :
+PRE_INSTALL = :
+POST_INSTALL = :
+NORMAL_UNINSTALL = :
+PRE_UNINSTALL = :
+POST_UNINSTALL = :
 CATALOGS = @CATALOGS@
 CATOBJEXT = @CATOBJEXT@
 CC = @CC@
+CPP = @CPP@
 DATADIRNAME = @DATADIRNAME@
 ENABLE_TIMESYNC = @ENABLE_TIMESYNC@
 GENCAT = @GENCAT@
@@ -81,12 +88,11 @@ U = @U@
 USE_INCLUDED_LIBINTL = @USE_INCLUDED_LIBINTL@
 USE_NLS = @USE_NLS@
 VERSION = @VERSION@
-host_cpu = @host_cpu@
-host_os = @host_os@
 l = @l@
 
 noinst_LIBRARIES=libzmodem.a
 CFLAGS=@CFLAGS@
+AUTOMAKE_OPTIONS=ansi2knr
 
 EXTRA_DIST = alloca.c ansi2knr.1 ansi2knr.c \
 	getopt.c getopt1.c mkdir.c mktime.c \
@@ -106,7 +112,9 @@ LIBRARIES =  $(noinst_LIBRARIES)
 
 DEFS = @DEFS@ -I. -I$(srcdir) -I..
 CPPFLAGS = @CPPFLAGS@
-libzmodem_a_OBJECTS =  long-options.o xstrtol.o xstrtoul.o error.o
+ANSI2KNR = @ANSI2KNR@
+libzmodem_a_OBJECTS =  long-options$U.o xstrtol$U.o xstrtoul$U.o \
+error$U.o
 AR = ar
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
 LINK = $(CC) $(CFLAGS) $(LDFLAGS) -o $@
@@ -124,14 +132,14 @@ GZIP = --best
 SOURCES = $(libzmodem_a_SOURCES)
 OBJECTS = $(libzmodem_a_OBJECTS)
 
-default: all
+all: Makefile $(ANSI2KNR) $(LIBRARIES) $(HEADERS)
 
 .SUFFIXES:
-.SUFFIXES: .c .o
-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+.SUFFIXES: .S .c .o .s
+$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4)
 	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps lib/Makefile
 
-Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
@@ -139,7 +147,7 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 mostlyclean-noinstLIBRARIES:
 
 clean-noinstLIBRARIES:
-	test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
+	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
 
 distclean-noinstLIBRARIES:
 
@@ -148,38 +156,111 @@ maintainer-clean-noinstLIBRARIES:
 .c.o:
 	$(COMPILE) -c $<
 
+.s.o:
+	$(COMPILE) -c $<
+
+.S.o:
+	$(COMPILE) -c $<
+
 mostlyclean-compile:
-	rm -f *.o core
+	-rm -f *.o core *.core
 
 clean-compile:
 
 distclean-compile:
-	rm -f *.tab.c
+	-rm -f *.tab.c
 
 maintainer-clean-compile:
 
+mostlyclean-krextra:
+
+clean-krextra:
+	-rm -f ansi2knr
+
+distclean-krextra:
+
+maintainer-clean-krextra:
+ansi2knr: ansi2knr.o
+	$(LINK) ansi2knr.o $(LIBS)
+ansi2knr.o: $(CONFIG_HEADER)
+
+
+mostlyclean-kr:
+	-rm -f *_.c
+
+clean-kr:
+
+distclean-kr:
+
+maintainer-clean-kr:
+
 libzmodem.a: $(libzmodem_a_OBJECTS) $(libzmodem_a_DEPENDENCIES)
-	rm -f libzmodem.a
+	-rm -f libzmodem.a
 	$(AR) cru libzmodem.a $(libzmodem_a_OBJECTS) $(libzmodem_a_LIBADD)
 	$(RANLIB) libzmodem.a
+alloca_.c: alloca.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/alloca.c; then echo $(srcdir)/alloca.c; else echo alloca.c; fi` | $(ANSI2KNR) alloca_.c
+error_.c: error.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/error.c; then echo $(srcdir)/error.c; else echo error.c; fi` | $(ANSI2KNR) error_.c
+getopt_.c: getopt.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/getopt.c; then echo $(srcdir)/getopt.c; else echo getopt.c; fi` | $(ANSI2KNR) getopt_.c
+getopt1_.c: getopt1.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/getopt1.c; then echo $(srcdir)/getopt1.c; else echo getopt1.c; fi` | $(ANSI2KNR) getopt1_.c
+long-options_.c: long-options.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/long-options.c; then echo $(srcdir)/long-options.c; else echo long-options.c; fi` | $(ANSI2KNR) long-options_.c
+mkdir_.c: mkdir.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/mkdir.c; then echo $(srcdir)/mkdir.c; else echo mkdir.c; fi` | $(ANSI2KNR) mkdir_.c
+mktime_.c: mktime.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/mktime.c; then echo $(srcdir)/mktime.c; else echo mktime.c; fi` | $(ANSI2KNR) mktime_.c
+stpcpy_.c: stpcpy.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/stpcpy.c; then echo $(srcdir)/stpcpy.c; else echo stpcpy.c; fi` | $(ANSI2KNR) stpcpy_.c
+strdup_.c: strdup.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/strdup.c; then echo $(srcdir)/strdup.c; else echo strdup.c; fi` | $(ANSI2KNR) strdup_.c
+strerror_.c: strerror.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/strerror.c; then echo $(srcdir)/strerror.c; else echo strerror.c; fi` | $(ANSI2KNR) strerror_.c
+strftime_.c: strftime.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/strftime.c; then echo $(srcdir)/strftime.c; else echo strftime.c; fi` | $(ANSI2KNR) strftime_.c
+strpbrk_.c: strpbrk.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/strpbrk.c; then echo $(srcdir)/strpbrk.c; else echo strpbrk.c; fi` | $(ANSI2KNR) strpbrk_.c
+strstr_.c: strstr.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/strstr.c; then echo $(srcdir)/strstr.c; else echo strstr.c; fi` | $(ANSI2KNR) strstr_.c
+strtol_.c: strtol.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/strtol.c; then echo $(srcdir)/strtol.c; else echo strtol.c; fi` | $(ANSI2KNR) strtol_.c
+strtoul_.c: strtoul.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/strtoul.c; then echo $(srcdir)/strtoul.c; else echo strtoul.c; fi` | $(ANSI2KNR) strtoul_.c
+vasprintf_.c: vasprintf.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/vasprintf.c; then echo $(srcdir)/vasprintf.c; else echo vasprintf.c; fi` | $(ANSI2KNR) vasprintf_.c
+xstrtol_.c: xstrtol.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/xstrtol.c; then echo $(srcdir)/xstrtol.c; else echo xstrtol.c; fi` | $(ANSI2KNR) xstrtol_.c
+xstrtoul_.c: xstrtoul.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/xstrtoul.c; then echo $(srcdir)/xstrtoul.c; else echo xstrtoul.c; fi` | $(ANSI2KNR) xstrtoul_.c
+alloca_.o error_.o getopt_.o getopt1_.o long-options_.o mkdir_.o \
+mktime_.o stpcpy_.o strdup_.o strerror_.o strftime_.o strpbrk_.o \
+strstr_.o strtol_.o strtoul_.o vasprintf_.o xstrtol_.o xstrtoul_.o : \
+$(ANSI2KNR)
 
 tags: TAGS
 
-ID: $(HEADERS) $(SOURCES)
-	here=`pwd` && cd $(srcdir) && mkid -f$$here/ID $(SOURCES) $(HEADERS)
+ID: $(HEADERS) $(SOURCES) $(LISP)
+	here=`pwd` && cd $(srcdir) \
+	  && mkid -f$$here/ID $(SOURCES) $(HEADERS) $(LISP)
 
-TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES)
+TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) $(LISP)
 	tags=; \
 	here=`pwd`; \
-	test -z "$(ETAGS_ARGS)$(SOURCES)$(HEADERS)$$tags" \
-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $(SOURCES) $(HEADERS) -o $$here/TAGS)
+	list='$(SOURCES) $(HEADERS)'; \
+	unique=`for i in $$list; do echo $$i; done | \
+	  awk '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
 
 mostlyclean-tags:
 
 clean-tags:
 
 distclean-tags:
-	rm -f TAGS ID
+	-rm -f TAGS ID
 
 maintainer-clean-tags:
 
@@ -194,25 +275,10 @@ distdir: $(DISTFILES)
 	  || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 	  || cp -p $$d/$$file $(distdir)/$$file; \
 	done
-alloca.o alloca.lo: alloca.c ../config.h
-error.o error.lo: error.c ../config.h
-getopt.o getopt.lo: getopt.c ../config.h
-getopt1.o getopt1.lo: getopt1.c ../config.h getopt.h
-long-options.o long-options.lo: long-options.c ../config.h getopt.h \
-	long-options.h
-mkdir.o mkdir.lo: mkdir.c ../config.h
-mktime.o mktime.lo: mktime.c ../config.h
-stpcpy.o stpcpy.lo: stpcpy.c ../config.h
-strdup.o strdup.lo: strdup.c ../config.h
-strerror.o strerror.lo: strerror.c
-strftime.o strftime.lo: strftime.c ../config.h
-strpbrk.o strpbrk.lo: strpbrk.c ../config.h
-strstr.o strstr.lo: strstr.c
-strtol.o strtol.lo: strtol.c ../config.h
-strtoul.o strtoul.lo: strtoul.c strtol.c ../config.h
-vasprintf.o vasprintf.lo: vasprintf.c ../config.h
-xstrtol.o xstrtol.lo: xstrtol.c ../config.h xstrtol.h
-xstrtoul.o xstrtoul.lo: xstrtoul.c xstrtol.c ../config.h xstrtol.h
+error.o: error.c ../config.h
+long-options.o: long-options.c ../config.h getopt.h long-options.h
+xstrtol.o: xstrtol.c ../config.h xstrtol.h
+xstrtoul.o: xstrtoul.c xstrtol.c ../config.h xstrtol.h
 
 info:
 dvi:
@@ -230,47 +296,50 @@ install: install-exec install-data all
 
 uninstall: 
 
-all: Makefile $(LIBRARIES) $(HEADERS)
-
 install-strip:
 	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' INSTALL_SCRIPT='$(INSTALL_PROGRAM)' install
 installdirs:
 
 
 mostlyclean-generic:
-	test -z "$(MOSTLYCLEANFILES)" || rm -f $(MOSTLYCLEANFILES)
+	-test -z "$(MOSTLYCLEANFILES)" || rm -f $(MOSTLYCLEANFILES)
 
 clean-generic:
-	test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
-	rm -f Makefile $(DISTCLEANFILES)
-	rm -f config.cache config.log stamp-h stamp-h[0-9]*
-	test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
+	-rm -f Makefile $(DISTCLEANFILES)
+	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
+	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 
 maintainer-clean-generic:
-	test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
-	test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
+	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 mostlyclean:  mostlyclean-noinstLIBRARIES mostlyclean-compile \
-		mostlyclean-tags mostlyclean-generic
+		mostlyclean-krextra mostlyclean-kr mostlyclean-tags \
+		mostlyclean-generic
 
-clean:  clean-noinstLIBRARIES clean-compile clean-tags clean-generic \
-		mostlyclean
+clean:  clean-noinstLIBRARIES clean-compile clean-krextra clean-kr \
+		clean-tags clean-generic mostlyclean
 
-distclean:  distclean-noinstLIBRARIES distclean-compile distclean-tags \
+distclean:  distclean-noinstLIBRARIES distclean-compile \
+		distclean-krextra distclean-kr distclean-tags \
 		distclean-generic clean
-	rm -f config.status
+	-rm -f config.status
 
 maintainer-clean:  maintainer-clean-noinstLIBRARIES \
-		maintainer-clean-compile maintainer-clean-tags \
+		maintainer-clean-compile maintainer-clean-krextra \
+		maintainer-clean-kr maintainer-clean-tags \
 		maintainer-clean-generic distclean
 	@echo "This command is intended for maintainers to use;"
 	@echo "it deletes files that may require special tools to rebuild."
 
-.PHONY: default mostlyclean-noinstLIBRARIES distclean-noinstLIBRARIES \
+.PHONY: mostlyclean-noinstLIBRARIES distclean-noinstLIBRARIES \
 clean-noinstLIBRARIES maintainer-clean-noinstLIBRARIES \
 mostlyclean-compile distclean-compile clean-compile \
-maintainer-clean-compile tags mostlyclean-tags distclean-tags \
+maintainer-clean-compile mostlyclean-krextra distclean-krextra \
+clean-krextra maintainer-clean-krextra mostlyclean-kr distclean-kr \
+clean-kr maintainer-clean-kr tags mostlyclean-tags distclean-tags \
 clean-tags maintainer-clean-tags distdir info dvi installcheck \
 install-exec install-data install uninstall all installdirs \
 mostlyclean-generic distclean-generic clean-generic \

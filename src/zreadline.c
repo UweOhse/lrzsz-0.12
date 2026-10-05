@@ -102,7 +102,7 @@ readline_internal(unsigned int timeout)
 			j=readline_left > 48 ? 48 : readline_left;
 			vstring("    ");
 			for (i=0;i<j;i++) {
-				if (i==24)
+				if (i%24==0 && i)
 					vstring("\n    ");
 				vstringf("%02x ", readline_ptr[i] & 0377);
 			}

@@ -11,7 +11,3 @@
 - improve error reporting.
 - clean up Output in verbose mode. (document what's printed if
   verbose is `n')
-- implement ZF1_ZMCRC / ZCRC.
-  - command line option for sender, to request crc check (ZF1_ZMCRC)
-  - command line option for receiver, to request crc check (ZCRC)
-  - make receiver understand ZF1_ZMCRC

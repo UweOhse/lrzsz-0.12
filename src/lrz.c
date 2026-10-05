@@ -45,7 +45,6 @@
 extern time_t time();
 extern char *strerror();
 extern char *strstr();
-extern char *stpcpy();
 #endif
 
 #ifndef HAVE_ERRNO_DECLARATION
@@ -125,14 +124,13 @@ static int rzfiles __P ((struct zm_fileinfo *));
 static int tryz __P ((void));
 static void checkpath __P ((const char *name));
 static void chkinvok __P ((const char *s));
-static void canit __P ((void));
 static void report __P ((int sct));
 static void uncaps __P ((char *s));
 static int IsAnyLower __P ((const char *s));
 static int putsec __P ((struct zm_fileinfo *zi, char *buf, size_t n));
 static int make_dirs __P ((char *pathname));
 static int procheader __P ((char *name, struct zm_fileinfo *));
-static int wcgetsec __P ((int *Blklen, char *rxbuf, unsigned int maxtime));
+static int wcgetsec __P ((size_t *Blklen, char *rxbuf, unsigned int maxtime));
 static int wcrx __P ((struct zm_fileinfo *));
 static int wcrxpn __P ((struct zm_fileinfo *, char *rpn));
 static int wcreceive __P ((int argc, char **argp));
@@ -198,7 +196,7 @@ bibi(int n)
 {
 	if (zmodem_requested)
 		zmputs(Attn);
-	canit();
+	canit(STDOUT_FILENO);
 	io_mode(0,0);
 	error(128+n,0,_("caught signal %d; exiting"), n);
 }
@@ -273,6 +271,9 @@ main(int argc, char *argv[])
 	if ((cp=getenv("ZMODEM_RESTRICTED"))!=NULL)
 		Restricted=2;
 
+	/* make temporary and unfinished files */
+	umask(0077);
+
 	from_cu();
 	chkinvok(argv[0]);	/* if called as [-]rzCOMMAND set flag */
 
@@ -335,7 +336,7 @@ main(int argc, char *argv[])
 		case 'p': Lzmanag = ZF1_ZMPROT;  break;
 		case 'q': Quiet=TRUE; Verbose=0; break;
 		case 's':
-			if (isdigit(*optarg)) {
+			if (isdigit((unsigned char) (*optarg))) {
 				struct tm *tm;
 				time_t t;
 				int hh,mm;
@@ -501,7 +502,7 @@ main(int argc, char *argv[])
 			Verbose = 2;
 	}
 
-	vfile("%s %s for %s-%s\n", program_name, VERSION, CPU, OS);
+	vfile("%s %s\n", program_name, VERSION);
 
 	if (tcp_flag==2) {
 		char buf[256];
@@ -558,11 +559,11 @@ main(int argc, char *argv[])
 	signal(SIGPIPE, bibi);
 	if (wcreceive(npats, patts)==ERROR) {
 		exitcode=0200;
-		canit();
+		canit(STDOUT_FILENO);
 	}
 	io_mode(0,0);
 	if (exitcode && !zmodem_requested)	/* bellow again with all thy might. */
-		canit();
+		canit(STDOUT_FILENO);
 	if (Verbose)
 	{
 		fputs("\r\n",stderr);
@@ -594,8 +595,8 @@ usage(int exitcode, const char *what)
 		exit(exitcode);
 	}
 
-	fprintf(f, _("%s version %s for %s-%s\n"), program_name,
-		VERSION, CPU, OS);
+	fprintf(f, _("%s version %s\n"), program_name,
+		VERSION);
 
 	fprintf(f,_("Usage: %s [options] [filename.if.xmodem]\n"), program_name);
 	fputs(_("Receive files with ZMODEM/YMODEM/XMODEM protocol\n"),f);
@@ -722,7 +723,7 @@ wcreceive(int argc, char **argp)
 					if (Verbose>1) {
 						vstringf(
 							_("\rBytes received: %7ld/%7ld   BPS:%-6ld                \r\n"),
-							zi.bytes_received, zi.bytes_total, bps);
+							(long) zi.bytes_received, (long) zi.bytes_total, bps);
 					}
 #ifdef ENABLE_SYSLOG
 					if (enable_syslog)
@@ -791,7 +792,7 @@ wcreceive(int argc, char **argp)
 			if (Verbose) {
 				vstringf(
 					_("\rBytes received: %7ld   BPS:%-6ld                \r\n"),
-					zi.bytes_received, bps);
+					(long) zi.bytes_received, bps);
 			}
 #ifdef ENABLE_SYSLOG
 			if (enable_syslog)
@@ -807,7 +808,7 @@ fubar:
 		lsyslog(LOG_ERR,"%s/%s: got error", 
 			shortname ? shortname : "no.name", protname());
 #endif
-	canit();
+	canit(STDOUT_FILENO);
 	if (Topipe && fout) {
 		pclose(fout);  return ERROR;
 	}
@@ -831,7 +832,7 @@ static int
 wcrxpn(struct zm_fileinfo *zi, char *rpn)
 {
 	register int c;
-	int Blklen=0;		/* record length of received packets */
+	size_t Blklen=0;		/* record length of received packets */
 
 #ifdef NFGVMIN
 	READLINE_PF(1);
@@ -924,7 +925,7 @@ wcrx(struct zm_fileinfo *zi)
  *    (Caller must do that when he is good and ready to get next sector)
  */
 static int
-wcgetsec(int *Blklen, char *rxbuf, unsigned int maxtime)
+wcgetsec(size_t *Blklen, char *rxbuf, unsigned int maxtime)
 {
 	register int checksum, wcj, firstch;
 	register unsigned short oldcrc;
@@ -1017,7 +1018,7 @@ humbug:
 		}
 	}
 	/* try to stop the bubble machine. */
-	canit();
+	canit(STDOUT_FILENO);
 	return ERROR;
 }
 
@@ -1029,7 +1030,8 @@ humbug:
  * remote file size is remote_bytes.
  */
 static int 
-do_crc_check(FILE *f, size_t remote_bytes, size_t check_bytes) {
+do_crc_check(FILE *f, size_t remote_bytes, size_t check_bytes) 
+{
 	struct stat st;
 	unsigned long crc;
 	unsigned long rcrc;
@@ -1182,7 +1184,9 @@ procheader(char *name, struct zm_fileinfo *zi)
 		int i;
 		if (zmanag == ZF1_ZMNEW || zmanag==ZF1_ZMNEWL) {
 			if (-1==fstat(fileno(fout),&sta)) {
+#ifdef ENABLE_SYSLOG
 				int e=errno;
+#endif
 				if (Verbose)
 					vstringf(_("file exists, skipped: %s\n"),name);
 				DO_SYSLOG((LOG_ERR,"cannot fstat open file %s: %s",
@@ -1214,6 +1218,7 @@ procheader(char *name, struct zm_fileinfo *zi)
 			}
 			fclose(fout);
 		} else {
+			size_t namelen;
 			fclose(fout);
 			if ((zmanag & ZF1_ZMMASK)!=ZF1_ZMCHNG) {
 				if (Verbose)
@@ -1221,8 +1226,10 @@ procheader(char *name, struct zm_fileinfo *zi)
 				return ERROR;
 			}
 			/* try to rename */
-			tmpname=alloca(strlen(name)+5);
-			ptr=stpcpy(tmpname,name);
+			namelen=strlen(name);
+			tmpname=alloca(namelen+5);
+			memcpy(tmpname,name,namelen);
+			ptr=tmpname+namelen;
 			*ptr++='.';
 			i=0;
 			do {
@@ -1256,8 +1263,8 @@ procheader(char *name, struct zm_fileinfo *zi)
 		if (d<0)
 			d=0;
 		if ((Verbose && d>60) || Verbose > 1)
-			vstringf(_("TIMESYNC: here %ld, remote %ld, diff %d seconds\n"),
-			(long) t, (long) zi->modtime, (long) d);
+			vstringf(_("TIMESYNC: here %ld, remote %ld, diff %ld seconds\n"),
+			(long) t, (long) zi->modtime, d);
 #ifdef HAVE_SETTIMEOFDAY
 		if (timesync_flag > 1 && d > 10)
 		{
@@ -1379,7 +1386,9 @@ procheader(char *name, struct zm_fileinfo *zi)
 #endif
 		if ( !fout)
 		{
+#ifdef ENABLE_SYSLOG
 			int e=errno;
+#endif
 			zpfatal(_("cannot open %s"), name_static);
 			DO_SYSLOG((LOG_ERR,"%s: cannot open: %s",
 				protname(),strerror(e)));
@@ -1521,7 +1530,7 @@ static void
 uncaps(char *s)
 {
 	for ( ; *s; ++s)
-		if (isupper(*s))
+		if (isupper((unsigned char)(*s)))
 			*s = tolower(*s);
 }
 /*
@@ -1531,24 +1540,10 @@ static int
 IsAnyLower(const char *s)
 {
 	for ( ; *s; ++s)
-		if (islower(*s))
+		if (islower((unsigned char)(*s)))
 			return TRUE;
 	return FALSE;
 }
-
-/* send cancel string to get the other end to shut up */
-static void
-canit(void)
-{
-	static char canistr[] = {
-	 24,24,24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,8,8,0
-	};
-
-	printf(canistr);
-	flushmo();
-	purgeline(0);	/* Do read next time ... */
-}
-
 
 static void
 report(int sct)
@@ -1607,7 +1602,7 @@ checkpath(const char *name)
 		/* don't overwrite any file in very restricted mode.
 		 * don't overwrite hidden files in restricted mode */
 		if ((Restricted==2 || *name=='.') && fopen(name, "r") != NULL) {
-			canit();
+			canit(STDOUT_FILENO);
 			vstring("\r\n");
 			vstringf(_("%s: %s exists\n"), 
 				program_name, name);
@@ -1620,7 +1615,7 @@ checkpath(const char *name)
 		 	strlen(PUBDIR)))
 #endif
 		) {
-			canit();
+			canit(STDOUT_FILENO);
 			vstring("\r\n");
 			vstringf(_("%s:\tSecurity Violation"),program_name);
 			vstring("\r\n");
@@ -1628,7 +1623,7 @@ checkpath(const char *name)
 		}
 		if (Restricted > 1) {
 			if (name[0]=='.' || strstr(name,"/.")) {
-				canit();
+				canit(STDOUT_FILENO);
 				vstring("\r\n");
 				vstringf(_("%s:\tSecurity Violation"),program_name);
 				vstring("\r\n");
@@ -1824,7 +1819,7 @@ rzfiles(struct zm_fileinfo *zi)
 				if (Verbose > 1) {
 					vstringf(
 						_("\rBytes received: %7ld/%7ld   BPS:%-6ld                \r\n"),
-						zi->bytes_received, zi->bytes_total, bps);
+						(long) zi->bytes_received, (long) zi->bytes_total, bps);
 				}
 				DO_SYSLOG_FNAME((LOG_INFO, "%s/%s: %ld Bytes, %ld BPS",shortname,
 						   protname(), (long) zi->bytes_total,bps));
@@ -2089,7 +2084,8 @@ moredata:
 				
 				if (Verbose > 1) {
 					vstringf(_("\rBytes received: %7ld/%7ld   BPS:%-6ld ETA %02d:%02d  "),
-							zi->bytes_received, zi->bytes_total, last_bps, minleft, secleft);
+						(long) zi->bytes_received, (long) zi->bytes_total, 
+						last_bps, minleft, secleft);
 					last_rxbytes=zi->bytes_received;
 					not_printed=0;
 				}

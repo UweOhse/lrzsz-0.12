@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 1998-01-20 12:55+0100\n"
+"POT-Creation-Date: 1998-12-30 08:49+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -14,290 +14,314 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: ENCODING\n"
 
-#: src/lsz.c:230
+#: src/lsz.c:228
 msgid "io_mode(,2) in rbsb.c not implemented\n"
 msgstr ""
 
-#: src/lrz.c:203 src/lsz.c:232
+#: src/lrz.c:201 src/lsz.c:230
 #, c-format
 msgid "caught signal %d; exiting"
 msgstr ""
 
-#: src/lsz.c:402
+#: src/lsz.c:400
 msgid "command tries"
 msgstr ""
 
-#: src/lsz.c:424 src/lsz.c:438
+#: src/lsz.c:422
 msgid "packetlength"
 msgstr ""
 
-#: src/lsz.c:429
+#: src/lsz.c:427
 #, c-format
 msgid "packetlength out of range 24..%ld"
 msgstr ""
 
-#: src/lsz.c:443
+#: src/lsz.c:436
+msgid "framelength"
+msgstr ""
+
+#: src/lsz.c:441
 #, c-format
 msgid "framelength out of range 32..%ld"
 msgstr ""
 
-#: src/lrz.c:322 src/lsz.c:452
+#: src/lrz.c:323 src/lsz.c:450
 msgid "min_bps"
 msgstr ""
 
-#: src/lsz.c:454
+#: src/lsz.c:452
 msgid "min_bps must be >= 0"
 msgstr ""
 
-#: src/lrz.c:328 src/lsz.c:460
+#: src/lrz.c:329 src/lsz.c:458
 msgid "min_bps_time"
 msgstr ""
 
-#: src/lrz.c:330 src/lsz.c:462
+#: src/lrz.c:331 src/lsz.c:460
 msgid "min_bps_time must be > 1"
 msgstr ""
 
-#: src/lrz.c:346 src/lsz.c:486
+#: src/lrz.c:347 src/lsz.c:484
 msgid "hour to large (0..23)"
 msgstr ""
 
-#: src/lrz.c:348 src/lsz.c:488
+#: src/lrz.c:349 src/lsz.c:486
 msgid "unparsable stop time\n"
 msgstr ""
 
-#: src/lrz.c:352 src/lsz.c:492
+#: src/lrz.c:353 src/lsz.c:490
 msgid "minute to large (0..59)"
 msgstr ""
 
-#: src/lrz.c:362 src/lrz.c:369 src/lsz.c:502 src/lsz.c:509
+#: src/lrz.c:363 src/lrz.c:370 src/lsz.c:500 src/lsz.c:507
 msgid "stop time to small"
 msgstr ""
 
-#: src/lrz.c:367 src/lsz.c:507
+#: src/lrz.c:368 src/lsz.c:505
 msgid "stop-at"
 msgstr ""
 
-#: src/lrz.c:398 src/lsz.c:518
+#: src/lrz.c:399 src/lsz.c:516
 msgid "timeout"
 msgstr ""
 
-#: src/lrz.c:400 src/lsz.c:520
+#: src/lrz.c:401 src/lsz.c:518
 msgid "timeout out of range 10..1000"
 msgstr ""
 
-#: src/lrz.c:416 src/lsz.c:528
+#: src/lrz.c:417 src/lsz.c:526
 msgid "security violation: can't do that under restricted shell\n"
 msgstr ""
 
-#: src/lrz.c:406 src/lsz.c:535
+#: src/lrz.c:407 src/lsz.c:533
 msgid "window size"
 msgstr ""
 
-#: src/lrz.c:431 src/lrz.c:438 src/lsz.c:558 src/lsz.c:565
+#: src/lrz.c:432 src/lrz.c:439 src/lsz.c:556 src/lsz.c:563
 msgid "cannot turnoff syslog"
 msgstr ""
 
-#: src/lrz.c:453 src/lsz.c:573
+#: src/lrz.c:454 src/lsz.c:571
 msgid "startup delay"
 msgstr ""
 
-#: src/lrz.c:469 src/lrz.c:754 src/lrz.c:1115 src/lrz.c:1236 src/lrz.c:1293
-#: src/lrz.c:1310 src/lrz.c:1325 src/lrz.c:1422 src/lsz.c:585 src/lsz.c:690
-#: src/lsz.c:828 src/lsz.c:1042 src/zreadline.c:127
+#: src/lrz.c:470 src/lrz.c:755 src/lrz.c:1117 src/lrz.c:1243 src/lrz.c:1300
+#: src/lrz.c:1317 src/lrz.c:1332 src/lrz.c:1431 src/lsz.c:583 src/lsz.c:692
+#: src/lsz.c:831 src/lsz.c:1080 src/zreadline.c:127
 msgid "out of memory"
 msgstr ""
 
-#: src/lrz.c:479 src/lsz.c:597
+#: src/lrz.c:480 src/lsz.c:595
 msgid "this program was never intended to be used setuid\n"
 msgstr ""
 
-#: src/lsz.c:609 src/lsz.c:624
+#: src/lsz.c:611 src/lsz.c:626
 msgid "need at least one file to send"
 msgstr ""
 
-#: src/lsz.c:626
+#: src/lsz.c:628
 msgid "Can't send command in restricted mode\n"
 msgstr ""
 
-#: src/lrz.c:523 src/lsz.c:653
+#: src/lrz.c:524 src/lsz.c:655
 msgid "hostname too long\n"
 msgstr ""
 
-#: src/lrz.c:538 src/lsz.c:668
+#: src/lrz.c:539 src/lsz.c:670
 msgid "illegal server address\n"
 msgstr ""
 
-#: src/lsz.c:707
+#: src/lsz.c:709
 msgid "can read only one file from stdin"
 msgstr ""
 
-#: src/lrz.c:570 src/lsz.c:804
+#: src/lrz.c:571 src/lsz.c:806
 msgid "Transfer incomplete\n"
 msgstr ""
 
-#: src/lrz.c:572 src/lsz.c:806
+#: src/lrz.c:573 src/lsz.c:808
 msgid "Transfer complete\n"
-msgstr ""
-
-#: src/lsz.c:838
-#, c-format
-msgid "send_pseudo %s: failed"
 msgstr ""
 
 #: src/lsz.c:841
 #, c-format
-msgid "send_pseudo %s: ok"
-msgstr ""
-
-#: src/lsz.c:849
-#, c-format
 msgid "send_pseudo %s: cannot open tmpfile %s: %s"
 msgstr ""
 
-#: src/lsz.c:874
+#: src/lsz.c:854
+#, c-format
+msgid "send_pseudo %s: cannot lstat tmpfile %s: %s"
+msgstr ""
+
+#: src/lsz.c:862
+#, c-format
+msgid "send_pseudo %s: avoiding symlink trap"
+msgstr ""
+
+#: src/lsz.c:873
+#, c-format
+msgid "send_pseudo %s: cannot write to tmpfile %s: %s"
+msgstr ""
+
+#: src/lsz.c:882
+#, c-format
+msgid "send_pseudo %s: failed"
+msgstr ""
+
+#: src/lsz.c:885
+#, c-format
+msgid "send_pseudo %s: ok"
+msgstr ""
+
+#: src/lsz.c:912
 msgid "tcp protocol init failed\n"
 msgstr ""
 
-#: src/lsz.c:897
+#: src/lsz.c:935
 #, c-format
 msgid "Answering TIMESYNC at %s"
 msgstr ""
 
-#: src/lsz.c:902
+#: src/lsz.c:940
 msgid "timezone"
 msgstr ""
 
-#: src/lsz.c:905
+#: src/lsz.c:943
 msgid "timezone unknown"
 msgstr ""
 
-#: src/lsz.c:934
+#: src/lsz.c:972
 msgid "Can't open any requested files."
 msgstr ""
 
-#: src/lsz.c:990
+#: src/lsz.c:1028
 #, c-format
 msgid "security violation: not allowed to upload from %s"
 msgstr ""
 
-#: src/lrz.c:1383 src/lsz.c:1008
+#: src/lrz.c:1392 src/lsz.c:1046
 #, c-format
 msgid "cannot open %s"
 msgstr ""
 
-#: src/lsz.c:1063
+#: src/lsz.c:1101
 #, c-format
 msgid "is not a file: %s"
 msgstr ""
 
-#: src/lsz.c:1087 src/lsz.c:1102
+#: src/lsz.c:1134 src/lsz.c:1149
 #, c-format
 msgid "%s/%s: error occured"
 msgstr ""
 
-#: src/lsz.c:1091
+#: src/lsz.c:1138
 #, c-format
 msgid "skipped: %s"
 msgstr ""
 
-#: src/lsz.c:1094
+#: src/lsz.c:1141
 #, c-format
 msgid "%s/%s: skipped"
 msgstr ""
 
-#: src/lsz.c:1121
+#: src/lsz.c:1168
 #, c-format
 msgid "Bytes Sent:%7ld   BPS:%-8ld                        \n"
 msgstr ""
 
-#: src/lsz.c:1150
+#: src/lsz.c:1197
 #, c-format
 msgid "Sending %s, %ld blocks: "
 msgstr ""
 
-#: src/lsz.c:1153
+#: src/lsz.c:1200
 msgid "Give your local XMODEM receive command now."
 msgstr ""
 
-#: src/lsz.c:1193
+#: src/lsz.c:1243
 #, c-format
 msgid "Sending: %s\n"
 msgstr ""
 
-#: src/lsz.c:1236
+#: src/lsz.c:1286
 msgid "Timeout on pathname"
 msgstr ""
 
-#: src/lsz.c:1280
+#: src/lsz.c:1333
 msgid "Receiver Cancelled"
 msgstr ""
 
-#: src/lsz.c:1306
+#: src/lsz.c:1359
 msgid "No ACK on EOT"
 msgstr ""
 
-#: src/lsz.c:1326
+#: src/lsz.c:1380
+#, c-format
+msgid "Xmodem sectors/kbytes sent: %3d/%2dk"
+msgstr ""
+
+#: src/lsz.c:1382
 #, c-format
 msgid "Ymodem sectors/kbytes sent: %3d/%2dk"
 msgstr ""
 
-#: src/lsz.c:1357
+#: src/lsz.c:1414
 msgid "Cancelled"
 msgstr ""
 
-#: src/lsz.c:1361
+#: src/lsz.c:1418
 msgid "Timeout on sector ACK"
 msgstr ""
 
-#: src/lsz.c:1366
+#: src/lsz.c:1423
 msgid "NAK on sector"
 msgstr ""
 
-#: src/lsz.c:1372
+#: src/lsz.c:1429
 msgid "Got burst for sector ACK"
 msgstr ""
 
-#: src/lsz.c:1374
+#: src/lsz.c:1431
 #, c-format
 msgid "Got %02x for sector ACK"
 msgstr ""
 
-#: src/lsz.c:1386
+#: src/lsz.c:1443
 msgid "Retry Count Exceeded"
 msgstr ""
 
-#: src/lrz.c:592 src/lsz.c:1478
+#: src/lrz.c:593 src/lsz.c:1521
 #, c-format
 msgid "Try `%s --help' for more information.\n"
 msgstr ""
 
-#: src/lrz.c:597 src/lsz.c:1483
+#: src/lrz.c:598 src/lsz.c:1526
 #, c-format
-msgid "%s version %s for %s-%s\n"
+msgid "%s version %s\n"
 msgstr ""
 
-#: src/lsz.c:1486
+#: src/lsz.c:1529
 #, c-format
 msgid "Usage: %s [options] file ...\n"
 msgstr ""
 
-#: src/lsz.c:1488
+#: src/lsz.c:1531
 #, c-format
 msgid "   or: %s [options] -{c|i} COMMAND\n"
 msgstr ""
 
-#: src/lsz.c:1489
+#: src/lsz.c:1532
 msgid "Send file(s) with ZMODEM/YMODEM/XMODEM protocol\n"
 msgstr ""
 
-#: src/lrz.c:603 src/lsz.c:1491
+#: src/lrz.c:604 src/lsz.c:1534
 msgid ""
 "    (X) = option applies to XMODEM only\n"
 "    (Y) = option applies to YMODEM only\n"
 "    (Z) = option applies to ZMODEM only\n"
 msgstr ""
 
-#: src/lsz.c:1497
+#: src/lsz.c:1540
 msgid ""
 "  -+, --append                append to existing destination file (Z)\n"
 "  -2, --twostop               use 2 stop bits\n"
@@ -324,7 +348,7 @@ msgid ""
 "  -M, --min-bps-time N          for at least N seconds (default: 120)\n"
 msgstr ""
 
-#: src/lsz.c:1522
+#: src/lsz.c:1565
 msgid ""
 "  -n, --newer                 send file if source newer (Z)\n"
 "  -N, --newer-or-longer       send file if source newer or longer (Z)\n"
@@ -350,71 +374,71 @@ msgid ""
 "short options use the same arguments as the long ones\n"
 msgstr ""
 
-#: src/lsz.c:1735
+#: src/lsz.c:1786
 msgid "got ZRQINIT"
 msgstr ""
 
-#: src/lrz.c:1072 src/lrz.c:1792 src/lsz.c:1741
+#: src/lrz.c:1074 src/lrz.c:1787 src/lsz.c:1792
 msgid "got ZCAN"
 msgstr ""
 
-#: src/lsz.c:1949
+#: src/lsz.c:2000
 #, c-format
 msgid "blklen now %d\n"
 msgstr ""
 
-#: src/lsz.c:2011
+#: src/lsz.c:2062
 #, c-format
 msgid "zsendfdata: bps rate %ld below min %ld"
 msgstr ""
 
-#: src/lsz.c:2028
+#: src/lsz.c:2079
 msgid "zsendfdata: reached stop time"
 msgstr ""
 
-#: src/lsz.c:2038
+#: src/lsz.c:2089
 #, c-format
 msgid "Bytes Sent:%7ld/%7ld   BPS:%-8ld ETA %02d:%02d  "
 msgstr ""
 
-#: src/lsz.c:2176
+#: src/lsz.c:2228
 #, c-format
 msgid "calc_blklen: reduced to %d due to error\n"
 msgstr ""
 
-#: src/lsz.c:2209
+#: src/lsz.c:2261
 #, c-format
 msgid "calc_blklen: returned old value %d due to low bpe diff\n"
 msgstr ""
 
-#: src/lsz.c:2211
+#: src/lsz.c:2263
 #, c-format
 msgid "calc_blklen: old %ld, new %ld, d %ld\n"
 msgstr ""
 
-#: src/lsz.c:2220
+#: src/lsz.c:2272
 #, c-format
 msgid "calc_blklen: calc total_bytes=%ld, bpe=%ld, ec=%ld\n"
 msgstr ""
 
-#: src/lsz.c:2231
+#: src/lsz.c:2283
 #, c-format
 msgid "calc_blklen: blklen %d, ok %ld, failed %ld -> %lu\n"
 msgstr ""
 
-#: src/lsz.c:2243
+#: src/lsz.c:2295
 #, c-format
 msgid "calc_blklen: returned %d as best\n"
 msgstr ""
 
-#: src/lsz.c:2437
+#: src/lsz.c:2489
 #, c-format
 msgid ""
 "\n"
 "countem: Total %d %ld\n"
 msgstr ""
 
-#: src/zm.c:245
+#: src/zm.c:244
 #, c-format
 msgid "Bad escape sequence %x"
 msgstr ""
@@ -423,7 +447,7 @@ msgstr ""
 msgid "Sender Canceled"
 msgstr ""
 
-#: src/lrz.c:996 src/zm.c:585 src/zm.c:644
+#: src/lrz.c:997 src/zm.c:585 src/zm.c:644
 msgid "TIMEOUT"
 msgstr ""
 
@@ -444,45 +468,45 @@ msgstr ""
 msgid "Got %s"
 msgstr ""
 
-#: src/zperr.c:42
+#: src/zperr.c:49
 #, c-format
 msgid "Retry %d: "
 msgstr ""
 
-#: src/lrz.c:386
+#: src/lrz.c:387
 msgid "don't have settimeofday, will not set time\n"
 msgstr ""
 
-#: src/lrz.c:390
+#: src/lrz.c:391
 msgid "not running as root (this is good!), can not set time\n"
 msgstr ""
 
-#: src/lrz.c:445
+#: src/lrz.c:446
 msgid "bytes_per_error"
 msgstr ""
 
-#: src/lrz.c:447
+#: src/lrz.c:448
 msgid "bytes-per-error should be >100"
 msgstr ""
 
-#: src/lrz.c:459
+#: src/lrz.c:460
 msgid "O_SYNC not supported by the kernel"
 msgstr ""
 
-#: src/lrz.c:493 src/lrz.c:495
+#: src/lrz.c:494 src/lrz.c:496
 msgid "garbage on commandline"
 msgstr ""
 
-#: src/lrz.c:600
+#: src/lrz.c:601
 #, c-format
 msgid "Usage: %s [options] [filename.if.xmodem]\n"
 msgstr ""
 
-#: src/lrz.c:601
+#: src/lrz.c:602
 msgid "Receive files with ZMODEM/YMODEM/XMODEM protocol\n"
 msgstr ""
 
-#: src/lrz.c:608
+#: src/lrz.c:609
 msgid ""
 "  -+, --append                append to existing files\n"
 "  -a, --ascii                 ASCII transfer (change CR/LF to LF)\n"
@@ -520,160 +544,160 @@ msgid ""
 "short options use the same arguments as the long ones\n"
 msgstr ""
 
-#: src/lrz.c:670
+#: src/lrz.c:671
 #, c-format
 msgid "%s waiting to receive."
 msgstr ""
 
-#: src/lrz.c:724 src/lrz.c:1826
+#: src/lrz.c:725 src/lrz.c:1821
 #, c-format
 msgid "\rBytes received: %7ld/%7ld   BPS:%-6ld                \r\n"
 msgstr ""
 
-#: src/lrz.c:766
+#: src/lrz.c:767
 #, c-format
 msgid "%s: ready to receive %s"
 msgstr ""
 
-#: src/lrz.c:793
+#: src/lrz.c:794
 #, c-format
 msgid "\rBytes received: %7ld   BPS:%-6ld                \r\n"
 msgstr ""
 
-#: src/lrz.c:819
+#: src/lrz.c:820
 #, c-format
 msgid ""
 "\r\n"
 "%s: %s removed.\r\n"
 msgstr ""
 
-#: src/lrz.c:850
+#: src/lrz.c:851
 msgid "Pathname fetch returned EOT"
 msgstr ""
 
-#: src/lrz.c:897
+#: src/lrz.c:898
 msgid "Received dup Sector"
 msgstr ""
 
-#: src/lrz.c:911
+#: src/lrz.c:912
 msgid "Sync Error"
 msgstr ""
 
-#: src/lrz.c:959
+#: src/lrz.c:960
 msgid "CRC"
 msgstr ""
 
-#: src/lrz.c:970
+#: src/lrz.c:971
 msgid "Checksum"
 msgstr ""
 
-#: src/lrz.c:973
+#: src/lrz.c:974
 msgid "Sector number garbled"
 msgstr ""
 
-#: src/lrz.c:985
+#: src/lrz.c:986
 msgid "Sender Cancelled"
 msgstr ""
 
-#: src/lrz.c:999
+#: src/lrz.c:1000
 #, c-format
 msgid "Got 0%o sector header"
 msgstr ""
 
-#: src/lrz.c:1106
+#: src/lrz.c:1108
 #, c-format
 msgid "file name ends with a /, skipped: %s\n"
 msgstr ""
 
-#: src/lrz.c:1120
+#: src/lrz.c:1122
 #, c-format
 msgid "zmanag=%d, Lzmanag=%d\n"
 msgstr ""
 
-#: src/lrz.c:1121
+#: src/lrz.c:1123
 #, c-format
 msgid "zconv=%d\n"
 msgstr ""
 
-#: src/lrz.c:1187 src/lrz.c:1220
+#: src/lrz.c:1191 src/lrz.c:1225
 #, c-format
 msgid "file exists, skipped: %s\n"
 msgstr ""
 
-#: src/lrz.c:1259
+#: src/lrz.c:1266
 #, c-format
-msgid "TIMESYNC: here %ld, remote %ld, diff %d seconds\n"
+msgid "TIMESYNC: here %ld, remote %ld, diff %ld seconds\n"
 msgstr ""
 
-#: src/lrz.c:1268
+#: src/lrz.c:1275
 #, c-format
 msgid "TIMESYNC: cannot set time: %s\n"
 msgstr ""
 
-#: src/lrz.c:1278
+#: src/lrz.c:1285
 msgid "cannot tmpfile() for tcp protocol synchronization"
 msgstr ""
 
-#: src/lrz.c:1297
+#: src/lrz.c:1304
 msgid "Topipe"
 msgstr ""
 
-#: src/lrz.c:1315
+#: src/lrz.c:1322
 #, c-format
 msgid "Receiving: %s\n"
 msgstr ""
 
-#: src/lrz.c:1558
+#: src/lrz.c:1553
 #, c-format
 msgid "Blocks received: %d"
 msgstr ""
 
-#: src/lrz.c:1612
+#: src/lrz.c:1607
 #, c-format
 msgid "%s: %s exists\n"
 msgstr ""
 
-#: src/lrz.c:1625 src/lrz.c:1633
+#: src/lrz.c:1620 src/lrz.c:1628
 #, c-format
 msgid "%s:\tSecurity Violation"
 msgstr ""
 
-#: src/lrz.c:1750
+#: src/lrz.c:1745
 msgid "remote command execution requested"
 msgstr ""
 
-#: src/lrz.c:1757
+#: src/lrz.c:1752
 msgid "not executed"
 msgstr ""
 
-#: src/lrz.c:1788
+#: src/lrz.c:1783
 msgid "got ZRINIT"
 msgstr ""
 
-#: src/lrz.c:1837
+#: src/lrz.c:1832
 msgid "Skipped"
 msgstr ""
 
 #. too bad
-#: src/lrz.c:2069
+#: src/lrz.c:2064
 #, c-format
 msgid "rzfile: bps rate %ld below min %ld"
 msgstr ""
 
 #. too bad
-#: src/lrz.c:2084
+#: src/lrz.c:2079
 msgid "rzfile: reached stop time"
 msgstr ""
 
-#: src/lrz.c:2091
+#: src/lrz.c:2086
 #, c-format
 msgid "\rBytes received: %7ld/%7ld   BPS:%-6ld ETA %02d:%02d  "
 msgstr ""
 
-#: src/lrz.c:2235
+#: src/lrz.c:2231
 msgid "fgets for tcp protocol synchronization failed: "
 msgstr ""
 
-#: src/lrz.c:2242
+#: src/lrz.c:2238
 msgid "file close error"
 msgstr ""

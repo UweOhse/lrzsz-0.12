@@ -1,3 +1,177 @@
+1998-12-29	Uwe Ohse  <uwe@ohse.de>
+
+	* src/lrz.c: removed stpcpy call.
+	  got rid of warnings on solaris (isXXXXX treating
+	  arguments as signed, size_t is not of "long" size).
+
+	* src/lsz.c: removed stpcpy calls.
+	  got rid of warnings on solaris (isXXXXX treating
+	  arguments as signed, size_t is not of "long" size).
+	  (wcs): has another argument "filename on remote
+	  site". 
+	  (wcsend): if no timezone variable was found the printf was
+	  called with to few arguments for the format.
+	  (send_pseudo): removed major/minor security problem (major,
+	  though nobody used that code, so it in fact was minor),
+	  stupid usage of /tmp.
+	  damned, i thought i had done that _long_ ago?
+
+	* src/lsyslog.c (lsyslog): special code for varargs.
+
+	* src/zm.c: threw out prototype for zsendline_s().
+
+	* src/rbsb.c: moved getspeed() and speeds table
+	  upwards.
+
+	* systype.in: realname can be given on the command line.
+
+	* configure.in: use LOG_USER in case LOG_UUCP is undefined.
+	  check for libnsl (slowlaris).
+
+	* README.tests: new
+
+	* Makefile.am: support for fastcheck, fastcheck-beos,
+	  "make success".
+
+	* beos-runpiped.c: new file. 
+
+1998-12-28	Uwe Ohse  <uwe@ohse.de>
+
+	* src/canit.c: new file. 
+
+	* src/zglobal.h: canit() prototype.
+	  declare "struct termios;" before including termios.h
+	  on svr3, to get rid of warnings.
+
+	* src/lsz.c (canit): deleted.
+	  (everythere): replaced invocation of canit() with
+	  canit(fd).
+
+	* src/lrz.c (canit): deleted.
+	  (everythere): replaced invocation of canit() with
+	  canit(fd).
+
+	* src/Makefile.am: added -DLOCALEDIR=... to DEFS
+
+	* acconfig.h: threw out LOCALEDIR. Gives redefinition
+	  warnings in intl directory.
+
+	* configure.in: --enable-syslog=LOG_UUCP is now
+	  default.
+
+	* src/tcp.c (tcp_connect): get rid of "signed/unsigned"
+	  warning and "array subscript is of type char" warning
+	  on isspace().
+
+1998-12-27	Uwe Ohse  <uwe@ohse.de>
+
+	* Makefile.am: distribute systype.in
+
+	* acinclude.m4:  new macro lrzsz_HEADER_SYS_SELECT
+	  (can sys/time.h and sys/select.h both be used)
+
+	* acconfig.h: define SYS_TIME_WITHOUT_SYS_SELECT
+
+	* check.lrzsz: check for emacs sources slightly 
+	  changed to work ...
+
+	* configure.in: create "systype" script, use
+	  lrzsz_HEADER_SYS_SELECT
+
+	* lib/Makefile.am: use ansi2knr.
+
+	* lib/ansi2knr.c:
+	* src/ansi2knr.c: updated to automake-1.3 version,
+	  implemented workaround for automake stupidity.
+
+	* src/lrz.c (do_crc_check): changed formatting.
+
+	* src/zglobal.h: use SYS_TIME_WITHOUT_SYS_SELECT.
+
+	* zperr.c: provide K&R style function definitions.
+
+1998-12-23	Uwe Ohse  <uwe@ohse.de>
+
+	* src/rbsb.c (rdchk): the read() version3
+	  was buggy, didn't return 0 on EWOULDBLOCK.
+	  That's a really long-standing problem ...
+
+	* src/tcp.c: include arpa/inet.h only if it exists.
+
+	* src/zglobal.h: include <socket.h> on BeOS to get
+	  fd_set.
+
+1998-12-22	Uwe Ohse  <uwe@ohse.de>
+
+	* src/lsz.c (main): got rid of CPU and OS.
+	  (usage): got rid of CPU and OS.
+
+	* src/lrz.c (main): got rid of CPU and OS.
+	  (usage): got rid of CPU and OS.
+
+	* acconfig.h: got rid of CPU and OS.
+
+	* configure.in: don't call AC_CANONICAL_HOST
+	  anymore.
+
+1998-12-21	Uwe Ohse  <uwe@ohse.de>
+
+	* configure.in: PUBDIR was handled incorrectly.
+	  Thanks to Stanislav Brabec <utx@k332.feld.cvut.cz>.
+
+	* buildrpm, Specfile.in, rpmrc: new files.
+	
+	* Makefile.am: support rpm stuff.
+
+	* src/lsz.c (main): start_blklen by default is not
+	  longer then framlength (except if luser personally
+	  decides to use both -4/-8 and -l).
+	  (getzrxinit): minor cleanup.
+	  (getzrxinit): test for S_ISCHR was reversed.
+	  Thanks to Nick Rossi <voyager@eskimo.com>.
+
+	* src/lrz.c (main): use umask().
+
+1998-10-22	Uwe Ohse  <uwe@ohse.de>
+
+	* src/lrz.c (procheader): removed warnings about unused 
+	  variable e (used only if #ifdef ENABLE_SYSLOG).
+
+	* src/lsyslog.c (lsyslog): removed warnings about unused
+	  arguments if not defined ENABLE_SYSLOG.
+
+1998-08-18	Uwe Ohse  <uwe@ohse.de>
+
+	* src/lsz.c (wcputsec): don't say "Ymodem" if running as
+	  Xmodem.
+
+	* changed version number to 0.12.20.
+
+	* src/lsz.c (getzrxinit): throw out purgeline() again.
+	  This causes selftest to break, and also other zmodems.
+	  Slightly modified the logic to resend a zrqinit.
+	  (getnak): Slightly modified the logic to resend a zrqinit.
+	  Maybe the real solution is to throw out the resending
+	  of ZRQINITs ... as omen doesn't do it, too, although
+	  it's documented in the protocol.
+
+1998-07-25	Uwe Ohse  <uwe@ohse.de>
+
+	* src/lsz.c (getzrxinit): calling purgeline() at start
+	  solves Stefan Glasers problems (internal connect zmodem,
+	  slow startup with other zmodems). Also: don't send a
+	  second ZRQINIT directly after the first one.
+	  (getnak): don't send a second ZRQINIT directly after
+	  the first one.
+
+1998-07-08	Uwe Ohse  <uwe@ohse.de>
+
+	* README.isdn4linux: new file.
+
+1998-03-13	Uwe Ohse  <uwe@ohse.de>
+
+	* src/tcp.c: #define INADDR_NONE if it is undefined
+
 1998-01-18	Uwe Ohse  <uwe@ohse.de>
 
 	* src/lrz.c (show_version): new function.

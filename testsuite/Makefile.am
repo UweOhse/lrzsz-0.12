@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS=dejagnu
 
-DISTFILES=Makefile.am
+DISTFILES=Makefile.am Makefile.in
 CLEANFILES=lrzsz.log lrzsz.sum site.bak
 DISTCLEANFILES=site.exp
 

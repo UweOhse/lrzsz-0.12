@@ -60,8 +60,54 @@ Howmany must be 255 or less
 #endif
 #endif
 
+static struct {
+	unsigned baudr;
+	speed_t speedcode;
+} speeds[] = {
+	{110,	B110},
+	{300,	B300},
+	{600,	B600},
+	{1200,	B1200},
+	{2400,	B2400},
+	{4800,	B4800},
+	{9600,	B9600},
+#ifdef B19200
+    {19200,  B19200},
+#endif
+#ifdef B38400
+    {38400,  B38400},
+#endif
+#ifdef B57600
+    {57600,  B57600},
+#endif
+#ifdef B115200
+    {115200,  B115200},
+#endif
+#ifdef B230400
+    {230400,  B230400},
+#endif
+#ifdef B460800
+    {460800,  B460800},
+#endif
+#ifdef EXTA
+	{19200,	EXTA},
+#endif
+#ifdef EXTB
+	{38400,	EXTB},
+#endif
+	{0, 0}
+};
 
-static unsigned getspeed(speed_t);
+static unsigned
+getspeed(speed_t code)
+{
+	int n;
+
+	for (n=0; speeds[n].baudr; ++n)
+		if (speeds[n].speedcode == code)
+			return speeds[n].baudr;
+	return 38400;	/* Assume fifo if ioctl failed */
+}
 
 /*
  * return 1 if stdout and stderr are different devices
@@ -104,43 +150,6 @@ from_cu(void)
 }
 
 
-static struct {
-	unsigned baudr;
-	speed_t speedcode;
-} speeds[] = {
-	{110,	B110},
-	{300,	B300},
-	{600,	B600},
-	{1200,	B1200},
-	{2400,	B2400},
-	{4800,	B4800},
-	{9600,	B9600},
-#ifdef B19200
-    {19200,  B19200},
-#endif
-#ifdef B38400
-    {38400,  B38400},
-#endif
-#ifdef B57600
-    {57600,  B57600},
-#endif
-#ifdef B115200
-    {115200,  B115200},
-#endif
-#ifdef B230400
-    {230400,  B230400},
-#endif
-#ifdef B460800
-    {460800,  B460800},
-#endif
-#ifdef EXTA
-	{19200,	EXTA},
-#endif
-#ifdef EXTB
-	{38400,	EXTB},
-#endif
-	{0, 0}
-};
 
 int Twostop;		/* Use two stop bits */
 
@@ -170,24 +179,36 @@ rdchk(int fd)
 	int lf, savestat;
 
 	savestat = fcntl(fd, F_GETFL) ;
-	fcntl(fd, F_SETFL, savestat | O_NDELAY) ;
+	if (savestat == -1)
+		return 0;
+#ifdef OVERLY_PARANOID
+	if (-1==fcntl(fd, F_SETFL, savestat | O_NDELAY))
+		return 0;
 	lf = read(fd, &checked, 1) ;
-	fcntl(fd, F_SETFL, savestat) ;
-	return(lf) ;
+	if (-1==fcntl(fd, F_SETFL, savestat)) {
+#ifdef ENABLE_SYSLOG
+		if (enable_syslog)
+			lsyslog(LOG_CRIT,"F_SETFL failed in rdchk(): %s",	
+				strerror(errno));
+#endif
+		zpfatal("rdchk: F_SETFL failed\n"); /* lose */
+		/* there is really no way to recover. And we can't tell
+		 * the other side what's going on if we can't write to
+		 * fd, but we try.
+		 */
+		canit(fd);
+		exit(1); 
+	}
+#else
+	fcntl(fd, F_SETFL, savestat | O_NDELAY);
+	lf = read(fd, &checked, 1) ;
+	fcntl(fd, F_SETFL, savestat);
+#endif
+	return(lf == -1 && errno==EWOULDBLOCK ? 0 : lf) ;
 }
 #endif
 
 
-static unsigned
-getspeed(speed_t code)
-{
-	int n;
-
-	for (n=0; speeds[n].baudr; ++n)
-		if (speeds[n].speedcode == code)
-			return speeds[n].baudr;
-	return 38400;	/* Assume fifo if ioctl failed */
-}
 
 
 

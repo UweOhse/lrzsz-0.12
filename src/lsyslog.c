@@ -29,13 +29,21 @@
 #if __STDC__
 #  include <stdarg.h>
 #  define VA_START(args, lastarg) va_start(args, lastarg)
+#  define WAYTOGO
 #else
 #  include <varargs.h>
 #  define VA_START(args, lastarg) va_start(args)
 #endif
 
 void
+#ifdef WAYTOGO
 lsyslog(int prio, const char *format, ...)
+#else
+lsyslog(prio,format,va_alist) 
+	int prio; 
+	const char *format; 
+	va_dcl
+#endif
 {
 #ifdef ENABLE_SYSLOG
 	static char *username=NULL;
@@ -65,6 +73,9 @@ lsyslog(int prio, const char *format, ...)
     va_end(ap);
     syslog(prio,"[%s] %s",username,s);
 	free(s);
+#else
+	(void) prio; /* get rid of warning */
+	(void) format; /* get rid of warning */
 #endif
 }
 

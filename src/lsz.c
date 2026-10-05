@@ -54,7 +54,6 @@ void *mm_addr=NULL;
 extern time_t time();
 extern char *strerror();
 extern char *strstr();
-extern char *stpcpy();
 #endif
 
 #ifndef HAVE_ERRNO_DECLARATION
@@ -77,7 +76,7 @@ int Canseek=1; /* 1: can; 0: only rewind, -1: neither */
 static int zsendfile __P ((struct zm_fileinfo *zi, const char *buf, size_t blen));
 static int getnak __P ((void));
 static int wctxpn __P ((struct zm_fileinfo *));
-static int wcs __P ((const char *oname));
+static int wcs __P ((const char *oname, const char *remotename));
 static size_t zfilbuf __P ((struct zm_fileinfo *zi));
 static size_t filbuf __P ((char *buf, size_t count));
 static int getzrxinit __P ((void));
@@ -85,7 +84,6 @@ static int calc_blklen __P ((long total_sent));
 static int sendzsinit __P ((void));
 static int wctx __P ((struct zm_fileinfo *));
 static int zsendfdata __P ((struct zm_fileinfo *));
-static void canit __P ((void));
 static int getinsync __P ((struct zm_fileinfo *, int flag));
 static void countem __P ((int argc, char **argv));
 static void chkinvok __P ((const char *s));
@@ -223,7 +221,7 @@ static int play_with_sigint=0;
 RETSIGTYPE
 bibi (int n)
 {
-	canit ();
+	canit(STDOUT_FILENO);
 	fflush (stdout);
 	io_mode (io_mode_fd,0);
 	if (n == 99)
@@ -435,7 +433,7 @@ main(int argc, char **argv)
 			s_err = xstrtoul (optarg, NULL, 0, &tmp, "ck");
 			Tframlen = tmp;
 			if (s_err != LONGINT_OK)
-				STRTOL_FATAL_ERROR (optarg, _("packetlength"), s_err);
+				STRTOL_FATAL_ERROR (optarg, _("framelength"), s_err);
 			if (Tframlen<32 || Tframlen>MAX_BLOCK)
 			{
 				char meld[256];
@@ -475,7 +473,7 @@ main(int argc, char **argv)
 		case 'R': Restricted = TRUE; break;
 		case 'q': Quiet=TRUE; Verbose=0; break;
 		case 's':
-			if (isdigit(*optarg)) {
+			if (isdigit((unsigned char) (*optarg))) {
 				struct tm *tm;
 				time_t t;
 				int hh,mm;
@@ -599,8 +597,12 @@ main(int argc, char **argv)
 	zsendline_init();
 
 	if (start_blklen==0) {
-		if (protocol == ZM_ZMODEM)
+		if (protocol == ZM_ZMODEM) {
 			start_blklen=1024;
+			if (Tframlen) {
+				start_blklen=max_blklen=Tframlen;
+			}
+		}
 		else
 			start_blklen=128;
 	}
@@ -631,7 +633,7 @@ main(int argc, char **argv)
 		if (Verbose == 0)
 			Verbose = 2;
 	}
-	vfile("%s %s for %s-%s\n", program_name, VERSION, CPU, OS);
+	vfile("%s %s\n", program_name, VERSION);
 
 	if (tcp_flag==2) {
 		char buf[256];
@@ -780,14 +782,14 @@ main(int argc, char **argv)
 
 	if (Cmdstr) {
 		if (getzrxinit()) {
-			Exitcode=0200; canit();
+			Exitcode=0200; canit(STDOUT_FILENO);
 		}
 		else if (zsendcmd(Cmdstr, strlen(Cmdstr)+1)) {
-			Exitcode=0200; canit();
+			Exitcode=0200; canit(STDOUT_FILENO);
 		}
 	} else if (wcsend(npats, patts)==ERROR) {
 		Exitcode=0200;
-		canit();
+		canit(STDOUT_FILENO);
 	}
 	fflush(stdout);
 	io_mode(io_mode_fd,0);
@@ -812,11 +814,12 @@ main(int argc, char **argv)
 static int 
 send_pseudo(const char *name, const char *data)
 {
-	/* yes, this *has* a minor race condition */
 	char *tmp;
 	const char *p;
-	FILE *f;
 	int ret=0; /* ok */
+	size_t plen;
+	int fd;
+	int lfd;
 	
 	p = getenv ("TMPDIR");
 	if (!p)
@@ -827,30 +830,65 @@ send_pseudo(const char *name, const char *data)
 	if (!tmp)
 		error(1,0,_("out of memory"));
 	
-	strcpy(stpcpy(tmp,p),name);
+	plen=strlen(p);
+	memcpy(tmp,p,plen);	
+	tmp[plen++]='/';
 
-	f = fopen (tmp, "w");
-	if (f) {
-		fputs(data,f);
-		fclose (f);
-		if (wcs (tmp) == ERROR) {
-			if (Verbose)
-				vstringf (_ ("send_pseudo %s: failed"),name);
-			else {
-				if (Verbose)
-					vstringf (_ ("send_pseudo %s: ok"),name);
-				Filcnt--;
-			}
+	lfd=0;
+	do {
+		if (lfd++==10) {
+			free(tmp);
+			vstringf (_ ("send_pseudo %s: cannot open tmpfile %s: %s"),
+					 name, tmp, strerror (errno));
 			vstring ("\r\n");
-			ret=1;
+			return 1;
 		}
-		unlink (tmp);
-	} else {
-		vstringf (_ ("send_pseudo %s: cannot open tmpfile %s: %s"),
+		sprintf(tmp+plen,"%s.%lu.%d",name,(unsigned long) getpid(),lfd);
+		fd=open(tmp,O_WRONLY|O_CREAT|O_EXCL,0700);
+		/* is O_EXCL guaranted to not follow symlinks? 
+		 * I don`t know ... so be careful
+		 */
+		if (fd!=-1) {
+			struct stat st;
+			if (0!=lstat(tmp,&st)) {
+				vstringf (_ ("send_pseudo %s: cannot lstat tmpfile %s: %s"),
+						 name, tmp, strerror (errno));
+				vstring ("\r\n");
+				unlink(tmp);
+				close(fd);
+				fd=-1;
+			} else {
+				if (S_ISLNK(st.st_mode)) {
+					vstringf (_ ("send_pseudo %s: avoiding symlink trap"),name);
+					vstring ("\r\n");
+					unlink(tmp);
+					close(fd);
+					fd=-1;
+				}
+			}
+		}
+	} while (fd==-1);
+	if (write(fd,data,strlen(data))!=(signed long) strlen(data)
+		|| close(fd)!=0) {
+		vstringf (_ ("send_pseudo %s: cannot write to tmpfile %s: %s"),
 				 name, tmp, strerror (errno));
+		vstring ("\r\n");
+		free(tmp);
+		return 1;
+	}
+
+	if (wcs (tmp,name) == ERROR) {
+		if (Verbose)
+			vstringf (_ ("send_pseudo %s: failed"),name);
+		else {
+			if (Verbose)
+				vstringf (_ ("send_pseudo %s: ok"),name);
+			Filcnt--;
+		}
 		vstring ("\r\n");
 		ret=1;
 	}
+	unlink (tmp);
 	free(tmp);
 	return ret;
 }
@@ -882,7 +920,7 @@ wcsend (int argc, char *argp[])
 
 	for (n = 0; n < argc; ++n) {
 		Totsecs = 0;
-		if (wcs (argp[n]) == ERROR)
+		if (wcs (argp[n],NULL) == ERROR)
 			return ERROR;
 	}
 #if defined(ENABLE_TIMESYNC)
@@ -902,7 +940,7 @@ wcsend (int argc, char *argp[])
 			vstringf (" (%s %ld)\r\n", _ ("timezone"), timezone / 60);
 #else
 		if (Verbose)
-			vstringf (" (%s %s)\r\n", _ ("timezone unknown"));
+			vstringf (" (%s)\r\n", _ ("timezone unknown"));
 #endif
 		send_pseudo("/$time$.t",buf);
 	}
@@ -917,19 +955,19 @@ wcsend (int argc, char *argp[])
 			Cmdstr = "echo \"lsz: Can't open any requested files\"";
 			if (getnak ()) {
 				Exitcode = 0200;
-				canit ();
+				canit(STDOUT_FILENO);
 			}
 			if (!zmodem_requested)
-				canit ();
+				canit(STDOUT_FILENO);
 			else if (zsendcmd (Cmdstr, 1 + strlen (Cmdstr))) {
 				Exitcode = 0200;
-				canit ();
+				canit(STDOUT_FILENO);
 			}
 			Exitcode = 1;
 			return OK;
 		}
 #endif
-		canit ();
+		canit(STDOUT_FILENO);
 		vstring ("\r\n");
 		vstringf (_ ("Can't open any requested files."));
 		vstring ("\r\n");
@@ -955,7 +993,7 @@ wcsend (int argc, char *argp[])
 }
 
 static int
-wcs(const char *oname)
+wcs(const char *oname, const char *remotename)
 {
 #if !defined(S_ISDIR)
 	int c;
@@ -984,7 +1022,7 @@ wcs(const char *oname)
 		 	strlen(MK_STRING(PUBDIR))))
 #endif
 		) {
-			canit();
+			canit(STDOUT_FILENO);
 			vchar('\r');
 			error(1,0,
 				_("security violation: not allowed to upload from %s"),oname);
@@ -1065,7 +1103,16 @@ wcs(const char *oname)
 		return OK;
 	}
 
-	zi.fname=name;
+	if (remotename) {
+		/* disqualify const */
+		union {
+			const char *c;
+			char *s;
+		} cheat;
+		cheat.c=remotename;
+		zi.fname=cheat.s;
+	} else
+		zi.fname=name;
 	zi.modtime=f.st_mtime;
 	zi.mode=f.st_mode;
 #if defined(S_ISFIFO)
@@ -1119,7 +1166,7 @@ wcs(const char *oname)
 		vchar('\r');
 		if (Verbose > 1) 
 			vstringf(_("Bytes Sent:%7ld   BPS:%-8ld                        \n"),
-				zi.bytes_sent,bps);
+				(long) zi.bytes_sent,bps);
 #ifdef ENABLE_SYSLOG
 		if (enable_syslog)
 			lsyslog(LOG_INFO, "%s/%s: %ld Bytes, %ld BPS",shortname,
@@ -1185,9 +1232,12 @@ wctxpn(struct zm_fileinfo *zi)
 	p=q;
 	while (q < (txbuf + MAX_BLOCK))
 		*q++ = 0;
+	/* note that we may lose some information here in case mode_t is wider than an 
+	 * int. But i believe sending %lo instead of %o _could_ break compatability
+	 */
 	if (!Ascii && (input_f!=stdin) && *zi->fname && fstat(fileno(input_f), &f)!= -1)
 		sprintf(p, "%lu %lo %o 0 %d %ld", (long) f.st_size, f.st_mtime,
-		  (no_unixmode) ? 0 : f.st_mode, 
+		  (unsigned int)((no_unixmode) ? 0 : f.st_mode), 
 		  Filesleft, Totalleft);
 	if (Verbose)
 		vstringf(_("Sending: %s\n"),txbuf);
@@ -1231,12 +1281,15 @@ getnak(void)
 			Ascii = 0;	/* Receiver does the conversion */
 			return FALSE;
 		case TIMEOUT:
-			/* 60 seconds are enough */
-			if (tries==6) {
+			/* 30 seconds are enough */
+			if (tries==3) {
 				zperr(_("Timeout on pathname"));
 				return TRUE;
 			}
-			if (zrqinits_sent>0 && zrqinits_sent<4) {
+			/* don't send a second ZRQINIT _directly_ after the
+			 * first one. Never send more then 4 ZRQINIT, because
+			 * omen rz stops if it saw 5 of them */
+			if ((zrqinits_sent>1 || tries>1) && zrqinits_sent<4) {
 				/* if we already sent a ZRQINIT we are using zmodem
 				 * protocol and may send further ZRQINITs 
 				 */
@@ -1323,7 +1376,11 @@ wcputsec(char *buf, int sectnum, size_t cseclen)
 
 	if (Verbose>1) {
 		vchar('\r');
-		vstringf(_("Ymodem sectors/kbytes sent: %3d/%2dk"), Totsecs, Totsecs/8 );
+		if (protocol==ZM_XMODEM) {
+			vstringf(_("Xmodem sectors/kbytes sent: %3d/%2dk"), Totsecs, Totsecs/8 );
+		} else {
+			vstringf(_("Ymodem sectors/kbytes sent: %3d/%2dk"), Totsecs, Totsecs/8 );
+		}
 	}
 	for (attempts=0; attempts <= RETRYMAX; attempts++) {
 		Lastrx= firstch;
@@ -1446,20 +1503,6 @@ zfilbuf (struct zm_fileinfo *zi)
 	return n;
 }
 
-/* send cancel string to get the other end to shut up */
-static void
-canit (void)
-{
-	static char canistr[] =
-	{
-		24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 0
-	};
-
-	printf (canistr);
-	flushmo ();
-	purgeline(io_mode_fd);
-}
-
 static void
 usage1 (int exitcode)
 {
@@ -1480,8 +1523,8 @@ usage(int exitcode, const char *what)
 		exit(exitcode);
 	}
 
-	fprintf(f, _("%s version %s for %s-%s\n"), program_name,
-		VERSION, CPU, OS);
+	fprintf(f, _("%s version %s\n"), program_name,
+		VERSION);
 
 	fprintf(f,_("Usage: %s [options] file ...\n"),
 		program_name);
@@ -1551,30 +1594,36 @@ usage(int exitcode, const char *what)
 static int 
 getzrxinit(void)
 {
+	static int dont_send_zrqinit=1;
 	int old_timeout=Rxtimeout;
 	int n;
 	struct stat f;
 	size_t rxpos;
+	int timeouts=0;
 
 	Rxtimeout=100; /* 10 seconds */
+	/* XXX purgeline(io_mode_fd); this makes _real_ trouble. why? -- uwe */
 
 	for (n=10; --n>=0; ) {
 		/* we might need to send another zrqinit in case the first is 
 		 * lost. But *not* if getting here for the first time - in
-		 * this case we might just right a ZRINIT for our first ZRQINIT 
+		 * this case we might just get a ZRINIT for our first ZRQINIT.
+		 * Never send more then 4 ZRQINIT, because
+		 * omen rz stops if it saw 5 of them.
 		 */
-		if (zrqinits_sent<10 && n!=10 && zrqinits_sent < 4) {
+		if (zrqinits_sent<4 && n!=10 && !dont_send_zrqinit) {
 			zrqinits_sent++;
 			stohdr(0L);
 			zshhdr(ZRQINIT, Txhdr);
 		}
+		dont_send_zrqinit=0;
 		
 		switch (zgethdr(Rxhdr, 1,&rxpos)) {
 		case ZCHALLENGE:	/* Echo receiver's challenge numbr */
 			stohdr(rxpos);
 			zshhdr(ZACK, Txhdr);
 			continue;
-		case ZCOMMAND:		/* They didn't see out ZRQINIT */
+		case ZCOMMAND:		/* They didn't see our ZRQINIT */
 			/* ??? Since when does a receiver send ZCOMMAND?  -- uwe */
 			continue;
 		case ZRINIT:
@@ -1603,16 +1652,16 @@ getzrxinit(void)
 			}
 #endif
 			/* Override to force shorter frame length */
-			if (Rxbuflen && (Rxbuflen>Tframlen) && (Tframlen>=32))
+			if (Tframlen && Rxbuflen > Tframlen)
 				Rxbuflen = Tframlen;
-			if ( !Rxbuflen && (Tframlen>=32) && (Tframlen<=MAX_BLOCK))
-				Rxbuflen = Tframlen;
+			if ( !Rxbuflen)
+				Rxbuflen = 1024;
 			vfile("Rxbuflen=%d", Rxbuflen);
 
 			/* If using a pipe for testing set lower buf len */
 			fstat(0, &f);
 #if defined(S_ISCHR)
-			if (S_ISCHR(f.st_mode)) {
+			if (! (S_ISCHR(f.st_mode))) {
 #else
 			if ((f.st_mode & S_IFMT) != S_IFCHR) {
 #endif
@@ -1652,6 +1701,8 @@ getzrxinit(void)
 			return (sendzsinit());
 		case ZCAN:
 		case TIMEOUT:
+			if (timeouts++==0)
+				continue; /* force one other ZRQINIT to be sent */
 			return ERROR;
 		case ZRQINIT:
 			if (Rxhdr[ZF0] == ZCOMMAND)
@@ -2036,7 +2087,8 @@ zsendfdata (struct zm_fileinfo *zi)
 			if (Verbose > 1) {
 				vchar ('\r');
 				vstringf (_("Bytes Sent:%7ld/%7ld   BPS:%-8ld ETA %02d:%02d  "),
-					 zi->bytes_sent, zi->bytes_total, last_bps, minleft, secleft);
+					 (long) zi->bytes_sent, (long) zi->bytes_total, 
+					last_bps, minleft, secleft);
 			}
 			last_txpos = zi->bytes_sent;
 		} else if (Verbose)

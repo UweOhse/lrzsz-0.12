@@ -1,12 +1,8 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/crctab.c)
-AM_INIT_AUTOMAKE(lrzsz, 0.12.19)
+AM_INIT_AUTOMAKE(lrzsz, 0.12.20)
 AM_CONFIG_HEADER(config.h)
 
-
-AC_CANONICAL_HOST
-AC_SUBST(host_os)
-AC_SUBST(host_cpu)
 
 dnl AC_C_CROSS is in AC_PROG_CC since 2.12
 AC_PREREQ(2.12)
@@ -46,7 +42,7 @@ AC_ARG_ENABLE(pubdir,
 	[if test "$enableval" = "no" ; then 
 		: 
 	  else 
-	    AC_DEFINE_UNQUOTED(PUBDIR,\"$enableval\")
+	    AC_DEFINE_UNQUOTED(PUBDIR,"$enableval")
 	  fi])
 AC_ARG_ENABLE(mkdir,
 	[--disable-mkdir   disable support for creating directories (lrz)],
@@ -69,7 +65,7 @@ AC_ARG_ENABLE(syslog,
 			AC_DEFINE_UNQUOTED(ENABLE_SYSLOG,$fac)
 			;;
 		*)
-			AC_DEFINE(ENABLE_SYSLOG,LOG_UUCP)
+			lookup_facility=LOG_UUCP
 			level="$enableval"
 			;;
 		esac
@@ -83,10 +79,8 @@ AC_ARG_ENABLE(syslog,
 		  fi
 	  	fi
 	  fi],[
-        if test `hostname` = tirka.ohse.de ; then
-		  AC_DEFINE(ENABLE_SYSLOG,LOG_UUCP)
-		  AC_DEFINE(ENABLE_SYSLOG_DEFAULT)
-        fi
+		AC_DEFINE(ENABLE_SYSLOG_DEFAULT)
+		lookup_facility=LOG_UUCP
 	  ])
 
 dnl Checks for programs.
@@ -125,7 +119,11 @@ esac
 
 dnl Checks for libraries.
 dnl SCO needs this.
-AC_CHECK_LIB(socket,syslog,,,-lc)
+AC_CHECK_LIB(socket,syslog,,,)
+dnl BeOS needs this
+AC_CHECK_LIB(be,syslog,,,)
+dnl slowlartis needs this
+AC_CHECK_LIB(nsl,gethostbyname,,,)
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -133,7 +131,7 @@ AC_CHECK_HEADERS(fcntl.h limits.h sys/ioctl.h sys/time.h unistd.h sys/times.h)
 LRZSZ_HEADERS_TERM_IO
 AC_CHECK_HEADERS(termios.h sys/termios.h termio.h sys/termio.h sgtty.h)
 AC_CHECK_HEADERS(sys/mman.h utime.h syslog.h sys/syslog.h sys/param.h)
-AC_CHECK_HEADERS(sys/select.h strings.h)
+AC_CHECK_HEADERS(sys/select.h strings.h arpa/inet.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
@@ -142,6 +140,7 @@ AC_TYPE_OFF_T
 LRZSZ_TYPE_SPEED_T
 AC_STRUCT_ST_RDEV
 AC_HEADER_TIME
+lrzsz_HEADER_SYS_SELECT
 AC_STRUCT_TM
 LRZSZ_ERRNO_DECL
 
@@ -228,6 +227,31 @@ if test $libquark_cv_var_timezone = yes ; then
 else
 	AC_MSG_RESULT(no)
 fi
+if test "x$lookup_facility" = x ; then
+	:
+else
+	AC_MSG_CHECKING([for $lookup_facility])
+	AC_CACHE_VAL(lrzsz_cv_lookup_facility,[
+		AC_EGREP_CPP(ihave$lookup_facility, [
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#else
+#include <sys/syslog.h>
+#endif
+#ifdef $lookup_facility
+ihave$lookup_facility
+#endif
+		], lrzsz_cv_lookup_facility=yes, lrzsz_cv_lookup_facility=no)
+	])
+	if test $lrzsz_cv_lookup_facility = yes ; then
+		AC_MSG_RESULT(yes)
+		AC_DEFINE_UNQUOTED(ENABLE_SYSLOG,$lookup_facility)
+	else
+		AC_DEFINE(ENABLE_SYSLOG,LOG_USER)
+		AC_MSG_RESULT(no)
+	fi
+fi
+
 
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
@@ -236,12 +260,10 @@ AC_SUBST(LIBS)
 AM_GNU_GETTEXT
 
 AC_DEFINE_UNQUOTED(LOCALEDIR,"$prefix/$DATADIRNAME")
-AC_DEFINE_UNQUOTED(CPU,"$host_cpu")
-AC_DEFINE_UNQUOTED(OS,"$host_os")
 AC_LINK_FILES($nls_cv_header_libgt, $nls_cv_header_intl)
 
 AC_OUTPUT([Makefile intl/Makefile lib/Makefile testsuite/Makefile \
-man/Makefile po/Makefile.in src/Makefile debian/rules \
+man/Makefile po/Makefile.in src/Makefile debian/rules Specfile systype \
 src/lrzszbug],
 [sed -e "/POTFILES =/r po/POTFILES" po/Makefile.in > po/Makefile; 
 chmod +x debian/rules;

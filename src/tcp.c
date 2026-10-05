@@ -20,11 +20,15 @@
   originally written by Uwe Ohse
 */
 
+#include "config.h"
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif
 #include <errno.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -132,13 +136,16 @@ tcp_connect (char *buf)
 	}
 	*p++=0;
 	s_in.sin_addr.s_addr=inet_addr(buf+1);
-	if (s_in.sin_addr.s_addr==INADDR_NONE) {
+#ifndef INADDR_NONE
+#define INADDR_NONE (-1)
+#endif
+	if (s_in.sin_addr.s_addr== (unsigned long) INADDR_NONE) {
 		struct hostent *h=gethostbyname(buf+1);
 		if (!h)
 			error(1,0,_("tcp_connect: illegal format3\n"));
 		memcpy(& s_in.sin_addr.s_addr,h->h_addr,h->h_length);
 	}
-	while (isspace(*p))
+	while (isspace((unsigned char)(*p)))
 		p++;
 	if (*p!='<') {
 		error(1,0,_("tcp_connect: illegal format4\n"));

@@ -62,16 +62,31 @@ char *alloca ();
 #ifdef TIME_WITH_SYS_TIME
 #  include <sys/time.h>
 #  include <time.h>
+#  define INCLUDED_SYS_TIME
 #else
 #  ifdef HAVE_SYS_TIME_H
 #    include <sys/time.h>
+#    define INCLUDED_SYS_TIME
 #  else
 #    include <time.h>
 #  endif
 #endif
+#ifdef SYS_TIME_WITHOUT_SYS_SELECT
+# ifdef INCLUDED_SYS_TIME
+#  undef HAVE_SYS_SELECT_H
+# endif
+#endif
+
 
 #ifdef HAVE_SYS_SELECT_H
 #  include <sys/select.h>
+#endif
+#ifdef __BEOS__
+ /* BeOS 4.0: sys/select.h is almost completely #ifdefd out */
+#define  HAVE_SOCKET_H
+#ifdef HAVE_SOCKET_H
+#include <socket.h>
+#endif
 #endif
 
 #if STDC_HEADERS
@@ -118,6 +133,8 @@ char *strchr (), *strrchr ();
 /* used to use #elif, but native braindead hpux 9.00 c compiler didn't 
  * understand it */
 #ifdef HAVE_TERMIOS_H
+/* get rid of warnings on SCO ODT 3.2 */
+struct termios;
 # include <termios.h>
 # define USE_TERMIOS
 #else
@@ -141,7 +158,7 @@ char *strchr (), *strrchr ();
        extern long Locbit;	/* Bit SUPPOSED to disable output translations */
 #     endif
 #    else
-#     error neither termio.h nor sgtty.h found. Cannot continue. */
+#     error neither termio.h nor sgtty.h found. Cannot continue.
 #    endif
 #   endif
 #  endif
@@ -393,6 +410,7 @@ int io_mode __P ((int fd, int n)) LRZSZ_ATTRIB_SECTION(lrzsz_rare);
 void sendbrk __P ((int fd));
 #define flushmo() fflush(stdout)
 void purgeline __P ((int fd));
+void canit __P ((int fd));
 
 
 /* crctab.c */

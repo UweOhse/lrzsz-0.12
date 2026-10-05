@@ -1,8 +1,14 @@
-# Makefile.in generated automatically by automake 1.2 from Makefile.am
+# Makefile.in generated automatically by automake 1.3 from Makefile.am
 
-# Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+# Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
-# gives unlimited permission to copy, distribute and modify it.
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
 
 
 SHELL = /bin/sh
@@ -25,6 +31,8 @@ mandir = @mandir@
 includedir = @includedir@
 oldincludedir = /usr/include
 
+DISTDIR =
+
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -42,17 +50,16 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 transform = @program_transform_name@
 
-NORMAL_INSTALL = true
-PRE_INSTALL = true
-POST_INSTALL = true
-NORMAL_UNINSTALL = true
-PRE_UNINSTALL = true
-POST_UNINSTALL = true
-host_alias = @host_alias@
-host_triplet = @host@
+NORMAL_INSTALL = :
+PRE_INSTALL = :
+POST_INSTALL = :
+NORMAL_UNINSTALL = :
+PRE_UNINSTALL = :
+POST_UNINSTALL = :
 CATALOGS = @CATALOGS@
 CATOBJEXT = @CATOBJEXT@
 CC = @CC@
+CPP = @CPP@
 DATADIRNAME = @DATADIRNAME@
 ENABLE_TIMESYNC = @ENABLE_TIMESYNC@
 GENCAT = @GENCAT@
@@ -80,13 +87,11 @@ U = @U@
 USE_INCLUDED_LIBINTL = @USE_INCLUDED_LIBINTL@
 USE_NLS = @USE_NLS@
 VERSION = @VERSION@
-host_cpu = @host_cpu@
-host_os = @host_os@
 l = @l@
 
 bin_PROGRAMS=lrz lsz
-lrz_SOURCES=lrz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c tcp.c lsyslog.c
-lsz_SOURCES=lsz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c tcp.c lsyslog.c
+lrz_SOURCES=lrz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c tcp.c lsyslog.c canit.c
+lsz_SOURCES=lsz.c timing.c zperr.c zreadline.c crctab.c rbsb.c zm.c protname.c tcp.c lsyslog.c canit.c
 noinst_HEADERS = timing.h zglobal.h zmodem.h
 datadir = $(prefix)/@DATADIRNAME@
 localedir = $(datadir)/locale
@@ -98,7 +103,7 @@ AUTOMAKE_OPTIONS=ansi2knr
 EXTRA_DIST = ansi2knr.1 ansi2knr.c lrzszbug.in
 INCLUDES = -I.. -I$(srcdir) -I$(top_srcdir)/src -I../intl -I$(top_srcdir)/lib
 #DEFS = -DLOCALEDIR=\"$(localedir)\" -DOS=\"@host_os@\" -DCPU=\"@host_cpu@\"
-DEFS = -DNFGVMIN @DEFS@
+DEFS = -DNFGVMIN @DEFS@ -DLOCALEDIR=\"$(localedir)\"
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = ../config.h
 CONFIG_CLEAN_FILES =  lrzszbug
@@ -107,12 +112,12 @@ PROGRAMS =  $(bin_PROGRAMS)
 CPPFLAGS = @CPPFLAGS@
 ANSI2KNR = @ANSI2KNR@
 lrz_OBJECTS =  lrz$U.o timing$U.o zperr$U.o zreadline$U.o crctab$U.o \
-rbsb$U.o zm$U.o protname$U.o tcp$U.o lsyslog$U.o
+rbsb$U.o zm$U.o protname$U.o tcp$U.o lsyslog$U.o canit$U.o
 lrz_LDADD = $(LDADD)
 lrz_DEPENDENCIES =  ../lib/libzmodem.a
 lrz_LDFLAGS = 
 lsz_OBJECTS =  lsz$U.o timing$U.o zperr$U.o zreadline$U.o crctab$U.o \
-rbsb$U.o zm$U.o protname$U.o tcp$U.o lsyslog$U.o
+rbsb$U.o zm$U.o protname$U.o tcp$U.o lsyslog$U.o canit$U.o
 lsz_LDADD = $(LDADD)
 lsz_DEPENDENCIES =  ../lib/libzmodem.a
 lsz_LDFLAGS = 
@@ -130,14 +135,14 @@ GZIP = --best
 SOURCES = $(lrz_SOURCES) $(lsz_SOURCES)
 OBJECTS = $(lrz_OBJECTS) $(lsz_OBJECTS)
 
-default: all
+all: Makefile $(ANSI2KNR) $(PROGRAMS) $(HEADERS)
 
 .SUFFIXES:
-.SUFFIXES: .c .o
-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+.SUFFIXES: .S .c .o .s
+$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4)
 	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps src/Makefile
 
-Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
@@ -147,7 +152,7 @@ lrzszbug: $(top_builddir)/config.status lrzszbug.in
 mostlyclean-binPROGRAMS:
 
 clean-binPROGRAMS:
-	test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
 
 distclean-binPROGRAMS:
 
@@ -155,37 +160,43 @@ maintainer-clean-binPROGRAMS:
 
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
-	$(mkinstalldirs) $(bindir)
+	$(mkinstalldirs) $(DESTDIR)$(bindir)
 	@list='$(bin_PROGRAMS)'; for p in $$list; do \
 	  if test -f $$p; then \
-	    echo "  $(INSTALL_PROGRAM) $$p $(bindir)/`echo $$p|sed '$(transform)'`"; \
-	     $(INSTALL_PROGRAM) $$p $(bindir)/`echo $$p|sed '$(transform)'`; \
+	    echo "  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`"; \
+	     $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`; \
 	  else :; fi; \
 	done
 
 uninstall-binPROGRAMS:
-	$(NORMAL_UNINSTALL)
+	@$(NORMAL_UNINSTALL)
 	list='$(bin_PROGRAMS)'; for p in $$list; do \
-	  rm -f $(bindir)/`echo $$p|sed '$(transform)'`; \
+	  rm -f $(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`; \
 	done
 
 .c.o:
 	$(COMPILE) -c $<
 
+.s.o:
+	$(COMPILE) -c $<
+
+.S.o:
+	$(COMPILE) -c $<
+
 mostlyclean-compile:
-	rm -f *.o core
+	-rm -f *.o core *.core
 
 clean-compile:
 
 distclean-compile:
-	rm -f *.tab.c
+	-rm -f *.tab.c
 
 maintainer-clean-compile:
 
 mostlyclean-krextra:
 
 clean-krextra:
-	rm -f ansi2knr
+	-rm -f ansi2knr
 
 distclean-krextra:
 
@@ -196,7 +207,7 @@ ansi2knr.o: $(CONFIG_HEADER)
 
 
 mostlyclean-kr:
-	rm -f *_.c
+	-rm -f *_.c
 
 clean-kr:
 
@@ -211,48 +222,55 @@ lrz: $(lrz_OBJECTS) $(lrz_DEPENDENCIES)
 lsz: $(lsz_OBJECTS) $(lsz_DEPENDENCIES)
 	@rm -f lsz
 	$(LINK) $(lsz_LDFLAGS) $(lsz_OBJECTS) $(lsz_LDADD) $(LIBS)
-crctab_.c: crctab.c
-	$(ANSI2KNR) $< crctab_.c
-lrz_.c: lrz.c
-	$(ANSI2KNR) $< lrz_.c
-lsyslog_.c: lsyslog.c
-	$(ANSI2KNR) $< lsyslog_.c
-lsz_.c: lsz.c
-	$(ANSI2KNR) $< lsz_.c
-protname_.c: protname.c
-	$(ANSI2KNR) $< protname_.c
-rbsb_.c: rbsb.c
-	$(ANSI2KNR) $< rbsb_.c
-tcp_.c: tcp.c
-	$(ANSI2KNR) $< tcp_.c
-timing_.c: timing.c
-	$(ANSI2KNR) $< timing_.c
-zm_.c: zm.c
-	$(ANSI2KNR) $< zm_.c
-zperr_.c: zperr.c
-	$(ANSI2KNR) $< zperr_.c
-zreadline_.c: zreadline.c
-	$(ANSI2KNR) $< zreadline_.c
-crctab_.o lrz_.o lsyslog_.o lsz_.o protname_.o rbsb_.o tcp_.o timing_.o \
-zm_.o zperr_.o zreadline_.o : $(ANSI2KNR)
+canit_.c: canit.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/canit.c; then echo $(srcdir)/canit.c; else echo canit.c; fi` | $(ANSI2KNR) canit_.c
+crctab_.c: crctab.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/crctab.c; then echo $(srcdir)/crctab.c; else echo crctab.c; fi` | $(ANSI2KNR) crctab_.c
+lrz_.c: lrz.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/lrz.c; then echo $(srcdir)/lrz.c; else echo lrz.c; fi` | $(ANSI2KNR) lrz_.c
+lsyslog_.c: lsyslog.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/lsyslog.c; then echo $(srcdir)/lsyslog.c; else echo lsyslog.c; fi` | $(ANSI2KNR) lsyslog_.c
+lsz_.c: lsz.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/lsz.c; then echo $(srcdir)/lsz.c; else echo lsz.c; fi` | $(ANSI2KNR) lsz_.c
+protname_.c: protname.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/protname.c; then echo $(srcdir)/protname.c; else echo protname.c; fi` | $(ANSI2KNR) protname_.c
+rbsb_.c: rbsb.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/rbsb.c; then echo $(srcdir)/rbsb.c; else echo rbsb.c; fi` | $(ANSI2KNR) rbsb_.c
+tcp_.c: tcp.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/tcp.c; then echo $(srcdir)/tcp.c; else echo tcp.c; fi` | $(ANSI2KNR) tcp_.c
+timing_.c: timing.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/timing.c; then echo $(srcdir)/timing.c; else echo timing.c; fi` | $(ANSI2KNR) timing_.c
+zm_.c: zm.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/zm.c; then echo $(srcdir)/zm.c; else echo zm.c; fi` | $(ANSI2KNR) zm_.c
+zperr_.c: zperr.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/zperr.c; then echo $(srcdir)/zperr.c; else echo zperr.c; fi` | $(ANSI2KNR) zperr_.c
+zreadline_.c: zreadline.c $(ANSI2KNR)
+	$(CPP) $(DEFS) $(INCLUDES) $(CPPFLAGS) `if test -f $(srcdir)/zreadline.c; then echo $(srcdir)/zreadline.c; else echo zreadline.c; fi` | $(ANSI2KNR) zreadline_.c
+canit_.o crctab_.o lrz_.o lsyslog_.o lsz_.o protname_.o rbsb_.o tcp_.o \
+timing_.o zm_.o zperr_.o zreadline_.o : $(ANSI2KNR)
 
 tags: TAGS
 
-ID: $(HEADERS) $(SOURCES)
-	here=`pwd` && cd $(srcdir) && mkid -f$$here/ID $(SOURCES) $(HEADERS)
+ID: $(HEADERS) $(SOURCES) $(LISP)
+	here=`pwd` && cd $(srcdir) \
+	  && mkid -f$$here/ID $(SOURCES) $(HEADERS) $(LISP)
 
-TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES)
+TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) $(LISP)
 	tags=; \
 	here=`pwd`; \
-	test -z "$(ETAGS_ARGS)$(SOURCES)$(HEADERS)$$tags" \
-	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $(SOURCES) $(HEADERS) -o $$here/TAGS)
+	list='$(SOURCES) $(HEADERS)'; \
+	unique=`for i in $$list; do echo $$i; done | \
+	  awk '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
 
 mostlyclean-tags:
 
 clean-tags:
 
 distclean-tags:
-	rm -f TAGS ID
+	-rm -f TAGS ID
 
 maintainer-clean-tags:
 
@@ -267,22 +285,22 @@ distdir: $(DISTFILES)
 	  || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
 	  || cp -p $$d/$$file $(distdir)/$$file; \
 	done
-crctab.o crctab.lo: crctab.c
-lrz.o lrz.lo: lrz.c zglobal.h ../config.h zmodem.h ../lib/getopt.h \
-	timing.h ../lib/long-options.h ../lib/xstrtoul.h \
-	../lib/xstrtol.h ../lib/error.h
-lsyslog.o lsyslog.lo: lsyslog.c ../config.h zglobal.h zmodem.h
-lsz.o lsz.lo: lsz.c zglobal.h ../config.h zmodem.h ../lib/getopt.h \
-	timing.h ../lib/long-options.h ../lib/xstrtoul.h \
-	../lib/xstrtol.h ../lib/error.h
-protname.o protname.lo: protname.c zglobal.h ../config.h zmodem.h
-rbsb.o rbsb.lo: rbsb.c zglobal.h ../config.h zmodem.h
-tcp.o tcp.lo: tcp.c zglobal.h ../config.h zmodem.h ../lib/error.h
-timing.o timing.lo: timing.c zglobal.h ../config.h zmodem.h timing.h
-zm.o zm.lo: zm.c zglobal.h ../config.h zmodem.h
-zperr.o zperr.lo: zperr.c zglobal.h ../config.h zmodem.h
-zreadline.o zreadline.lo: zreadline.c zglobal.h ../config.h zmodem.h \
+canit.o: canit.c zglobal.h ../config.h zmodem.h ../lib/getopt.h
+crctab.o: crctab.c
+lrz.o: lrz.c zglobal.h ../config.h zmodem.h ../lib/getopt.h timing.h \
+	../lib/long-options.h ../lib/xstrtoul.h ../lib/xstrtol.h \
 	../lib/error.h
+lsyslog.o: lsyslog.c ../config.h zglobal.h zmodem.h
+lsz.o: lsz.c zglobal.h ../config.h zmodem.h ../lib/getopt.h timing.h \
+	../lib/long-options.h ../lib/xstrtoul.h ../lib/xstrtol.h \
+	../lib/error.h
+protname.o: protname.c zglobal.h ../config.h zmodem.h
+rbsb.o: rbsb.c zglobal.h ../config.h zmodem.h
+tcp.o: tcp.c ../config.h zglobal.h zmodem.h ../lib/error.h
+timing.o: timing.c zglobal.h ../config.h zmodem.h timing.h
+zm.o: zm.c zglobal.h ../config.h zmodem.h
+zperr.o: zperr.c zglobal.h ../config.h zmodem.h
+zreadline.o: zreadline.c zglobal.h ../config.h zmodem.h ../lib/error.h
 
 info:
 dvi:
@@ -300,28 +318,26 @@ install: install-exec install-data all
 
 uninstall: uninstall-binPROGRAMS uninstall-local
 
-all: Makefile $(ANSI2KNR) $(PROGRAMS) $(HEADERS)
-
 install-strip:
 	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' INSTALL_SCRIPT='$(INSTALL_PROGRAM)' install
 installdirs:
-	$(mkinstalldirs)  $(bindir)
+	$(mkinstalldirs)  $(DATADIR)$(bindir)
 
 
 mostlyclean-generic:
-	test -z "$(MOSTLYCLEANFILES)" || rm -f $(MOSTLYCLEANFILES)
+	-test -z "$(MOSTLYCLEANFILES)" || rm -f $(MOSTLYCLEANFILES)
 
 clean-generic:
-	test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
-	rm -f Makefile $(DISTCLEANFILES)
-	rm -f config.cache config.log stamp-h stamp-h[0-9]*
-	test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
+	-rm -f Makefile $(DISTCLEANFILES)
+	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
+	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 
 maintainer-clean-generic:
-	test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
-	test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
+	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 mostlyclean:  mostlyclean-binPROGRAMS mostlyclean-compile \
 		mostlyclean-krextra mostlyclean-kr mostlyclean-tags \
 		mostlyclean-generic
@@ -331,7 +347,7 @@ clean:  clean-binPROGRAMS clean-compile clean-krextra clean-kr \
 
 distclean:  distclean-binPROGRAMS distclean-compile distclean-krextra \
 		distclean-kr distclean-tags distclean-generic clean
-	rm -f config.status
+	-rm -f config.status
 
 maintainer-clean:  maintainer-clean-binPROGRAMS maintainer-clean-compile \
 		maintainer-clean-krextra maintainer-clean-kr \
@@ -340,9 +356,9 @@ maintainer-clean:  maintainer-clean-binPROGRAMS maintainer-clean-compile \
 	@echo "This command is intended for maintainers to use;"
 	@echo "it deletes files that may require special tools to rebuild."
 
-.PHONY: default mostlyclean-binPROGRAMS distclean-binPROGRAMS \
-clean-binPROGRAMS maintainer-clean-binPROGRAMS uninstall-binPROGRAMS \
-install-binPROGRAMS mostlyclean-compile distclean-compile clean-compile \
+.PHONY: mostlyclean-binPROGRAMS distclean-binPROGRAMS clean-binPROGRAMS \
+maintainer-clean-binPROGRAMS uninstall-binPROGRAMS install-binPROGRAMS \
+mostlyclean-compile distclean-compile clean-compile \
 maintainer-clean-compile mostlyclean-krextra distclean-krextra \
 clean-krextra maintainer-clean-krextra mostlyclean-kr distclean-kr \
 clean-kr maintainer-clean-kr tags mostlyclean-tags distclean-tags \
@@ -353,27 +369,27 @@ maintainer-clean-generic clean mostlyclean distclean maintainer-clean
 
 
 install-exec-local:
-	rm -f $(bindir)/`echo lsb | sed -e '$(transform)'`
-	ln $(bindir)/`echo lsz |sed -e '$(transform)'` \
-		$(bindir)/`echo lsb |sed -e '$(transform)'` 
+	rm -f $(DESTDIR)/$(bindir)/`echo lsb | sed -e '$(transform)'`
+	ln $(DESTDIR)/$(bindir)/`echo lsz |sed -e '$(transform)'` \
+		$(DESTDIR)/$(bindir)/`echo lsb |sed -e '$(transform)'` 
 	rm -f $(bindir)/`echo lsx | sed -e '$(transform)'`
-	ln $(bindir)/`echo lsz |sed -e '$(transform)'` \
-		$(bindir)/`echo lsx |sed -e '$(transform)'` 
+	ln $(DESTDIR)/$(bindir)/`echo lsz |sed -e '$(transform)'` \
+		$(DESTDIR)/$(bindir)/`echo lsx |sed -e '$(transform)'` 
 	rm -f $(bindir)/`echo lrb | sed -e '$(transform)'`
-	ln $(bindir)/`echo lrz |sed -e '$(transform)'` \
-		$(bindir)/`echo lrb |sed -e '$(transform)'` 
+	ln $(DESTDIR)/$(bindir)/`echo lrz |sed -e '$(transform)'` \
+		$(DESTDIR)/$(bindir)/`echo lrb |sed -e '$(transform)'` 
 	rm -f $(bindir)/`echo lrx | sed -e '$(transform)'`
-	ln $(bindir)/`echo lrz |sed -e '$(transform)'` \
-		$(bindir)/`echo lrx |sed -e '$(transform)'` 
+	ln $(DESTDIR)/$(bindir)/`echo lrz |sed -e '$(transform)'` \
+		$(DESTDIR)/$(bindir)/`echo lrx |sed -e '$(transform)'` 
 #	rm -f $(bindir)/`echo lrzszbug | sed -e '$(transform)'`
 #	ln $(bindir)/`echo lrzszbug |sed -e '$(transform)'` \
 #		$(bindir)/`echo lrzszbug |sed -e '$(transform)'` 
 
 uninstall-local:
-	rm -f $(bindir)/`echo lsb |sed -e '$(transform)'` 
-	rm -f $(bindir)/`echo lsx |sed -e '$(transform)'` 
-	rm -f $(bindir)/`echo lrb |sed -e '$(transform)'` 
-	rm -f $(bindir)/`echo lrx |sed -e '$(transform)'` 
+	rm -f $(DESTDIR)/$(bindir)/`echo lsb |sed -e '$(transform)'` 
+	rm -f $(DESTDIR)/$(bindir)/`echo lsx |sed -e '$(transform)'` 
+	rm -f $(DESTDIR)/$(bindir)/`echo lrb |sed -e '$(transform)'` 
+	rm -f $(DESTDIR)/$(bindir)/`echo lrx |sed -e '$(transform)'` 
 #	rm -f $(bindir)/`echo lrzszbug |sed -e '$(transform)'` 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

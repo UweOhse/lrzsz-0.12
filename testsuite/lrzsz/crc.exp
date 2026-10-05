@@ -13,7 +13,7 @@ exec cp -p $objdir/../src/lrz $testdir/$name/lrz
 # this deals with different touch -t conventions. (POSIX/pre-posix-HPUX in this case)
 catch "exec sh -c \"touch -t 020304051980.06 $testdir/$name/lrz || touch -t 198002030405.06 $testdir/$name/lrz\"" dummy
 catch "exec ls -l $testdir/$name/lrz 2>/dev/null" timestamp
-set fails [runthem_internal $name "strace -vs 128 -o /tmp/out $objdir/../src/lsz -B 10240" "-q --crc-check" \
+set fails [runthem_internal $name "$objdir/../src/lsz -B 10240" "-q --crc-check" \
 	$objdir/../src/lrz "-q" \
 	"$objdir/../src/lrz" "" dummy]
 if {$fails == 0} {
@@ -128,13 +128,14 @@ unset name fails dummy timestamp
 # from now on ignore who initiates the crc-check. We know that both sides 
 # can init it, from Part 1 & 2.
 
+exec logger 4
 # Part 4: file exists, same length, crc differs. 
 set name crc-check-diff-crc
 exec mkdir $testdir/$name
 exec cp $objdir/../src/lrz $testdir/$name/lrz
 catch "exec dd if=$srcdir/../src/lrz.c of=$testdir/$name/lrz conv=notrunc bs=512 count=1"
 set fails [runthem_internal $name "$objdir/../src/lsz" "-q --crc-check" \
-	$objdir/../src/lrz "-q" \
+	"$objdir/../src/lrz" "-q" \
 	"$objdir/../src/lrz" "rmdir,compare,delete" dummy]
 if {$fails == 0} {
 	pass "$name"

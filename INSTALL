@@ -42,7 +42,7 @@ To install:
      to install the programs and manual pages under the traditional
      names (sz, sz.1 instead of lsz, lsz.1).
 2) make
-   (please contact uwe@tirka.gun.de if there are any problems. Sorry,
+   (please contact uwe@ohse.de if there are any problems. Sorry,
    for the moment i only have access to linux machines)
 3) make check
    will perform a selftest, sending some files in the distribution 

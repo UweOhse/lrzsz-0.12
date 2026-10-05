@@ -24,7 +24,8 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#if __STDC__
+#ifdef __STDC__
+#  define WAYTOGO
 #  include <stdarg.h>
 #  define VA_START(args, lastarg) va_start(args, lastarg)
 #else
@@ -33,7 +34,13 @@
 #endif
 
 void
+#ifdef WAYTOGO
 zperr(const char *fmt, ...)
+#else
+zperr(fmt, va_alist)
+	const char *fmt;
+	va_dcl
+#endif
 {
     va_list ap;
 
@@ -47,7 +54,13 @@ zperr(const char *fmt, ...)
 }
 
 void
+#ifdef WAYTOGO
 zpfatal(const char *fmt, ...)
+#else
+zpfatal(fmt, va_alist)
+	const char *fmt;
+	va_dcl
+#endif
 {
     va_list ap;
     int err=errno;
@@ -62,7 +75,13 @@ zpfatal(const char *fmt, ...)
 }
 
 void 
+#ifdef WAYTOGO
 vfile(const char *format, ...)
+#else
+vfile(format, va_alist)
+	const char *format;
+	va_dcl
+#endif
 {
     va_list ap;
 
@@ -77,7 +96,13 @@ vfile(const char *format, ...)
 #ifndef vstringf
 /* if using gcc this function is not needed */
 void 
+#ifdef WAYTOGO
 vstringf(const char *format, ...)
+#else
+vstringf(format, va_alist)
+	const char *format;
+	va_dcl
+#endif
 {
     va_list ap;
 
