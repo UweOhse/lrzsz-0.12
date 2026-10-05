@@ -1,6 +1,13 @@
 SUBDIRS = lib intl src po man
 EXTRA_DIST = check.lrzsz COMPATABILITY
 
+dist-hook:
+	mkdir $(distdir)/debian
+	cp -fa $(srcdir)/debian/changelog  $(distdir)/debian/
+	cp -fa $(srcdir)/debian/control  $(distdir)/debian/
+	cp -fa $(srcdir)/debian/copyright  $(distdir)/debian/
+	cp -fa $(srcdir)/debian/rules.in  $(distdir)/debian/
+
 check-local:
 	QUIET=-q $(srcdir)/check.lrzsz $(srcdir) `pwd`	
 vcheck:

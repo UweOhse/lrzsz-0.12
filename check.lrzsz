@@ -86,6 +86,28 @@ if test "$mode" = all -o "$mode" = z ; then
 		any_failure="$any_failure ZMODEM"
 	fi
 fi
+# test zmodem-4k
+if test "$mode" = all -o "$mode" = z4 ; then
+	echo "testing ZMODEM4K"
+	mkdir $testdir/zmodem4k
+	failed=0
+	($SZ -q4 $SZBUFSIZE $z_test_files ) <$testdir/pipe | \
+		(cd $testdir/zmodem4k ; exec $RZ $RZBUFSIZE $QUIET >>../pipe )
+	for i in $z_test_files ; do 
+		bn=`basename $i`
+		cmp $i $testdir/zmodem4k/$bn
+		if test $? -eq 0 ; then
+			rm -f $testdir/zmodem4k/$bn
+		else
+			failed=1
+		fi
+	done
+	rmdir $testdir/zmodem4k 2>&5
+	if test $failed = 1 ; then 
+		echo "ZMODEM4k test failed"
+		any_failure="$any_failure ZMODEM4k"
+	fi
+fi
 
 # test zmodem8k
 if test "$mode" = all -o "$mode" = z8 ; then
@@ -113,6 +135,43 @@ if test "$mode" = all -o "$mode" = z8 ; then
 			any_failure="$any_failure ZMODEM8k"
 		fi
 		rmdir $testdir/zmodem8k 2>&5
+	fi
+fi
+
+if test "$mode" = all -o "$mode" = z8N ; then
+	# we test this only if we have something really large, because this is
+	# we only case we can expect any differences
+	if test "x$z8_test_files" = x ; then
+		:
+	else
+		echo "testing ZMODEM8K-NULL"
+		mkdir $testdir/zmodem8k-NULL
+		$SZ -q8OT $SZBUFSIZE $z8_test_files <$testdir/pipe | \
+			(cd $testdir/zmodem8k-NULL ; $RZ -DO $RZBUFSIZE $QUIET >>../pipe )
+		rmdir $testdir/zmodem8k-NULL 2>&5
+	fi
+fi
+
+# test zmodem-tcp
+if test "$mode" = all -o "$mode" = tcp ; then
+	echo "testing ZMODEMtcp"
+	mkdir $testdir/zmodemtcp
+	failed=0
+	($SZ --tcp -q4T $SZBUFSIZE $z_test_files ) <$testdir/pipe | \
+		(cd $testdir/zmodemtcp ; exec $RZ $RZBUFSIZE $QUIET >>../pipe )
+	for i in $z_test_files ; do 
+		bn=`basename $i`
+		cmp $i $testdir/zmodemtcp/$bn
+		if test $? -eq 0 ; then
+			rm -f $testdir/zmodemtcp/$bn
+		else
+			failed=1
+		fi
+	done
+	rmdir $testdir/zmodemtcp 2>&5
+	if test $failed = 1 ; then 
+		echo "ZMODEMtcp test failed"
+		any_failure="$any_failure ZMODEMtcp"
 	fi
 fi
 

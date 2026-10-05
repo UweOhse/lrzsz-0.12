@@ -1,12 +1,26 @@
-/* lrz.c cosmetic modifications by Matt Porter
- * many changes by Uwe Ohse
- * from rz.c By Chuck Forsberg
- * 
- *  A program for Linux to receive files and commands from computers running
- *  zmodem, ymodem, or xmodem protocols.
- *  lrz uses Unix buffered input to reduce wasted CPU time.
- *
- */
+/*
+  lrz - receive files with x/y/zmodem
+  Copyright (C) until 1988 Chuck Forsberg (Omen Technology INC)
+  Copyright (C) 1994 Matt Porter, Michael D. Black
+  Copyright (C) 1996, 1997 Uwe Ohse
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2, or (at your option)
+  any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+  02111-1307, USA.
+
+  originally written by Chuck Forsberg
+*/
 
 #include "zglobal.h"
 
@@ -93,6 +107,10 @@ char secbuf[MAX_BLOCK + 1];
 int timesync_flag=0;
 int in_timesync=0;
 #endif
+int in_tcpsync=0;
+int tcpsync_flag=1;
+int tcp_socket=-1;
+char tcp_buf[256]="";
 #if defined(F_GETFD) && defined(F_SETFD) && defined(O_SYNC)
 static int o_sync = 0;
 #endif
@@ -395,9 +413,9 @@ main(int argc, char *argv[])
 
 	}
 
-	if (getuid()!=geteuid() || getgid() != getegid()) {
+	if (getuid()!=geteuid()) {
 		error(1,0,
-		_("this program was never intended to be used set[ug]id\n"));
+		_("this program was never intended to be used setuid\n"));
 	}
 	/* initialize zsendline tab */
 	zsendline_init();
@@ -539,7 +557,7 @@ wcreceive(int argc, char **argp)
 	if (protocol!=ZM_XMODEM || argc==0) {
 		Crcflg=1;
 		if ( !Quiet)
-			fprintf(stderr, _("%s waiting to receive."), program_name);
+			vstringf(_("%s waiting to receive."), program_name);
 		if ((c=tryz())!=0) {
 			if (c == ZCOMPL)
 				return OK;
@@ -592,7 +610,7 @@ wcreceive(int argc, char **argp)
 					bps=(zi.bytes_received-zi.bytes_skipped)/d;
 
 					if (Verbose>1) {
-						fprintf(stderr,
+						vstringf(
 							_("\rBytes received: %7ld/%7ld   BPS:%-6ld                \r\n"),
 							zi.bytes_received, zi.bytes_total, bps);
 					}
@@ -634,9 +652,9 @@ wcreceive(int argc, char **argp)
 		else
 			shortname=*argp;
 #endif
-		putc('\n',stderr);
-		fprintf(stderr, _("%s: ready to receive %s"), program_name, Pathname);
-		fputs("\r\n",stderr);
+		vchar('\n');
+		vstringf(_("%s: ready to receive %s"), program_name, Pathname);
+		vstring("\r\n");
 
 		if ((fout=fopen(Pathname, "w")) == NULL) {
 #ifdef ENABLE_SYSLOG
@@ -661,7 +679,7 @@ wcreceive(int argc, char **argp)
 				d=0.5; /* can happen if timing uses time() */
 			bps=(zi.bytes_received-zi.bytes_skipped)/d;
 			if (Verbose) {
-				fprintf(stderr,
+				vstringf(
 					_("\rBytes received: %7ld   BPS:%-6ld                \r\n"),
 					zi.bytes_received, bps);
 			}
@@ -688,7 +706,7 @@ fubar:
 
 	if (Restricted && Pathname) {
 		unlink(Pathname);
-		fprintf(stderr, _("\r\n%s: %s removed.\r\n"), program_name, Pathname);
+		vstringf(_("\r\n%s: %s removed.\r\n"), program_name, Pathname);
 	}
 	return ERROR;
 }
@@ -912,8 +930,8 @@ procheader(char *name, struct zm_fileinfo *zi)
 	zi->fname=name_static;
 
 	if (Verbose>2) {
-		fprintf(stderr,_("zmanag=%d, Lzmanag=%d\n"),zmanag,Lzmanag);
-		fprintf(stderr,_("zconv=%d\n"),zconv);
+		vstringf(_("zmanag=%d, Lzmanag=%d\n"),zmanag,Lzmanag);
+		vstringf(_("zconv=%d\n"),zconv);
 	}
 
 	/* set default parameters and overrides */
@@ -939,11 +957,15 @@ procheader(char *name, struct zm_fileinfo *zi)
 	if (timesync_flag && 0==strcmp(name,"$time$.t"))
 		in_timesync=1;
 #endif
+	in_tcpsync=0;
+	if (tcpsync_flag && 0==strcmp(name,"$tcp$.t"))
+		in_tcpsync=1;
 	/* Check for existing file */
 	if (zconv != ZCRESUM && !Rxclob && (zmanag&ZF1_ZMMASK) != ZF1_ZMCLOB 
 		&& (zmanag&ZF1_ZMMASK) != ZF1_ZMAPND
 #ifdef ENABLE_TIMESYNC
 	    && !in_timesync
+	    && !in_tcpsync
 #endif
 		&& (fout=fopen(name, "r"))) {
 		struct stat sta;
@@ -953,7 +975,7 @@ procheader(char *name, struct zm_fileinfo *zi)
 		fclose(fout);
 		if ((zmanag & ZF1_ZMMASK)!=ZF1_ZMCHNG) {
 			if (Verbose)
-				fprintf(stderr,_("file exists, skipped: %s\n"),name);
+				vstringf(_("file exists, skipped: %s\n"),name);
 			return ERROR;
 		}
 		/* try to rename */
@@ -1007,8 +1029,7 @@ procheader(char *name, struct zm_fileinfo *zi)
 		if (d<0)
 			d=0;
 		if ((Verbose && d>60) || Verbose > 1)
-			fprintf(stderr,  
-	_("TIMESYNC: here %ld, remote %ld, diff %d seconds\n"),
+			vstringf(_("TIMESYNC: here %ld, remote %ld, diff %d seconds\n"),
 			(long) t, (long) zi->modtime, (long) d);
 #ifdef HAVE_SETTIMEOFDAY
 		if (timesync_flag > 1 && d > 10)
@@ -1017,14 +1038,22 @@ procheader(char *name, struct zm_fileinfo *zi)
 			tv.tv_sec=zi->modtime;
 			tv.tv_usec=0;
 			if (settimeofday(&tv,NULL))
-				fprintf(stderr,
-					_("TIMESYNC: cannot set time: %s\n"),
-				strerror(errno));
+				vstringf(_("TIMESYNC: cannot set time: %s\n"),
+					strerror(errno));
 		}
 #endif
 		return ERROR; /* skips file */
 	}
 #endif /* ENABLE_TIMESYNC */
+	if (in_tcpsync) {
+		fout=tmpfile();
+		if (!fout) {
+			error(1,errno,_("cannot tmpfile() for tcp protocol synchronization"));
+		}
+		zi->bytes_received=0;
+		return OK;
+	}
+
 
 	if (!zmodem_requested && MakeLCPathname && !IsAnyLower(name_static)
 	  && !(zi->mode&UNIXFILE))
@@ -1037,7 +1066,7 @@ procheader(char *name, struct zm_fileinfo *zi)
 			error(1,0,_("out of memory"));
 		sprintf(Pathname, "%s %s", program_name+2, name_static);
 		if (Verbose) {
-			fprintf(stderr,  "%s: %s %s\n",
+			vstringf("%s: %s %s\n",
 				_("Topipe"),
 				Pathname, Thisbinary?"BIN":"ASCII");
 		}
@@ -1055,9 +1084,8 @@ procheader(char *name, struct zm_fileinfo *zi)
 		strcpy(Pathname, name_static);
 		if (Verbose) {
 			/* overwrite the "waiting to receive" line */
-			fputs("\r                                                                     \r",
-				stderr);
-			fprintf(stderr, _("Receiving: %s\n"), name_static);
+			vstring("\r                                                                     \r");
+			vstringf(_("Receiving: %s\n"), name_static);
 		}
 		checkpath(name_static);
 		if (Nflag)
@@ -1072,6 +1100,7 @@ procheader(char *name, struct zm_fileinfo *zi)
 			}
 		}
 #ifdef OMEN
+		/* looks like a security hole -- uwe */
 		if (name_static[0] == '!' || name_static[0] == '|') {
 			if ( !(fout = popen(name_static+1, "w"))) {
 				return ERROR;
@@ -1282,8 +1311,8 @@ report(int sct)
 {
 	if (Verbose>1)
 	{
-		fprintf(stderr,_("Blocks received: %d"),sct);
-		putc('\r',stderr);
+		vstringf(_("Blocks received: %d"),sct);
+		vchar('\r');
 	}
 }
 
@@ -1335,8 +1364,8 @@ checkpath(const char *name)
 		 * don't overwrite hidden files in restricted mode */
 		if ((Restricted==2 || *name=='.') && fopen(name, "r") != NULL) {
 			canit();
-			fputs("\r\n",stderr);
-			fprintf(stderr, _("%s: %s exists\n"), 
+			vstring("\r\n");
+			vstringf(_("%s: %s exists\n"), 
 				program_name, name);
 			bibi(-1);
 		}
@@ -1348,17 +1377,17 @@ checkpath(const char *name)
 #endif
 		) {
 			canit();
-			fputs("\r\n",stderr);
-			fprintf(stderr,_("%s:\tSecurity Violation"),program_name);
-			fputs("\r\n",stderr);
+			vstring("\r\n");
+			vstringf(_("%s:\tSecurity Violation"),program_name);
+			vstring("\r\n");
 			bibi(-1);
 		}
 		if (Restricted > 1) {
 			if (name[0]=='.' || strstr(name,"/.")) {
 				canit();
-				fputs("\r\n",stderr);
-				fprintf(stderr,_("%s:\tSecurity Violation"),program_name);
-				fputs("\r\n",stderr);
+				vstring("\r\n");
+				vstringf(_("%s:\tSecurity Violation"),program_name);
+				vstring("\r\n");
 				bibi(-1);
 			}
 		}
@@ -1401,6 +1430,14 @@ tryz(void)
 		if (Zctlesc)
 			Txhdr[ZF0] |= TESCCTL; /* TESCCTL == ESCCTL */
 		zshhdr(tryzhdrtype, Txhdr);
+
+		if (tcp_socket==-1 && *tcp_buf) {
+			/* we need to switch to tcp mode */
+			tcp_socket=tcp_connect(tcp_buf);
+			tcp_buf[0]=0;
+			dup2(tcp_socket,0);
+			dup2(tcp_socket,1);
+		}
 		if (tryzhdrtype == ZSKIP)	/* Don't skip too far */
 			tryzhdrtype = ZRINIT;	/* CAF 8-21-87 */
 again:
@@ -1451,14 +1488,14 @@ again:
 			if (zrdata(secbuf, MAX_BLOCK) == GOTCRCW) {
 				if (Verbose)
 				{
-					fprintf(stderr,"%s: %s\n", program_name,
+					vstringf("%s: %s\n", program_name,
 						_("remote command execution requested"));
-					fprintf(stderr,"%s: %s\n", program_name, secbuf);
+					vstringf("%s: %s\n", program_name, secbuf);
 				}
 				if (!allow_remote_commands) 
 				{
 					if (Verbose)
-						fprintf(stderr,"%s: %s\n", program_name, 
+						vstringf("%s: %s\n", program_name, 
 							_("not executed"));
 					zshhdr(ZCOMPL, Txhdr);
 					return ZCOMPL;
@@ -1488,11 +1525,11 @@ again:
 			return ZCOMPL;
 		case ZRINIT:
 			if (Verbose)
-				fprintf(stderr,_("got ZRINIT"));
+				vstringf(_("got ZRINIT"));
 			return ERROR;
 		case ZCAN:
 			if (Verbose)
-				fprintf(stderr,_("got ZCAN"));
+				vstringf(_("got ZCAN"));
 			return ERROR;
 		}
 	}
@@ -1544,18 +1581,19 @@ rzfiles(struct zm_fileinfo *zi)
 					d=0.5; /* can happen if timing uses time() */
 				bps=(zi->bytes_received-zi->bytes_skipped)/d;
 				if (Verbose > 1) {
-					fprintf(stderr,
+					vstringf(
 						_("\rBytes received: %7ld/%7ld   BPS:%-6ld                \r\n"),
 						zi->bytes_received, zi->bytes_total, bps);
 				}
 				DO_SYSLOG((LOG_INFO, "%s/%s: %ld Bytes, %ld BPS",shortname,
 						   protname(), (long) zi->bytes_total,bps));
 			}
+			/* FALL THROUGH */
 		case ZSKIP:
 			if (c==ZSKIP)
 			{
 				if (Verbose) 
-					fprintf(stderr,_("Skipped"));
+					vstringf(_("Skipped"));
 				DO_SYSLOG((LOG_INFO, "%s/%s: skipped",shortname,protname()));
 			}
 			switch (tryz()) {
@@ -1808,8 +1846,7 @@ moredata:
 				}
 				
 				if (Verbose > 1) {
-					fprintf(stderr,
-							_("\rBytes received: %7ld/%7ld   BPS:%-6ld ETA %02d:%02d  "),
+					vstringf(_("\rBytes received: %7ld/%7ld   BPS:%-6ld ETA %02d:%02d  "),
 							zi->bytes_received, zi->bytes_total, last_bps, minleft, secleft);
 					last_rxbytes=zi->bytes_received;
 					not_printed=0;
@@ -1950,6 +1987,14 @@ closeit(struct zm_fileinfo *zi)
 		}
 		return OK;
 	}
+	if (in_tcpsync) {
+		rewind(fout);
+		if (!fgets(tcp_buf,sizeof(tcp_buf),fout)) {
+			error(1,errno,_("fgets for tcp protocol synchronization failed: "));
+		}	
+		fclose(fout);
+		return OK;
+	}
 	ret=fclose(fout);
 	if (ret) {
 		zpfatal(_("file close error"));
@@ -1971,7 +2016,11 @@ closeit(struct zm_fileinfo *zi)
 		utime(Pathname, timep);
 #endif
 	}
+#ifdef S_ISREG
+	if (S_ISREG(zi->mode)) {
+#else
 	if ((zi->mode&S_IFMT) == S_IFREG) {
+#endif
 		/* we must not make this program executable if running 
 		 * under rsh, because the user might have uploaded an
 		 * unrestricted shell.

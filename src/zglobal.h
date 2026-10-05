@@ -1,6 +1,28 @@
 #ifndef ZMODEM_GLOBAL_H
 #define ZMODEM_GLOBAL_H
 
+/* zglobal.h - prototypes etcetera for lrzsz
+
+  Copyright (C) until 1998 Chuck Forsberg (OMEN Technology Inc)
+  Copyright (C) 1994 Matt Porter
+  Copyright (C) 1996, 1997 Uwe Ohse
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2, or (at your option)
+  any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+  02111-1307, USA.
+*/
+
 #include "config.h"
 #include <sys/types.h>
 
@@ -15,7 +37,9 @@
 #pragma alloca
 #  else
 #   ifndef alloca
- char *alloca ();
+#    ifndef __GLIBC__
+char *alloca ();
+#    endif
 #   endif
 #  endif
 # endif
@@ -90,9 +114,6 @@ char *strchr (), *strrchr ();
 #    endif
 #  endif
 #endif
-
-#include <termios.h>
-#define USE_TERMIOS
 
 /* used to use #elif, but native braindead hpux 9.00 c compiler didn't 
  * understand it */
@@ -297,10 +318,20 @@ extern unsigned Baudrate;
 void zperr __P ((const char *fmt, ...));
 void zpfatal __P ((const char *fmt, ...));
 void vfile __P ((const char *format, ...));
+#define vchar(x) putc(x,stderr)
+#define vstring(x) fputs(x,stderr)
+
+#ifdef __GNUC__
+#if __GNUC__ > 1
+#define vstringf(format,args...) fprintf(stderr,format, ##args)
+#endif
+#endif
+#ifndef vstringf
+void vstringf __P ((const char *format, ...));
+#endif
 
 /* rbsb.c */
 int from_cu __P ((void));
-void cucheck __P ((void));
 int rdchk __P ((int fd));
 int io_mode __P ((int fd, int n));
 void sendbrk __P ((int fd));
@@ -344,6 +375,12 @@ int zgethdr __P ((char *hdr, int eflag));
 void stohdr __P ((long pos));
 long rclhdr __P ((char *hdr));
 
+int tcp_server __P ((char *buf));
+int tcp_connect __P ((char *buf));
+int tcp_accept __P ((int d));
+
+
 const char * protname __P ((void));
+
 
 #endif

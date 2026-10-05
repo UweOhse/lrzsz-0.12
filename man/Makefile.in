@@ -1,6 +1,6 @@
-# Makefile.in generated automatically by automake 1.1l from Makefile.am
+# Makefile.in generated automatically by automake 1.2 from Makefile.am
 
-# Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+# Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
 # gives unlimited permission to copy, distribute and modify it.
 
@@ -32,49 +32,61 @@ pkgincludedir = $(includedir)/@PACKAGE@
 
 top_builddir = ..
 
+ACLOCAL = @ACLOCAL@
+AUTOCONF = @AUTOCONF@
+AUTOMAKE = @AUTOMAKE@
+AUTOHEADER = @AUTOHEADER@
+
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 transform = @program_transform_name@
-host_triplet = @host@
+
+NORMAL_INSTALL = true
+PRE_INSTALL = true
+POST_INSTALL = true
+NORMAL_UNINSTALL = true
+PRE_UNINSTALL = true
+POST_UNINSTALL = true
 host_alias = @host_alias@
-MKINSTALLDIRS = @MKINSTALLDIRS@
-INTLLIBS = @INTLLIBS@
-INTLDEPS = @INTLDEPS@
-LIBOBJS = @LIBOBJS@
-VERSION = @VERSION@
-ANSI2KNR = @ANSI2KNR@
-POSUB = @POSUB@
-GT_YES = @GT_YES@
-PACKAGE = @PACKAGE@
+host_triplet = @host@
 CATALOGS = @CATALOGS@
-PACKAGE_VERSION = @PACKAGE_VERSION@
-ENABLE_TIMESYNC = @ENABLE_TIMESYNC@
-U = @U@
-GMOFILES = @GMOFILES@
-GT_NO = @GT_NO@
-RANLIB = @RANLIB@
-DATADIRNAME = @DATADIRNAME@
-XGETTEXT = @XGETTEXT@
-LDFLAGS = @LDFLAGS@
-USE_INCLUDED_LIBINTL = @USE_INCLUDED_LIBINTL@
 CATOBJEXT = @CATOBJEXT@
-host_cpu = @host_cpu@
-INTLOBJS = @INTLOBJS@
 CC = @CC@
-LIBS = @LIBS@
-INSTOBJEXT = @INSTOBJEXT@
-l = @l@
-MSGFMT = @MSGFMT@
 CFLAGS = @CFLAGS@
+DATADIRNAME = @DATADIRNAME@
+ENABLE_TIMESYNC = @ENABLE_TIMESYNC@
 GENCAT = @GENCAT@
-POFILES = @POFILES@
+GMOFILES = @GMOFILES@
 GMSGFMT = @GMSGFMT@
+GT_NO = @GT_NO@
+GT_YES = @GT_YES@
+INSTOBJEXT = @INSTOBJEXT@
+INTLDEPS = @INTLDEPS@
+INTLLIBS = @INTLLIBS@
+INTLOBJS = @INTLOBJS@
+LDFLAGS = @LDFLAGS@
+LIBOBJS = @LIBOBJS@
+LIBS = @LIBS@
+MAKEINFO = @MAKEINFO@
+MKINSTALLDIRS = @MKINSTALLDIRS@
+MSGFMT = @MSGFMT@
+PACKAGE = @PACKAGE@
+PACKAGE_VERSION = @PACKAGE_VERSION@
+POFILES = @POFILES@
+POSUB = @POSUB@
+RANLIB = @RANLIB@
+U = @U@
+USE_INCLUDED_LIBINTL = @USE_INCLUDED_LIBINTL@
 USE_NLS = @USE_NLS@
+VERSION = @VERSION@
+host_cpu = @host_cpu@
 host_os = @host_os@
+l = @l@
 
 man_MANS = lrz.1 lsz.1
+EXTRA_DIST = lrz.1 lsz.1
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = ../config.h
 CONFIG_CLEAN_FILES = 
@@ -84,35 +96,38 @@ NROFF = nroff
 DIST_COMMON =  Makefile.am Makefile.in
 
 
-DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) \
-	$(TEXINFOS) $(MANS) $(EXTRA_DIST)
+DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = tar
+GZIP = --best
 default: all
 
 .SUFFIXES:
-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL) 
-	cd $(top_srcdir) && automake --gnu man/Makefile
+$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps man/Makefile
 
-Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status $(BUILT_SOURCES)
+Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
 install-man: $(MANS)
 	$(NORMAL_INSTALL)
 	$(mkinstalldirs) $(mandir)/man1
-	sect=1;				\
+	@sect=1;				\
 	inst=`echo "lrz" | sed '$(transform)'`.1; \
 	if test -f $(srcdir)/lrz.1; then file=$(srcdir)/lrz.1; \
 	else file=lrz.1; fi; \
+	echo " $(INSTALL_DATA) $$file $(mandir)/man$$sect/$$inst"; \
 	$(INSTALL_DATA) $$file $(mandir)/man$$sect/$$inst
-	sect=1;				\
+	@sect=1;				\
 	inst=`echo "lsz" | sed '$(transform)'`.1; \
 	if test -f $(srcdir)/lsz.1; then file=$(srcdir)/lsz.1; \
 	else file=lsz.1; fi; \
+	echo " $(INSTALL_DATA) $$file $(mandir)/man$$sect/$$inst"; \
 	$(INSTALL_DATA) $$file $(mandir)/man$$sect/$$inst
 
 uninstall-man:
+	$(NORMAL_UNINSTALL)
 	inst=`echo "lrz" | sed '$(transform)'`.1; \
 	rm -f $(mandir)/man1/$$inst
 	inst=`echo "lsz" | sed '$(transform)'`.1; \
@@ -125,6 +140,7 @@ TAGS:
 distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
 
 subdir = man
+
 distdir: $(DISTFILES)
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
@@ -138,20 +154,20 @@ check: all
 	$(MAKE)
 installcheck:
 install-exec: 
-	$(NORMAL_INSTALL)
+	@$(NORMAL_INSTALL)
 
 install-data: install-man
-	$(NORMAL_INSTALL)
+	@$(NORMAL_INSTALL)
 
 install: install-exec install-data all
 	@:
 
 uninstall: uninstall-man
 
-all: $(MANS) Makefile
+all: Makefile $(MANS)
 
 install-strip:
-	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
+	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' INSTALL_SCRIPT='$(INSTALL_PROGRAM)' install
 installdirs:
 	$(mkinstalldirs)  $(mandir)/man1
 
@@ -164,7 +180,7 @@ clean-generic:
 
 distclean-generic:
 	rm -f Makefile $(DISTCLEANFILES)
-	rm -f config.cache config.log stamp-h
+	rm -f config.cache config.log stamp-h stamp-h[0-9]*
 	test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 
 maintainer-clean-generic:

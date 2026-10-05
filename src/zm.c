@@ -1,4 +1,26 @@
 /*
+  zm.c - zmodem protocol handling lowlevelstuff
+  Copyright (C) until 1998 Chuck Forsberg (OMEN Technology Inc)
+  Copyright (C) 1996, 1997 Uwe Ohse
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2, or (at your option)
+  any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+  02111-1307, USA.
+
+  originally written by Chuck Forsberg
+*/
+/* historical comment: -- uwe
  *   Z M . C
  *    ZMODEM protocol primitives
  *    05-09-88  Chuck Forsberg Omen Technology Inc
@@ -225,12 +247,12 @@ zsendline(int c)
 }
 
 void inline
-zsendline_s(char *s, int count) 
+zsendline_s(const char *s, int count) 
 {
-	char *end=s+count;
+	const char *end=s+count;
 	while(s!=end) {
-		int last_esc;
-		char *t=s;
+		int last_esc=0;
+		const char *t=s;
 		while (t!=end) {
 			last_esc=zsendline_tab[(unsigned) ((*t) & 0377)];
 			if (last_esc) 
@@ -375,23 +397,15 @@ zsdata(const char *buf, int length, int frameend)
 	register unsigned short crc;
 
 	vfile("zsdata: %d %s", length, Zendnames[(frameend-ZCRCE)&3]);
-#if 0
-	if (Crc32t)
-		zsda32(buf, length, frameend);
-	else {
-#endif
-		crc = 0;
-		for (;--length >= 0; ++buf) {
-			zsendline(*buf); crc = updcrc((0377 & *buf), crc);
-		}
-		xsendline(ZDLE); xsendline(frameend);
-		crc = updcrc(frameend, crc);
-
-		crc = updcrc(0,updcrc(0,crc));
-		zsendline(crc>>8); zsendline(crc);
-#if 0
+	crc = 0;
+	for (;--length >= 0; ++buf) {
+		zsendline(*buf); crc = updcrc((0377 & *buf), crc);
 	}
-#endif
+	xsendline(ZDLE); xsendline(frameend);
+	crc = updcrc(frameend, crc);
+
+	crc = updcrc(0,updcrc(0,crc));
+	zsendline(crc>>8); zsendline(crc);
 	if (frameend == ZCRCW) {
 		xsendline(XON);  flushmo();
 	}
@@ -422,11 +436,9 @@ zsda32(const char *buf, int length, int frameend)
 			zsendline(c);
 		crc >>= 8;
 	}
-#if 1
 	if (frameend == ZCRCW) {
 		xsendline(XON);  flushmo();
 	}
-#endif
 }
 
 #if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ <= 4)
@@ -555,7 +567,6 @@ zrdat32(char *buf, int length)
 	register char *end;
 	register int d;
 
-#if 1
 	crc = 0xFFFFFFFFL;  Rxcount = 0;  end = buf + length;
 	while (buf <= end) {
 		if ((c = zdlread()) & ~0377) {
@@ -604,64 +615,6 @@ crcfoo:
 	}
 	zperr(_("Data subpacket too long"));
 	return ERROR;
-#else
-	char *start=buf;
-	Rxcount = 0;  end = buf + length;
-	while (buf <= end) {
-cont:
-		if ((c = zdlread()) & ~0377) 
-			goto gotend;
-		*buf++ = c;
-	}
-	zperr(_("Data subpacket too long"));
-	return ERROR;
-gotend:
-	crc = 0xFFFFFFFFL;
-	while (buf!=start) 
-	{
-		crc=UPDC32(*(start++),crc);
-	}
-
-gotsomething:
-	switch (c) {
-	case GOTCRCE:
-	case GOTCRCG:
-	case GOTCRCQ:
-	case GOTCRCW:
-		d = c;
-		c &= 0377;
-		crc = UPDC32(c, crc);
-		if ((c = zdlread()) & ~0377)
-			goto gotsomething;
-		crc = UPDC32(c, crc);
-		if ((c = zdlread()) & ~0377)
-			goto gotsomething;
-		crc = UPDC32(c, crc);
-		if ((c = zdlread()) & ~0377)
-			goto gotsomething;
-		crc = UPDC32(c, crc);
-		if ((c = zdlread()) & ~0377)
-			goto gotsomething;
-		crc = UPDC32(c, crc);
-		if (crc != 0xDEBB20E3) {
-			zperr(badcrc);
-			return ERROR;
-		}
-		Rxcount = length - (end - buf);
-		COUNT_BLK(Rxcount);
-		vfile("zrdat32: %d %s", Rxcount, Zendnames[(d-GOTCRCE)&3]);
-		return d;
-	case GOTCAN:
-		zperr(_("Sender Canceled"));
-		return ZCAN;
-	case TIMEOUT:
-		zperr(_("TIMEOUT"));
-		return c;
-	default:
-		zperr(_("Bad data subpacket"));
-		return c;
-	}
-#endif
 }
 
 /*
@@ -719,12 +672,9 @@ agn2:
 			return(ERROR);
 		}
 		if (eflag && ((c &= 0177) & 0140) && Verbose)
-			putc(c, stderr);
+			vchar(c);
 		else if (eflag > 1 && Verbose)
-			putc(c, stderr);
-#ifdef UNIX
-		fflush(stderr);
-#endif
+			vchar(c);
 		goto startover;
 	case ZPAD|0200:		/* This is what we want. */
 		Not8bit = c;

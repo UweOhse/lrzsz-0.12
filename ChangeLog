@@ -1,3 +1,90 @@
+Sat Aug 23 22:54:12 MET DST 1997
+
+	* src/lrz.c (closeit): use S_ISREG instead of (mode&S_IFMT)==...
+	  if possible. (closeit) removed unused variable
+
+	* src/rbsb.c (Fromcu): deal with major(), minor() and makedev ...
+	  dev_t might not be a simple type of the system (or, worse, the
+	  compiler).
+
+	* src/tcp.c (tcp_server): change len to size_t. 
+	  (tcp_server): remove unused variable namelen.
+	  (tcp_accept): change namelen to size_t.
+	  (global): include "error.h", <ctype.h>, <stdlib.h>, <stdio.h>. 
+	  (tcp_accept): remove unused variable newsock.
+	  (tcp_connect): rename variable sin to s_in.
+
+	* src/lsz.c (wcs): use S_ISxxx instead of (mode & S_IFxxx)==...)
+	  if possible. (getzrxinit) same. (countem) also.
+
+	* src/Makefile.am: don't uses LOCALEDIR, OS, CPU anymore
+
+	* configure.in: AC_DEFINEs_UNQUOTED LOCALEDIR, OS, CPU.
+	  Bugfix: PUBDIR should be AC_DEFINEd_UNQUOTED, not AC_DEFINEd.
+
+	* src/zm.c (zsendline_s): last_esc was not initialized.
+
+Sun Jun  1 09:52:45 MET DST 1997 Uwe Ohse <uwe@ohse.de>
+
+	* updated COPYING
+
+	* man/Makefile.am: added manual pages to EXTRA_DIST as automake
+	  doesn't automagically distribute them anymore.
+
+	* src/zglobal.h: new macro vchar() (put a char onto stderr),
+	  new macro vstring() (put a string onto ...).
+	  prototype for vstringf().
+	  remove prototype for cucheck().
+
+	* src/zperr.c: new function vstringf() (vfile without "Verbose > 2"
+	  check).
+
+	* src/lrz.c: use vchar/vstring/vstringf instead of writing
+	  to stderr. 
+	  implement tcp mode code.
+	  don't restrict setgid anymore, too many people had problems 
+	  with this ...
+
+	* src/zreadline.c: use vchar/vstring/vstringf instead of writing
+	  to stderr.
+
+	* src/zm.c: use vchar/vstring/vstringf instead of writing
+	  to stderr. made zsendline_s receive a _const_ char *.
+
+	* src/rbsb.c: use vchar/vstring/vstringf instead of writing
+	  to stderr. remove unused function cucheck().
+
+	* src/lsz.c: removed NEW_ERROR define, delete old code, NEW_ERROR
+	  is now certainly stable enough.
+	  most places: use vchar/vstring/vstringf instead of writing
+	  to stderr.
+	  New options -4/-5 for try4k/start4k. 4k blocksize gives somewhat
+	  better benchmark results than 1k and 10% better results than 8k
+	  on my dual processor system (don't wonder: 4k is a pagesize, and
+	  using more than 4k makes pipe writes block. doesn't matter in
+	  real life :-)).
+	  implement tcp mode code.
+	  don't restrict setgid anymore, too many people had problems 
+	  with this ...
+
+	* src/tcp.c: new file.
+
+	* configure.in: change version to 0.12.17. fiddled around to
+	  get it properly running with automake-1.1p.
+
+	* lib/Makefile.am: add LIBOBJS to libzmodem_a_DEPENDENCIES (don't 
+	  know why automake-1.1p needs this, but anyway).
+
+
+Wed May 21 16:49:51 1997  Philippe De Muyter  <phdm@info.ucl.ac.be>
+
+	* src/zglobal.h (termios.h): Do not include that file unconditionally !
+	(USE_TERMIOS): Do not define that unconditionally !
+
+Tue Mar 25 01:21:07 MET 1997
+
+	* lib/Makefile.am: add "libzmodem_a_DEPENDENCIES  = @ALLOCA@"
+
 Mon Mar 24 08:01:14 MET 1997
 
 	* Release 0.12.16

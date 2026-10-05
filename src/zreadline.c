@@ -1,16 +1,32 @@
-/* lrz.c cosmetic modifications by Matt Porter
- * from rz.c By Chuck Forsberg
- * 
- *  A program for Linux to receive files and commands from computers running
- *  zmodem, ymodem, or xmodem protocols.
- *  lrz uses Unix buffered input to reduce wasted CPU time.
- *
- */
+/*
+  zreadline.c - line reading stuff for lrzsz
+  Copyright (C) until 1998 Chuck Forsberg (OMEN Technology Inc)
+  Copyright (C) 1994 Matt Porter
+  Copyright (C) 1996, 1997 Uwe Ohse
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2, or (at your option)
+  any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+  02111-1307, USA.
+
+  originally written by Chuck Forsberg
+*/
+/* once part of lrz.c, taken out to be useful to lsz.c too */
 
 #include "zglobal.h"
 
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <signal.h>
 #include <ctype.h>
 #include <errno.h>
@@ -48,7 +64,7 @@ readline(int timeout)
 #endif
 	if (--readline_left >= 0) {
 		if (Verbose > 8) {
-			fprintf(stderr, "%02x ", *readline_ptr&0377);
+			vstringf("%02x ", *readline_ptr&0377);
 		}
 		return (*readline_ptr++ & 0377);
 	}
@@ -61,12 +77,12 @@ readline(int timeout)
 		else if (n==0)
 			n=1;
 		if (Verbose > 5)
-			fprintf(stderr, "Calling read: alarm=%d  Readnum=%d ",
+			vstringf("Calling read: alarm=%d  Readnum=%d ",
 			  n, readline_readnum);
 		signal(SIGALRM, zreadline_alarm_handler); alarm(n);
 	}
 	else if (Verbose > 5)
-		fprintf(stderr, "Calling read: Readnum=%d ",
+		vstringf("Calling read: Readnum=%d ",
 		  readline_readnum);
 
 	readline_ptr=readline_buffer;
@@ -86,26 +102,26 @@ readline(int timeout)
 		}
 	}
 	if (Verbose > 5) {
-		fprintf(stderr, "Read returned %d bytes\n", readline_left);
+		vstringf("Read returned %d bytes\n", readline_left);
 		if (readline_left==-1)
-			fprintf(stderr, "errno=%d:%s\n", errno,strerror(errno));
+			vstringf("errno=%d:%s\n", errno,strerror(errno));
 		if (Verbose > 9 && readline_left>0) {
 			int i,j;
 			j=readline_left > 48 ? 48 : readline_left;
-			fprintf(stderr,"    ");
+			vstring("    ");
 			for (i=0;i<j;i++) {
 				if (i==24)
-					fprintf(stderr,"\n    ");
-				fprintf(stderr, "%02x ", readline_ptr[i] & 0377);
+					vstring("\n    ");
+				vstringf("%02x ", readline_ptr[i] & 0377);
 			}
-			fprintf(stderr,"\n");
+			vstringf("\n");
 		}
 	}
 	if (readline_left < 1)
 		return TIMEOUT;
 	--readline_left;
 	if (Verbose > 8) {
-		fprintf(stderr, "%02x ", *readline_ptr&0377);
+		vstringf("%02x ", *readline_ptr&0377);
 	}
 	return (*readline_ptr++ & 0377);
 }

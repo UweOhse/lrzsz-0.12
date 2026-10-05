@@ -1,15 +1,30 @@
 /*
- *
+  rbsb.c - terminal handling stuff for lrzsz
+  Copyright (C) until 1988 Chuck Forsberg (Omen Technology INC)
+  Copyright (C) 1994 Matt Porter, Michael D. Black
+  Copyright (C) 1996, 1997 Uwe Ohse
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2, or (at your option)
+  any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+  02111-1307, USA.
+
+  originally written by Chuck Forsberg
+*/
+
+/*
  *  Rev 05-05-1988
- *  This file contains Unix specific code for setting terminal modes,
- *  very little is specific to ZMODEM or YMODEM per se (that code is in
- *  sz.c and rz.c).  The CRC-16 routines used by XMODEM, YMODEM, and ZMODEM
- *  are also in this file, a fast table driven macro version
- *
- *	V7/BSD HACKERS:  SEE NOTES UNDER mode(2) !!!
- *
- *   This file is #included so the main file can set parameters such as HOWMANY.
- *   See the main files (rz.c/sz.c) for compile instructions.
+ *  ============== (not quite, but originated there :-). -- uwe 
  */
 #include "zglobal.h"
 
@@ -26,6 +41,14 @@ long Locbit = LLITOUT;	/* Bit SUPPOSED to disable output translations */
 
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
+#endif
+
+#ifdef MAJOR_IN_MKDEV
+#include <sys/mkdev.h>
+#else
+# ifdef MAJOR_IN_SYSMACROS
+# include <sys/sysmacros.h>
+# endif
 #endif
 
 #if HOWMANY  > 255
@@ -45,27 +68,33 @@ from_cu(void)
 {
 #ifdef HAVE_ST_RDEV
 	struct stat a, b;
-	a.st_rdev=b.st_rdev=0; /* in case fstat fails */
-	a.st_dev=b.st_dev=0; /* in case fstat fails */
+#if defined(makedev)
+	dev_t help=makedev(0,0);
+#else
+	int help=0;
+#endif
+
+	/* in case fstat fails */
+	a.st_rdev=b.st_rdev=a.st_dev=b.st_dev=help;
 
 	fstat(1, &a); fstat(2, &b);
 
+#if defined(major) && defined(minor)
+	if (major(a.st_rdev) != major(b.st_rdev) 
+		|| minor(a.st_rdev) != minor(b.st_rdev))
+		Fromcu=1;
+	else if (major(a.st_dev) != major(b.st_dev) 
+		|| minor(a.st_dev) != minor(b.st_dev))
+		Fromcu=1;
+	else
+		Fromcu=0;
+#else
 	Fromcu = (a.st_rdev != b.st_rdev) || (a.st_dev != b.st_dev);
+#endif
 #else
 	Fromcu = 1; /* a bad guess .. */
 #endif
 	return Fromcu;
-}
-
-void 
-cucheck(void)
-{
-	if (Fromcu)
-	{
-		fputs("\r\n",stderr);
-		fprintf(stderr,_("Transfer complete."));
-		fputs("\r\n",stderr);
-	}
 }
 
 

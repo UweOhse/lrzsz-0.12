@@ -1,15 +1,27 @@
-/*  lsz.c cosmetic modifications by Matt Porter 
- * 
- *  from the Public Domain version of sz.c by Chuck Forsberg,
- *  Omen Technology INC
- *
- *  A program for Linux to send files and commands to computers running
- *  zmodem, ymodem, or xmodem protocols.
- *
- */
-#include "zglobal.h"
+/*
+  lsz - send files with x/y/zmodem
+  Copyright (C) until 1988 Chuck Forsberg (Omen Technology INC)
+  Copyright (C) 1994 Matt Porter, Michael D. Black
+  Copyright (C) 1996, 1997 Uwe Ohse
 
-#define NEW_ERROR
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2, or (at your option)
+  any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+  02111-1307, USA.
+
+  originally written by Chuck Forsberg
+*/
+#include "zglobal.h"
 
 /* char *getenv(); */
 
@@ -66,9 +78,7 @@ static int wcs __P ((const char *oname));
 static int zfilbuf __P ((struct zm_fileinfo *zi));
 static int filbuf __P ((char *buf, int count));
 static int getzrxinit __P ((void));
-#ifdef NEW_ERROR
 static int calc_blklen __P ((long total_sent));
-#endif
 static int sendzsinit __P ((void));
 static int wctx __P ((struct zm_fileinfo *));
 static int zsendfdata __P ((struct zm_fileinfo *));
@@ -174,12 +184,13 @@ int max_blklen=1024;
 int start_blklen=0;
 int zmodem_requested;
 time_t stop_time=0;
+int tcp_flag=0;
+int tcp_socket=-1;
 
-#ifdef NEW_ERROR
 int error_count;
 #define OVERHEAD 18
 #define OVER_ERR 20
-#endif
+
 #define MK_STRING(x) #x
 
 #ifdef ENABLE_SYSLOG
@@ -233,6 +244,8 @@ static struct option const long_options[] =
   {"twostop", no_argument, NULL, '2'},
   {"try-8k", no_argument, NULL, '8'},
   {"start-8k", no_argument, NULL, '9'},
+  {"try-4k", no_argument, NULL, '4'},
+  {"start-4k", no_argument, NULL, '5'},
   {"ascii", no_argument, NULL, 'a'},
   {"binary", no_argument, NULL, 'b'},
   {"bufsize", required_argument, NULL, 'B'},
@@ -274,6 +287,7 @@ static struct option const long_options[] =
   {"overwrite-or-skip", no_argument, NULL, 'Y'},
 
   {"delay-startup", required_argument, NULL, 4},
+  {"tcp", no_argument, NULL, 5},
   {NULL, 0, NULL, 0}
 };
 
@@ -316,7 +330,7 @@ main(int argc, char **argv)
 	Rxtimeout = 600;
 
 	while ((c = getopt_long (argc, argv, 
-		"2+8abB:C:c:dfeEghi:kL:l:m:M:NnOopRrqsSt:TUuvw:XYy",
+		"2+48abB:C:c:dfeEghi:kL:l:m:M:NnOopRrqsSt:TUuvw:XYy",
 		long_options, (int *) 0))!=EOF)
 	{
 		unsigned long int tmp;
@@ -338,6 +352,16 @@ main(int argc, char **argv)
 		case '9': /* this is a longopt .. */
 			start_blklen=8192;
 			max_blklen=8192;
+			break;
+		case '4':
+			if (max_blklen==4096)
+				start_blklen=4096;
+			else
+				max_blklen=4096;
+			break;
+		case '5': /* this is a longopt .. */
+			start_blklen=4096;
+			max_blklen=4096;
 			break;
 		case 'a': Lzconv = ZCNL; Ascii = TRUE; break;
 		case 'b': Lzconv = ZCBIN; break;
@@ -521,15 +545,18 @@ main(int argc, char **argv)
 			if (s_err != LONGINT_OK)
 				STRTOL_FATAL_ERROR (optarg, _("startup delay"), s_err);
 			break;
+		case 5:
+			tcp_flag=1;
+			break;
 		default:
 			usage (2,NULL);
 			break;
 		}
 	}
 
-	if (getuid()!=geteuid() || getgid() != getegid()) {
+	if (getuid()!=geteuid()) {
 		error(1,0,
-		_("this program was never intended to be used set[ug]id\n"));
+		_("this program was never intended to be used setuid\n"));
 	}
 	zsendline_init();
 
@@ -550,6 +577,7 @@ main(int argc, char **argv)
 	/* we want interrupted system calls to fail and not to be restarted. */
 	siginterrupt(SIGALRM,1);
 #endif
+
 
 	npats = argc - optind;
 	patts=&argv[optind];
@@ -656,6 +684,10 @@ main(int argc, char **argv)
 				Filesleft++;
 			}
 #endif
+			if (tcp_flag) {
+				Totalleft+=256; /* tcp never needs more */
+				Filesleft++;
+			}
 		}
 	}
 	fflush(stdout);
@@ -691,6 +723,52 @@ main(int argc, char **argv)
 	/*NOTREACHED*/
 }
 
+static int 
+send_pseudo(const char *name, const char *data)
+{
+	/* yes, this *has* a minor race condition */
+	char *tmp;
+	const char *p;
+	FILE *f;
+	int ret=0; /* ok */
+	
+	p = getenv ("TMPDIR");
+	if (!p)
+		p = getenv ("TMP");
+	if (!p)
+		p = "/tmp";
+	tmp=malloc(PATH_MAX+1);
+	if (!tmp)
+		error(1,0,_("out of memory"));
+	
+	strcpy(stpcpy(tmp,p),name);
+
+	f = fopen (tmp, "w");
+	if (f) {
+		fputs(data,f);
+		fclose (f);
+		if (wcs (tmp) == ERROR) {
+			if (Verbose)
+				vstringf (_ ("send_pseudo %s: failed"),name);
+			else {
+				if (Verbose)
+					vstringf (_ ("send_pseudo %s: ok"),name);
+				Filcnt--;
+			}
+			vstring ("\r\n");
+			ret=1;
+		}
+		unlink (tmp);
+	} else {
+		vstringf (_ ("send_pseudo %s: cannot open tmpfile %s: %s"),
+				 name, tmp, strerror (errno));
+		vstring ("\r\n");
+		ret=1;
+	}
+	free(tmp);
+	return ret;
+}
+
 static int
 wcsend (int argc, char *argp[])
 {
@@ -699,6 +777,24 @@ wcsend (int argc, char *argp[])
 	Crcflg = FALSE;
 	firstsec = TRUE;
 	bytcnt = -1;
+
+	if (tcp_flag) {
+		FILE *f;
+		char buf[256];
+		int d;
+
+		/* tell receiver to receive via tcp */
+		d=tcp_server(buf);
+		if (send_pseudo("/$tcp$.t",buf)) {
+			error(1,0,_("tcp protocol init failed\n"));
+		}
+		/* ok, now that this file is sent we can switch to tcp */
+
+		tcp_socket=tcp_accept(d);
+		dup2(tcp_socket,0);
+		dup2(tcp_socket,1);
+	}
+
 	for (n = 0; n < argc; ++n) {
 		Totsecs = 0;
 		if (wcs (argp[n]) == ERROR)
@@ -707,62 +803,24 @@ wcsend (int argc, char *argp[])
 #if defined(ENABLE_TIMESYNC)
 	if (Rxflags2 & ZF1_TIMESYNC && enable_timesync) {
 		/* implement Peter Mandrellas extension */
-		/* yes, this *has* a minor race condition */
-		char *tmp;
-		const char *p;
 		FILE *f;
+		char buf[60];
+		time_t t = time (NULL);
+		struct tm *tm = localtime (&t);		/* sets timezone */
+		strftime (buf, sizeof (buf) - 1, "%H:%M:%S", tm);
 		if (Verbose) {
-			fputs ("\r\n", stderr);
-			fprintf (stderr, _ ("Answering TIMESYNC"));
+			vstring ("\r\n");
+			vstringf (_("Answering TIMESYNC at %s"),buf);
 		}
-		p = getenv ("TMPDIR");
-		if (!p)
-			p = getenv ("TMP");
-		if (!p)
-			p = "/tmp";
-		tmp=malloc(PATH_MAX+1);
-		if (!tmp)
-			error(1,0,_("out of memory"));
-		
-		strcpy(stpcpy(tmp,p),"/$time$.t");
-
-		f = fopen (tmp, "w");
-		if (f) {
-			char buf[30];
-			time_t t = time (NULL);
-			struct tm *tm = localtime (&t);		/* sets timezone */
-			strftime (buf, sizeof (buf) - 1, "%H:%M:%S", tm);
-			if (Verbose)
-				fprintf (stderr, " %s %s", _ ("at"), buf);
 #if defined(HAVE_TIMEZONE_VAR)
-			fprintf (f, "%ld\r\n", timezone / 60);
-			if (Verbose)
-				fprintf (stderr, " (%s %ld)\r\n", _ ("timezone"), timezone / 60);
+		sprintf(buf+strlen(buf),"%ld\r\n", timezone / 60);
+		if (Verbose)
+			vstringf (" (%s %ld)\r\n", _ ("timezone"), timezone / 60);
 #else
-			if (Verbose)
-				fprintf (stderr, " (%s %s)\r\n", _ ("timezone unknown"));
+		if (Verbose)
+			vstringf (" (%s %s)\r\n", _ ("timezone unknown"));
 #endif
-			fclose (f);
-			if (wcs (tmp) == ERROR)
-				if (Verbose)
-					fprintf (stderr, _ ("TIMESYNC: failed\n"));
-				else {
-					if (Verbose)
-						fprintf (stderr, _ ("TIMESYNC: ok\n"));
-					Filcnt--;
-				}
-			unlink (tmp);
-		} else {
-			if (!Verbose) {
-				fputs ("\r\n", stderr);
-				fprintf (stderr, _ ("Answering TIMESYNC"));
-			}
-			fprintf (stderr, "\n");
-			fprintf (stderr, _ ("  cannot open tmpfile %s: %s"),
-					 tmp, strerror (errno));
-			fputs ("\r\n", stderr);
-		}
-		free(tmp);
+		send_pseudo("/$time$.t",buf);
 	}
 #endif
 	Totsecs = 0;
@@ -788,9 +846,9 @@ wcsend (int argc, char *argp[])
 		}
 #endif
 		canit ();
-		fputs ("\r\n", stderr);
-		fprintf (stderr, _ ("Can't open any requested files."));
-		fputs ("\r\n", stderr);
+		vstring ("\r\n");
+		vstringf (_ ("Can't open any requested files."));
+		vstring ("\r\n");
 		return ERROR;
 	}
 	if (zmodem_requested)
@@ -841,7 +899,7 @@ wcs(const char *oname)
 #endif
 		) {
 			canit();
-			putc('\r',stderr);
+			vchar('\r');
 			error(1,0,
 				_("security violation: not allowed to upload from %s"),oname);
 		}
@@ -910,8 +968,12 @@ wcs(const char *oname)
 	vpos = 0;
 	/* Check for directory or block special files */
 	fstat(fileno(input_f), &f);
+#if defined(S_ISDIR)
+	if (S_ISDIR(f.st_mode) || S_ISBLK(f.st_mode)) {
+#else
 	c = f.st_mode & S_IFMT;
 	if (c == S_IFDIR || c == S_IFBLK) {
+#endif
 		error(0,0, _("is not a file: %s"),name);
 		fclose(input_f);
 		return OK;
@@ -920,7 +982,11 @@ wcs(const char *oname)
 	zi.fname=name;
 	zi.modtime=f.st_mtime;
 	zi.mode=f.st_mode;
+#if defined(S_ISFIFO)
+	zi.bytes_total= (S_ISFIFO(f.st_mode)) ? DEFBYTL : f.st_size;
+#else
 	zi.bytes_total= c == S_IFIFO ? DEFBYTL : f.st_size;
+#endif
 	zi.bytes_sent=0;
 	zi.bytes_received=0;
 	zi.bytes_skipped=0;
@@ -964,10 +1030,9 @@ wcs(const char *oname)
 		if (d==0) /* can happen if timing() uses time() */
 			d=0.5;
 		bps=zi.bytes_sent/d;
-		putc('\r',stderr);
+		vchar('\r');
 		if (Verbose > 1) 
-			fprintf(stderr,
-				_("Bytes Sent:%7ld   BPS:%-8ld                        \n"),
+			vstringf(_("Bytes Sent:%7ld   BPS:%-8ld                        \n"),
 				zi.bytes_sent,bps);
 #ifdef ENABLE_SYSLOG
 		if (enable_syslog)
@@ -996,11 +1061,11 @@ wctxpn(struct zm_fileinfo *zi)
 
 	if (protocol==ZM_XMODEM) {
 		if (Verbose && *zi->fname && fstat(fileno(input_f), &f)!= -1) {
-			fprintf(stderr, _("Sending %s, %ld blocks: "),
+			vstringf(_("Sending %s, %ld blocks: "),
 			  zi->fname, (long) (f.st_size>>7));
 		}
-		fprintf(stderr, _("Give your local XMODEM receive command now."));
-		fputs("\r\n",stderr);
+		vstringf(_("Give your local XMODEM receive command now."));
+		vstring("\r\n");
 		return OK;
 	}
 	if (!zmodem_requested)
@@ -1038,7 +1103,7 @@ wctxpn(struct zm_fileinfo *zi)
 		sprintf(p, "%lu %lo %o 0 %d %ld", (long) f.st_size, f.st_mtime,
 		  f.st_mode, Filesleft, Totalleft);
 	if (Verbose)
-		fprintf(stderr, _("Sending: %s\n"),txbuf);
+		vstringf(_("Sending: %s\n"),txbuf);
 	Totalleft -= f.st_size;
 	if (--Filesleft <= 0)
 		Totalleft = 0;
@@ -1170,9 +1235,8 @@ wcputsec(char *buf, int sectnum, int cseclen)
 	firstch=0;	/* part of logic to detect CAN CAN */
 
 	if (Verbose>1) {
-		putc('\r',stderr);
-		fprintf(stderr, 
-			_("Ymodem sectors/kbytes sent: %3d/%2dk"), Totsecs, Totsecs/8 );
+		vchar('\r');
+		vstringf(_("Ymodem sectors/kbytes sent: %3d/%2dk"), Totsecs, Totsecs/8 );
 	}
 	for (attempts=0; attempts <= RETRYMAX; attempts++) {
 		Lastrx= firstch;
@@ -1331,9 +1395,12 @@ usage(int exitcode, const char *what)
 		"    (Y) = option applies to YMODEM only\n"
 		"    (Z) = option applies to ZMODEM only\n"
 		),f);
+	/* splitted into two halves for really bad compilers */
 	fputs(_(
 "  -+, --append                append to existing destination file (Z)\n"
 "  -2, --twostop               use 2 stop bits\n"
+"  -4, --try-4k                go up to 4K blocksize\n"
+"      --start-4k              start with 4K blocksize (doesn't try 8)\n"
 "  -8, --try-8k                go up to 8K blocksize\n"
 "      --start-8k              start with 8K blocksize\n"
 "  -a, --ascii                 ASCII transfer (change CR/LF to LF)\n"
@@ -1353,6 +1420,8 @@ usage(int exitcode, const char *what)
 "  -l, --framelen N            limit frame length to N bytes (l>=L) (Z)\n"
 "  -m, --min-bps N             stop transmission if BPS below N\n"
 "  -M, --min-bps-time N          for at least N seconds (default: 120)\n"
+		),f);
+	fputs(_(
 "  -n, --newer                 send file if source newer (Z)\n"
 "  -N, --newer-or-longer       send file if source newer or longer (Z)\n"
 "  -o, --16-bit-crc            use 16 bit CRC instead of 32 bit CRC (Z)\n"
@@ -1362,6 +1431,7 @@ usage(int exitcode, const char *what)
 "  -R, --restricted            restricted, more secure mode\n"
 "  -q, --quiet                 quiet (no progress reports)\n"
 "  -s, --stop-at {HH:MM|+N}    stop transmission at HH:MM or in N seconds\n"
+"      --tcp                   build a TCP connection to transmit files\n"
 "  -u, --unlink                unlink file after transmission\n"
 "  -U, --unrestrict            turn off restricted mode (if allowed to)\n"
 "  -v, --verbose               be verbose, provide debugging information\n"
@@ -1436,7 +1506,11 @@ getzrxinit(void)
 
 			/* If using a pipe for testing set lower buf len */
 			fstat(0, &f);
+#if defined(S_ISCHR)
+			if (S_ISCHR(f.st_mode)) {
+#else
 			if ((f.st_mode & S_IFMT) != S_IFCHR) {
+#endif
 				Rxbuflen = MAX_BLOCK;
 			}
 			/*
@@ -1445,7 +1519,11 @@ getzrxinit(void)
 			 */
 			if ( !command_mode) {
 				fstat(fileno(input_f), &f);
+#if defined(S_ISREG)
+				if (S_ISREG(f.st_mode)) {
+#else
 				if ((f.st_mode & S_IFMT) != S_IFREG) {
+#endif
 					Canseek = -1;
 					/* return ERROR; */
 				}
@@ -1548,13 +1626,13 @@ again:
 			continue;
 		case ZRQINIT:  /* remote site is sender! */
 			if (Verbose)
-				fprintf(stderr,_("got ZRQINIT"));
+				vstringf(_("got ZRQINIT"));
 			DO_SYSLOG((LOG_INFO, "%s/%s: got ZRQINIT - sz talks to sz",
 					   shortname,protname()));
 			return ERROR;
 		case ZCAN:
 			if (Verbose)
-				fprintf(stderr,_("got ZCAN"));
+				vstringf(_("got ZCAN"));
 			DO_SYSLOG((LOG_INFO, "%s/%s: got ZCAN - receiver canceled",
 					   shortname,protname()));
 			return ERROR;
@@ -1727,13 +1805,11 @@ zsendfdata (struct zm_fileinfo *zi)
 	do {
 		int n;
 		int e;
-#ifdef NEW_ERROR
 		int old = blklen;
 		blklen = calc_blklen (total_sent);
 		total_sent += blklen + OVERHEAD;
 		if (Verbose > 2 && blklen != old)
-			fprintf (stderr, "blklen now %d\n", blklen);
-#endif
+			vstringf (_("blklen now %d\n"), blklen);
 #ifdef HAVE_MMAP
 		if (mm_addr) {
 			if (zi->bytes_sent + blklen < mm_size)
@@ -1748,15 +1824,16 @@ zsendfdata (struct zm_fileinfo *zi)
 		if (zi->eof_seen) {
 			e = ZCRCE;
 			if (Verbose>3)
-				fputs("e=ZCRCE/eof seen",stderr);
+				vstring("e=ZCRCE/eof seen");
 		} else if (junkcount > 3) {
 			e = ZCRCW;
 			if (Verbose>3)
-				fputs("e=ZCRCW/junkcount > 3",stderr);
+				vstring("e=ZCRCW/junkcount > 3");
 		} else if (bytcnt == Lastsync) {
 			e = ZCRCW;
 			if (Verbose>3)
-				fprintf(stderr,"e=ZCRCW/bytcnt == Lastsync == %ld", (unsigned long) Lastsync);
+				vstringf("e=ZCRCW/bytcnt == Lastsync == %ld", 
+					(unsigned long) Lastsync);
 #if 0
 		/* what is this good for? Rxbuflen/newcnt normally are short - so after
 		 * a few KB ZCRCW will be used? (newcnt is never incremented)
@@ -1764,18 +1841,18 @@ zsendfdata (struct zm_fileinfo *zi)
 		} else if (Rxbuflen && (newcnt -= n) <= 0) {
 			e = ZCRCW;
 			if (Verbose>3)
-				fprintf(stderr,"e=ZCRCW/Rxbuflen(newcnt=%ld,n=%ld)", 
+				vstringf("e=ZCRCW/Rxbuflen(newcnt=%ld,n=%ld)", 
 					(unsigned long) newcnt,(unsigned long) n);
 #endif
 		} else if (Txwindow && (Txwcnt += n) >= Txwspac) {
 			Txwcnt = 0;
 			e = ZCRCQ;
 			if (Verbose>3)
-				fputs("e=ZCRCQ/Window",stderr);
+				vstring("e=ZCRCQ/Window");
 		} else {
 			e = ZCRCG;
 			if (Verbose>3)
-				fputs("e=ZCRCG",stderr);
+				vstring("e=ZCRCG");
 		}
 		if ((Verbose > 1 || min_bps || stop_time)
 			&& (not_printed > (min_bps ? 3 : 7) 
@@ -1793,8 +1870,11 @@ zsendfdata (struct zm_fileinfo *zi)
 					if (last_bps<min_bps) {
 						if (now-low_bps>=min_bps_time) {
 							/* too bad */
-							vfile(_("zsendfdata: bps rate %ld below min %ld"),
+							if (Verbose) {
+								vstringf(_("zsendfdata: bps rate %ld below min %ld"),
 								  last_bps, min_bps);
+								vstring("\r\n");
+							}
 							DO_SYSLOG((LOG_INFO, "%s/%s: bps rate low: %ld <%ld",
 									   shortname, protname(), last_bps, min_bps));
 							return ERROR;
@@ -1807,17 +1887,19 @@ zsendfdata (struct zm_fileinfo *zi)
 			}
 			if (stop_time && now>=stop_time) {
 				/* too bad */
-				vfile(_("zsendfdata: reached stop time"));
+				if (Verbose) {
+					vstring(_("zsendfdata: reached stop time"));
+					vstring("\r\n");
+				}
 				DO_SYSLOG((LOG_INFO, "%s/%s: reached stop time",
 						   shortname, protname()));
 				return ERROR;
 			}
 
 			if (Verbose > 1) {
-				putc ('\r', stderr);
-				fprintf (stderr,
-						 _ ("Bytes Sent:%7ld/%7ld   BPS:%-8ld ETA %02d:%02d  "),
-						 zi->bytes_sent, zi->bytes_total, last_bps, minleft, secleft);
+				vchar ('\r');
+				vstringf (_("Bytes Sent:%7ld/%7ld   BPS:%-8ld ETA %02d:%02d  "),
+					 zi->bytes_sent, zi->bytes_total, last_bps, minleft, secleft);
 			}
 			last_txpos = zi->bytes_sent;
 		} else if (Verbose)
@@ -1907,7 +1989,7 @@ zsendfdata (struct zm_fileinfo *zi)
 		}
 	}
 }
-#ifdef NEW_ERROR
+
 static int
 calc_blklen(long total_sent)
 {
@@ -1957,7 +2039,7 @@ calc_blklen(long total_sent)
 			else if (last_blklen > 512)
 				last_blklen=512;
 			if (Verbose > 3)
-				fprintf(stderr,"calc_blklen: reduced to %d due to error\n",
+				vstringf(_("calc_blklen: reduced to %d due to error\n"),
 					last_blklen);
 		}
 		last_error_count=error_count;
@@ -1990,9 +2072,9 @@ calc_blklen(long total_sent)
 	{
 		if (Verbose > 3)
 		{
-			fprintf(stderr,"calc_blklen: returned old value %d due to low bpe diff\n",
+			vstringf(_("calc_blklen: returned old value %d due to low bpe diff\n"),
 				last_blklen);
-			fprintf(stderr,"calc_blklen: old %ld, new %ld, d %ld\n",
+			vstringf(_("calc_blklen: old %ld, new %ld, d %ld\n"),
 				last_bytes_per_error,this_bytes_per_error,d );
 		}
 		return last_blklen;
@@ -2001,7 +2083,7 @@ calc_blklen(long total_sent)
 
 calcit:
 	if (Verbose > 3)
-		fprintf(stderr,"calc_blklen: calc total_bytes=%ld, bpe=%ld, ec=%ld\n",
+		vstringf(_("calc_blklen: calc total_bytes=%ld, bpe=%ld, ec=%ld\n"),
 			total_bytes,this_bytes_per_error,(long) error_count);
 	for (i=32;i<=max_blklen;i*=2) {
 		long ok; /* some many ok blocks do we need */
@@ -2012,7 +2094,7 @@ calcit:
 		transmitted=total_bytes + ok * OVERHEAD  
 			+ failed * ((long) i+OVERHEAD+OVER_ERR);
 		if (Verbose > 4)
-			fprintf(stderr,"calc_blklen: blklen %d, ok %ld, failed %ld -> %lu\n",
+			vstringf(_("calc_blklen: blklen %d, ok %ld, failed %ld -> %lu\n"),
 				i,ok,failed,transmitted);
 		if (transmitted < best_bytes || !best_bytes)
 		{
@@ -2024,11 +2106,10 @@ calcit:
 		best_size=2*last_blklen;
 	last_blklen=best_size;
 	if (Verbose > 3)
-		fprintf(stderr,"calc_blklen: returned %d as best\n",
+		vstringf(_("calc_blklen: returned %d as best\n"),
 			last_blklen);
 	return last_blklen;
 }
-#endif
 
 /*
  * Respond to receiver's complaint, get back in sync with receiver
@@ -2061,21 +2142,7 @@ getinsync(struct zm_fileinfo *zi, int flag)
 			zi->eof_seen = 0;
 			bytcnt = Lrxpos = zi->bytes_sent = Rxpos;
 			if (Lastsync == Rxpos) {
-#ifndef NEW_ERROR
-				if (++Beenhereb4 > 4)
-					if (blklen > 32)
-					{
-						blklen /= 2;
-						if (Verbose > 1) {
-							putc('\r',stderr);
-							fprintf(stderr,_("Falldown to %ld blklen"),
-								blklen);
-							puts("\r\n",stderr);
-						}
-					}
-#else
 				error_count++;
-#endif
 			}
 			Lastsync = Rxpos;
 			return c;
@@ -2091,9 +2158,7 @@ getinsync(struct zm_fileinfo *zi, int flag)
 			return c;
 		case ERROR:
 		default:
-#ifdef NEW_ERROR
-				error_count++;
-#endif
+			error_count++;
 			zsbhdr(ZNAK, Txhdr);
 			continue;
 		}
@@ -2207,12 +2272,15 @@ countem (int argc, char **argv)
 	for (Totalleft = 0, Filesleft = 0; --argc >= 0; ++argv) {
 		f.st_size = -1;
 		if (Verbose > 2) {
-			fprintf (stderr, "\nCountem: %03d %s ", argc, *argv);
-			fflush (stderr);
+			vstringf ("\nCountem: %03d %s ", argc, *argv);
 		}
 		if (access (*argv, R_OK) >= 0 && stat (*argv, &f) >= 0) {
+#if defined(S_ISDIR)
+			if (!S_ISDIR(f.st_mode) && !S_ISBLK(f.st_mode)) {
+#else
 			c = f.st_mode & S_IFMT;
 			if (c != S_IFDIR && c != S_IFBLK) {
+#endif
 				++Filesleft;
 				Totalleft += f.st_size;
 			}
@@ -2221,14 +2289,12 @@ countem (int argc, char **argv)
 			Totalleft += DEFBYTL;
 		}
 		if (Verbose > 2)
-			fprintf (stderr, " %ld", (long) f.st_size);
+			vstringf (" %ld", (long) f.st_size);
 	}
 	if (Verbose > 2)
-		fprintf (stderr, "\ncountem: Total %d %ld\n",
+		vstringf (_("\ncountem: Total %d %ld\n"),
 				 Filesleft, Totalleft);
-#ifdef NEW_ERROR
 	calc_blklen (Totalleft);
-#endif
 }
 
 /* End of lsz.c */

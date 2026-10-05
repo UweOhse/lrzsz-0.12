@@ -138,6 +138,15 @@
    extern x(); declarations. */
 #undef STRICT_PROTOTYPES
 
+/* where the localedata hides */
+#undef LOCALEDIR
+
+/* which OS */
+#undef OS
+
+/* the CPU */
+#undef CPU
+
 /* Define if you have the __argz_count function.  */
 #undef HAVE___ARGZ_COUNT
 

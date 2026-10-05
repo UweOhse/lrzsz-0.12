@@ -59,4 +59,11 @@
    extern x(); declarations. */
 #undef STRICT_PROTOTYPES
 
+/* where the localedata hides */
+#undef LOCALEDIR
 
+/* which OS */
+#undef OS
+
+/* the CPU */
+#undef CPU

@@ -1,8 +1,25 @@
-/*
- *   Z M O D E M . H     Manifest constants for ZMODEM
- *    application to application file transfer protocol
+/* zmodem.h - ZMODEM protocol constants
+
+  Copyright (C) until 1998 Chuck Forsberg (OMEN Technology Inc)
+  Copyright (C) 1996, 1997 Uwe Ohse
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2, or (at your option)
+  any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+  02111-1307, USA.
+
  *    05-23-87  Chuck Forsberg Omen Technology Inc
- */
+*/
 #define ZPAD '*'	/* 052 Padding character begins frames */
 #define ZDLE 030	/* Ctrl-X Zmodem escape - `ala BISYNC DLE */
 #define ZDLEE (ZDLE^0100)	/* Escaped ZDLE as transmitted */

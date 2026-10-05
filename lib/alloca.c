@@ -159,6 +159,7 @@ typedef union hdr
 
 static header *last_alloca_header = NULL;	/* -> last alloca header.  */
 
+
 /* Return a pointer to at least SIZE bytes of storage,
    which will be automatically reclaimed upon exit from
    the procedure that called alloca.  Originally, this space
@@ -219,6 +220,13 @@ alloca (size)
     return (pointer) ((char *) new + sizeof (header));
   }
 }
+
+/* brute force hack around glibc-2.0.4 together with lcc 
+   (need -D_BSD_SOURCE for u_long, but then get "alloca.h", 
+    which #defines alloca to be __alloca). -- uwe
+ */
+pointer __alloca (size) unsigned size;
+{ return alloca(size); }
 
 #if defined (CRAY) && defined (CRAY_STACKSEG_END)
 
