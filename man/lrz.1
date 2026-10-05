@@ -130,6 +130,8 @@ SYS III/V:
 rzrmail::5:1::/bin:/usr/local/rzrmail
 If the SHELL environment variable includes
 .I "rsh"
+,
+.I "rbash"
 or
 .I "rksh"
 (restricted shell),
@@ -153,29 +155,24 @@ The meanings of the available options are:
 .PP
 .PD 0
 .TP
-.B backslash (\\\\)
-convert next character to upper case.
-.TP
-.B +
+.B "-+, --append"
 append received data to an existing file (ZMODEM, ASCII only).
 .TP
-.B a
+.B "-a, --ascii"
 Convert files to
 .SM Unix
 conventions by stripping carriage returns and all characters
 beginning with the first Control Z (CP/M end of file).
 .TP
-.B b
+.B "-b, --binary"
 Binary
 (tell it like it is)
 file transfer override.
 .TP
-.B c
-Request 16 bit CRC.
-XMODEM file transfers default to 8 bit checksum.
-YMODEM and ZMODEM normally use 16 bit CRC.
+.B "-c, --with-crc"
+XMODEM only. Use 16 bit CRC (normally a one byte checksum is used).
 .TP
-.B C
+.B "-C, --allow-remote-commands"
 allow remote command execution (
 .B insecure
 ). This allows the sender to execute an arbitrary command through
@@ -185,18 +182,18 @@ allow remote command execution (
 (). Default is to disable this feature (?). This option is ignored
 if running in restricted mode.
 .TP
-.B D
+.B "-D, --null"
 Output file data to /dev/null; for testing.
 (Unix only)
 .TP
-.B e
+.B "-e, --escape"
 Force sender to escape all control characters;
 normally XON, XOFF, DLE, CR-@-CR, and Ctrl-X are escaped.
 .TP
-.B h
+.B "-h, --help"
 give help screen.
 .TP
-.B O
+.B "-O, --disable-timeouts"
 Disable read timeout handling code. This makes lrz hang if the
 sender does not send any more, but increases performance (a bit)
 and decreases system load (through reducing the number of system
@@ -204,16 +201,16 @@ calls by about 50 percent).
 
 Use this option with care.
 .TP
-.B p
+.B "-p, --protect"
 (ZMODEM) Protect: skip file if destination file exists.
 .TP
-.B q
+.B "-q, --quiet"
 Quiet suppresses verbosity.
 .TP
-.B r
+.B "-r, --resume"
 Crash recovery mode. lrz tries to resume interrupted file transfers.
 .TP
-.B R
+.B "-R, --restricted"
 Enter more restricted mode. lrz will not create directories or files
 with a leading dot if this option is given twice.
 
@@ -221,7 +218,7 @@ See
 .B SECURITY
 for mode information about restricted mode.
 .TP
-.B S
+.B "-S, --timesync"
 Request timesync packet from the sender. The sender sends its system time, 
 causing lrz to complain about more then 60 seconds difference. 
 
@@ -231,29 +228,45 @@ is given twice (this fails if lrz is not run by root).
 This option makes lrz incompatible with certain other ZModems. Don't
 use it unless you know what you are doing.
 .TP
-.B "t tim"
+.B "--syslog[=off]"
+turn syslogging on or off. the default is set at configure time.
+This option is ignored if no syslog support is compiled in.
+.TP
+.B "-t TIM, --timeout TIM"
 Change timeout to
-.I tim
+.I TIM
 tenths of seconds. This is ignored if timeout handling is turned of
 through the 
 .B O 
 option.
 .TP
-.B U
+.B "-U, --unrestrict"
 turn off restricted mode (this is not possible if running under
 a restricted shell).
 .TP
-.B v
+.B "--version"
+prints out version number.
+.TP
+.B "-v, --verbose"
 Verbose
 causes a list of file
 names to be appended to stderr.
 More v's generate more output.
 .TP
-.B wN
+.B "-wN, --windowsize N"
 Set window size to N.
 .TP
-.B y
+.B "-X, --xmodem"
+use XMODEM protocol.
+.TP
+.B "-y, --overwrite"
 Yes, clobber any existing files with the same name.
+.TP
+.B "--ymodem"
+use YMODEM protocol.
+.TP
+.B "-Z, --zmodem"
+use ZMODEM protocol.
 .PD
 .ne 6
 .SH SECURITY
@@ -263,7 +276,7 @@ to a parent directory, will not modify an existing file, and
 removes any files received in error. Remote command execution is 
 disabled.
 
-The use a more restricted mode set the environment variable 
+To use a more restricted mode set the environment variable 
 .B ZMODEM_RESTRICTED 
 or give the
 .B R

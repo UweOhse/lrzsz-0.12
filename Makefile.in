@@ -1,189 +1,272 @@
-# Makefile for Linux lrz and lsz programs
-# This are german umlauts - useful for make test: "üöäÜÖÜß"
-#
-VERSION=0.12b
+# Makefile.in generated automatically by automake 1.0 from Makefile.am
 
-CC=@CC@
-CFLAGS=@CFLAGS@  -DOS=\"@host_os@\" -DCPU=\"@host_cpu@\" @ENABLE_TIMESYNC@ \
-	-DVERSION=\"$(VERSION)\" @PUBDIR@ @ENABLE_MKDIR@ -DNFGVMIN
-LDFLAGS=@LDFLAGS@
-LIBS=@LIBS@
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-bindir=@bindir@
+# Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+# This Makefile.in is free software; the Free Software Foundation
+# gives unlimited permission to copy, distribute and modify it.
 
-mandir=@mandir@
-man1=man1
-man1ext=1
-man1dir=$(mandir)/$(man1)
 
-transform=@program_transform_name@
-srcdir=@srcdir@
-VPATH=$(srcdir):.
+SHELL = /bin/sh
 
-OS=@host_os@
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+VPATH = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
 
-PROGRAMS=lsz lrz
-INSTALL=@INSTALL@
-INSTALL_DATA=@INSTALL_DATA@
-INSTALL_PROGRAM=@INSTALL_PROGRAM@
-LN_S=@LN_S@
+bindir = @bindir@
+sbindir = @sbindir@
+libexecdir = @libexecdir@
+datadir = @datadir@
+sysconfdir = @sysconfdir@
+sharedstatedir = @sharedstatedir@
+localstatedir = @localstatedir@
+libdir = @libdir@
+infodir = @infodir@
+mandir = @mandir@
+includedir = @includedir@
+oldincludedir = /usr/include
+
+pkgdatadir = $(datadir)/@PACKAGE@
+pkglibdir = $(libdir)/@PACKAGE@
+pkgincludedir = $(includedir)/@PACKAGE@
+
+top_builddir = .
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+transform = @program_transform_name@
+
+SUBDIRS = lib intl src po man
+EXTRA_DIST = @README_ALPHA@ check.lrzsz COMPATABILITY
+ACLOCAL = aclocal.m4
+ACCONFIG = acconfig.h
+CONFIG_HEADER_IN = config.h.in
+mkinstalldirs = $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = ./config.h
+DIST_COMMON = README ABOUT-NLS AUTHORS COPYING ChangeLog INSTALL \
+Makefile.am Makefile.in NEWS README TODO acconfig.h aclocal.m4 \
+config.guess config.h.in config.sub configure configure.in install-sh \
+mkinstalldirs stamp-h.in
+
+
+PACKAGE = @PACKAGE@
+VERSION = @VERSION@
+
+DISTFILES = $(DIST_COMMON) $(SOURCES) $(BUILT_SOURCES) $(HEADERS) \
+	$(TEXINFOS) $(INFOS) $(MANS) $(EXTRA_DIST) $(DATA)
+DEP_DISTFILES = $(DIST_COMMON) $(SOURCES) $(BUILT_SOURCES) $(HEADERS) \
+	$(TEXINFOS) $(INFO_DEPS) $(MANS) $(EXTRA_DIST) $(DATA)
+
+TAR = tar
+default: all
+
+
+$(srcdir)/Makefile.in: Makefile.am configure.in
+	cd $(srcdir) && automake Makefile
+
+# For an explanation of the following Makefile rules, see node
+# `Automatic Remaking' in GNU Autoconf documentation.
+Makefile: Makefile.in config.status
+	CONFIG_FILES=$@ CONFIG_HEADERS= ./config.status
+config.status: configure
+	./config.status --recheck
+$(srcdir)/configure: configure.in $(ACLOCAL) $(CONFIGURE_DEPENDENCIES)
+	cd $(srcdir) && autoconf
+
+$(CONFIG_HEADER): stamp-h
+stamp-h: $(CONFIG_HEADER_IN) config.status
+	CONFIG_FILES= CONFIG_HEADERS=$(CONFIG_HEADER) ./config.status
+	@echo timestamp > stamp-h
+$(srcdir)/$(CONFIG_HEADER_IN): stamp-h.in
+$(srcdir)/stamp-h.in: configure.in $(ACLOCAL) $(ACCONFIG) $(CONFIG_TOP) $(CONFIG_BOT)
+	cd $(srcdir) && autoheader
+	echo timestamp > $(srcdir)/stamp-h.in
+
+# This directory's subdirectories are mostly independent; you can cd
+# into them and run `make' without going through this Makefile.
+# To change the values of `make' variables: instead of editing Makefiles,
+# (1) if the variable is set in `config.status', edit `config.status'
+#     (which will cause the Makefiles to be regenerated when you run `make');
+# (2) otherwise, pass the desired values on the `make' command line.
+
 @SET_MAKE@
 
-DISTDIR=lrzsz-$(VERSION)
+all-recursive install-data-recursive install-exec-recursive \
+installdirs-recursive install-recursive uninstall-recursive \
+check-recursive installcheck-recursive info-recursive dvi-recursive \
+mostlyclean-recursive clean-recursive distclean-recursive \
+maintainer-clean-recursive:
+	for subdir in $(SUBDIRS); do		\
+	  target=`echo $@ | sed s/-recursive//`; \
+	  echo making $$target in $$subdir;	\
+	  (cd $$subdir && $(MAKE) $$target)	\
+	   || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
 
-DISTFILES=CHANGES COPYING INSTALL Makefile.in NEWS README TODO \
-	COMPATABILITY \
-	crctab.c lrz.1 lrz.c lsz.1 lsz.c rbsb.c timing.c timing.h \
-	zm.c zmodem.h \
-	acconfig.h config.guess config.h.in config.sub configure \
-	configure.in install-sh  \
-	strerror.c mkdir.c strstr.c
+tags: TAGS
 
-MOSTLYCLEANFILES=*.o lrb lsb lrx lsx core out gmon.*
-CLEANFILES=lrz lsz
-DISTCLEANFILES=config.cache config.h Makefile config.log config.status
+tags-recursive:
+	list="$(SUBDIRS)"; for subdir in $$list; do \
+	  (cd $$subdir && $(MAKE) tags); \
+	done
 
-EXTRATESTFILES= #/pub/gnu/emacs-19.30.tar.gz
+TAGS: tags-recursive $(HEADERS) $(SOURCES) $(CONFIG_HEADER) \
+		$(TAGS_DEPENDENCIES)
+	tags=; \
+	here=`pwd`; \
+	for subdir in $(SUBDIRS); do \
+	  test -f $$subdir/TAGS && { \
+	    tags="$$tags -i $$here/$$subdir/TAGS"; \
+	  } \
+	done; \
+	test -z "$(ETAGS_ARGS)$(CONFIG_HEADER)$(SOURCES)$(HEADERS)$$tags" \
+	  || etags $(ETAGS_ARGS) $$tags $(CONFIG_HEADER) $(SOURCES) $(HEADERS)
 
-all: lrz lsz
+mostlyclean-tags:
 
-lrz: lrz.o timing.o
-	$(CC) $(LDFLAGS) -o $@ lrz.o timing.o $(LIBS)
-lsz: lsz.o timing.o
-	$(CC) $(LDFLAGS) -o $@ lsz.o timing.o $(LIBS)
+clean-tags:
 
-lrz.o: lrz.c crctab.c rbsb.c zm.c zmodem.h timing.h config.h
-	$(CC) -c $(CFLAGS) -I$(srcdir) $(srcdir)/lrz.c
-lsz.o: lsz.c crctab.c rbsb.c zm.c zmodem.h timing.h config.h
-	$(CC) -c $(CFLAGS) -I$(srcdir) $(srcdir)/lsz.c
-timing.o: timing.h timing.c config.h
-	$(CC) -c $(CFLAGS) -I$(srcdir) $(srcdir)/timing.c
-dist:
-	rm -rf $(DISTDIR)
-	mkdir $(DISTDIR)
-	cp -a $(DISTFILES) $(DISTDIR)
-	tar czvvf lrzsz-$(VERSION).tar.gz $(DISTDIR)
-uudist: dist
-	uuencode <lrzsz-$(VERSION).tar.gz lrzsz-$(VERSION).tar.gz >lrzsz-$(VERSION).tar.gz.uu
+distclean-tags:
+	rm -f TAGS ID
 
-# yes, this is a hack
-uu2sh: uudist
-	uuencode <lrzsz-$(VERSION).tar.gz lrzsz-$(VERSION).tar.gz |mail -s lrzsz-$(VERSION).tar.gz.uu sh@du3.maus.de
+maintainer-clean-tags:
 
+distdir = $(PACKAGE)-$(VERSION)
+# This target untars the dist file and tries a VPATH configuration.  Then
+# it guarantees that the distribution is self-contained by making another
+# tarfile.
+distcheck: dist
+	rm -rf $(distdir)
+	$(TAR) zxf $(distdir).tar.gz
+	mkdir $(distdir)/=build
+	mkdir $(distdir)/=inst
+	dc_install_base=`cd $(distdir)/=inst && pwd`; \
+	cd $(distdir)/=build \
+	  && ../configure --srcdir=.. --prefix=$$dc_install_base \
+	  && $(MAKE) \
+	  && $(MAKE) check \
+	  && $(MAKE) install \
+	  && $(MAKE) installcheck \
+	  && $(MAKE) dist
+	rm -rf $(distdir)
+	@echo "========================"; \
+	echo "$(distdir).tar.gz is ready for distribution"; \
+	echo "========================"
+dist: distdir
+	chmod -R a+r $(distdir)
+	$(TAR) chozf $(distdir).tar.gz $(distdir)
+	rm -rf $(distdir)
+distdir: $(DEP_DISTFILES)
+	rm -rf $(distdir)
+	mkdir $(distdir)
+	chmod 777 $(distdir)
+	@for file in `cd $(srcdir) && echo $(DISTFILES)`; do \
+	  test -f $(distdir)/$$file \
+	  || ln $(srcdir)/$$file $(distdir)/$$file 2> /dev/null \
+	  || cp -p $(srcdir)/$$file $(distdir)/$$file; \
+	done
+	for subdir in $(SUBDIRS); do		\
+	  test -d $(distdir)/$$subdir		\
+	  || mkdir $(distdir)/$$subdir		\
+	  || exit 1;				\
+	  chmod 777 $(distdir)/$$subdir;	\
+	  (cd $$subdir && $(MAKE) distdir=../$(distdir)/$$subdir distdir) \
+	    || exit 1; \
+	done
+info: info-recursive
 
-install: install-programs install-man
+dvi: dvi-recursive
 
-install-strip: 
+check: check-recursive
+
+installcheck: installcheck-recursive
+
+all-recursive-hack: $(CONFIG_HEADER)
+	$(MAKE) all-recursive
+
+all-am: Makefile config.h
+
+install-exec: install-exec-recursive
+
+install-data: install-data-recursive
+
+install: install-recursive
+	@:
+
+uninstall: uninstall-recursive
+
+all: all-recursive-hack all-am
+
+install-strip:
 	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
-
-install-programs:
-	for i in $(PROGRAMS) ; do \
-	  $(INSTALL_PROGRAM) -m755 $$i $(bindir)/`echo $$p |sed '$(transform)'` ;\
-	done
-	( cd $(bindir) ; \
-	  $(LN_S) -f `echo lrz|sed '$(transform)'` `echo lrb|sed '$(transform)'` ;\
-	  $(LN_S) -f `echo lrz|sed '$(transform)'` `echo lrx|sed '$(transform)'` ;\
-	  $(LN_S) -f `echo lsz|sed '$(transform)'` `echo lsb|sed '$(transform)'` ;\
-	  $(LN_S) -f `echo lsz|sed '$(transform)'` `echo lsx|sed '$(transform)'` ;\
-	)
-
-install-man: lsz.1 lrz.1
-	@-for i in lrz lsz ; do \
-		sect=1; inst=`echo $$i| sed '$(transform)'`.$(man1ext) ; \
-		echo "installing $$i.man as $(man1dir)/$$inst" ; \
-		$(INSTALL_DATA) $(srcdir)/$$i.1 $(man1dir)/$$inst ; \
-	done
-	@inst=$(man1dir)/`echo lsb.$(man1ext)|sed '$(transform)'` ; \
-		echo "installing lsz.man as $$inst" ; \
-		echo ".so $(man1)/`echo lsz|sed '$(transform)'`.$(man1ext)" >$$inst
-	@inst=$(man1dir)/`echo lsx.$(man1ext)|sed '$(transform)'` ; \
-		echo "installing lsz.man as $$inst" ; \
-		echo ".so $(man1)/`echo lsz|sed '$(transform)'`.$(man1ext)" >$$inst
-	@inst=$(man1dir)/`echo lrb.$(man1ext)|sed '$(transform)'` ; \
-		echo "installing lrz.man as $$inst" ; \
-		echo ".so $(man1)/`echo lrz|sed '$(transform)'`.$(man1ext)" >$$inst
-	@inst=$(man1dir)/`echo lrx.$(man1ext)|sed '$(transform)'` ; \
-		echo "installing lrz.man as $$inst" ; \
-		echo ".so $(man1)/`echo lrz|sed '$(transform)'`.$(man1ext)" >$$inst
-
-uninstall:
-	for i in lsz lrz lsb lrb lsx lrx ; do \
-		rm -f $(bindir)/`echo $$i|sed '$(transform)'`; \
-	done
+installdirs: installdirs-recursive
 
 
-usenet:
-	shar -f /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c rbsb.c \
-	 init.com crc.c vmodem.h vvmodem.c vrzsz.c crctab.c minirb.c \
-	 *.1 gz ptest.sh *.t
+mostlyclean-generic:
+	test -z "$(MOSTLYCLEANFILES)" || rm -f $(MOSTLYCLEANFILES)
 
-shar:
-	shar -f /tmp/rzsz -m 2000000 README Makefile zmodem.h zm.c \
-	 init.com vmodem.h vvmodem.c vrzsz.c sz.c rz.c crctab.c \
-	 crc.c rbsb.c minirb.c *.1 gz ptest.sh *.t
+clean-generic:
+	test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
-unixforum: shar
-	compress -b12 /tmp/rzsz.sh
+distclean-generic:
+	rm -f Makefile $(DISTCLEANFILES)
+	rm -f config.cache config.log $(CONFIG_HEADER) stamp-h
 
-unix:
-	undos README zmodem.h zm.c sz.c rz.c \
-	 vmodem.h vvmodem.c vrzsz.c crctab.c *.1 \
-	 init.com crc.c *.t 
+maintainer-clean-generic:
+	test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
+	test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
+mostlyclean-am:  mostlyclean-tags mostlyclean-generic
 
-dos:
-	todos README zmodem.h zm.c sz.c rz.c \
-	 vmodem.h vvmodem.c vrzsz.c crctab.c *.1 \
-	 init.com crc.c *.t 
-arc:
-	rm -f /tmp/rzsz.arc
-	arc a /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
-	 vmodem.h vvmodem.c vrzsz.c crctab.c rbsb.c \
-	 init.com crc.c *.1 gz ptest.sh *.t minirb.c
-	chmod og-w /tmp/rzsz.arc
-	mv /tmp/rzsz.arc /t/yam
+clean-am:  clean-tags clean-generic mostlyclean-am 
 
-zoo:
-	rm -f /tmp/rzsz.zoo
-	zoo a /tmp/rzsz README Makefile zmodem.h zm.c sz.c rz.c \
-	 vmodem.h vvmodem.c vrzsz.c crctab.c rbsb.c *.1 \
-	 init.com crc.c gz ptest.sh *.t minirb.c
-	chmod og-w /tmp/rzsz.zoo
-	mv /tmp/rzsz.zoo /t/yam
+distclean-am:  distclean-tags distclean-generic clean-am 
 
-tags:
-	ctags sz.c rz.c zm.c rbsb.c
+maintainer-clean-am:  maintainer-clean-tags maintainer-clean-generic \
+		distclean-am 
+
+mostlyclean:  mostlyclean-am mostlyclean-recursive
+
+clean:  clean-am clean-recursive
+
+distclean:  distclean-am distclean-recursive
+	rm -f config.status
+
+maintainer-clean:  maintainer-clean-am maintainer-clean-recursive
+	@echo "This command is intended for maintainers to use;"
+	@echo "it deletes files that may require special tools to rebuild."
+	rm -f config.status
+
+.PHONY: default install-data-recursive uninstall-data-recursive \
+install-exec-recursive uninstall-exec-recursive installdirs-recursive \
+uninstalldirs-recursive all-recursive check-recursive \
+installcheck-recursive info-recursive dvi-recursive \
+mostlyclean-recursive distclean-recursive clean-recursive \
+maintainer-clean-recursive tags tags-recursive mostlyclean-tags \
+distclean-tags clean-tags maintainer-clean-tags distdir info dvi check \
+installcheck all-recursive-hack all-am install-exec install-data \
+install uninstall all installdirs mostlyclean-generic distclean-generic \
+clean-generic maintainer-clean-generic clean mostlyclean distclean \
+maintainer-clean
 
 
+check:
+	QUIET=-q $(srcdir)/check.lrzsz $(srcdir) `pwd`	
+vcheck:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd`	
 
-mostlyclean: 
-	rm -f $(MOSTLYCLEANFILES)
-clean: mostlyclean
-	rm -f $(CLEANFILES)
-	rm -rf testdir
-distclean: clean
-	rm -f $(DISTCLEANFILES)
-maintainer-clean: distclean
+# Tag before making distribution.  Also, don't make a distribution if
+# checks fail.  Also, make sure the NEWS file is up-to-date.
+cvs-dist: 
+	@if sed 1q NEWS | grep -e "$(VERSION)" > /dev/null; then :; else \
+		echo "NEWS not updated; not releasing" 1>&2; \
+		exit 1;                               \
+	fi
+	cvs tag `echo "Release-$(VERSION)" | sed 's/\./-/g'`
+	$(MAKE) dist
+.SUFFIXES:
 
-check test:
-	rm -rf testdir
-	mkdir testdir
-	mkfifo testdir/pipe
-	./lsz -q88O $(DISTFILES) $(EXTRATESTFILES) <testdir/pipe 2>out| \
-	(cd testdir ; ../lrz -O >>pipe )
-	for i in $(DISTFILES) $(EXTRATESTFILES) ; do \
-		cmp $$i testdir/`basename $$i` || exit 1 ; \
-	done
-	-test -f testdir/gmon.out && mv testdir/gmon.out gmon.lrz
-	-test -f gmon.out && mv gmon.out gmon.lsz
-	rm -rf testdir
-
-stest:
-	rm -f pipe security.leak
-	mkfifo pipe
-	lsz -q -c 'echo you have a security leak > security.leak' <pipe |\
-	    lrz -q >>pipe
-	@echo
-	-@cat security.leak || echo "no security leak found"
-	@echo
-	rm -f pipe security.leak
+# Tell versions [3.59,3.63) of GNU make to not export all variables.
+# Otherwise a system limit (for SysV at least) may be exceeded.
+.NOEXPORT:

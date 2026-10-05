@@ -2,7 +2,7 @@
 /* Michael D. Black, Computer Science Innovations */
 /* Melbourne, FL.  mblack@csihq.com */
 
-#include "config.h"
+#include "zglobal.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -68,7 +68,8 @@
 #endif /* HAVE_TIMES */
 
 #ifdef HAVE_GETTIMEOFDAY
-int gettimeofday (struct timeval *tv, struct timezone *tz);
+/* collides with Solaris 2.5 prototype? */
+/* int gettimeofday (struct timeval *tv, struct timezone *tz); */
 #endif
 
 double 
@@ -109,6 +110,9 @@ timing (int reset)
 			goto doit;
 		}
 	}
+	if (fbad)
+		yet=(double) time(NULL);
+#undef NEED_TIME
 #endif
 
 #ifdef HAVE_TIMES
@@ -143,7 +147,6 @@ timing (int reset)
 #ifdef NEED_TIME
 	yet=(double) time(NULL);
 #endif
-doit:
   if (reset) {
     starttime = yet;
     return starttime;

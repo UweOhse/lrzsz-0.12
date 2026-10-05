@@ -13,10 +13,13 @@
  *	long rclhdr(hdr) recover position offset from header
  */
 
-#ifndef CANFDX
-#include "zmodem.h"
+
+#include "zglobal.h"
+
+#include <stdio.h>
+#include <unistd.h>
+
 int Rxtimeout = 100;		/* Tenths of seconds to wait for something */
-#endif
 
 /* Globals used by ZMODEM functions */
 int Rxframeind;		/* ZBIN ZBIN32, or ZHEX type of frame received */
@@ -26,7 +29,7 @@ char Rxhdr[4];		/* Received header */
 char Txhdr[4];		/* Transmitted header */
 long Rxpos;		/* Received file position */
 long Txpos;		/* Transmitted file position */
-int Txfcs32;		/* TURE means send binary frames with 32 bit FCS */
+int Txfcs32;		/* TRUE means send binary frames with 32 bit FCS */
 int Crc32t;		/* Display flag indicating 32 bit CRC being sent */
 int Crc32;		/* Display flag indicating 32 bit CRC being received */
 int Znulls;		/* Number of nulls to send at beginning of ZDATA hdr */
@@ -35,7 +38,7 @@ char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
 static lastsent;	/* Last char we sent */
 static Not8bit;		/* Seven bits seen on header */
 
-static char *frametypes[] = {
+static const char *frametypes[] = {
 	"Carrier Lost",		/* -3 */
 	"TIMEOUT",		/* -2 */
 	"ERROR",		/* -1 */
@@ -65,18 +68,137 @@ static char *frametypes[] = {
 			/*  not including psuedo negative entries */
 };
 
-static char badcrc[] = "Bad CRC";
-
+#define badcrc _("Bad CRC")
+/* static char *badcrc = "Bad CRC"; */
+static inline int noxrd7(void);
+static int inline zdlread(void);
+static int zdlread2(int);
+static inline int zgeth1(void);
+static void zputhex(int c, char *pos);
+static int zgethex(void);
+static int zrbhdr(char *hdr);
+static int zrbhdr32(char *hdr);
+static int zrhhdr(char *hdr);
 static void zsendline_init(char *);
+static int zrdat32(char *buf, int length);
+static void zsda32(const char *buf, int length, int frameend);
+static void zsbh32(char *hdr, int type);
+
+extern int zmodem_requested;
+
+#define sendline(c) putchar((c) & 0377)
+#define xsendline(c) putchar(c)
+
+/*
+ * Read a byte, checking for ZMODEM escape encoding
+ *  including CAN*5 which represents a quick abort
+ */
+static inline int
+zdlread(void)
+{
+	int c;
+	/* Quick check for non control characters */
+	if ((c = READLINE_PF(Rxtimeout)) & 0140)
+		return c;
+	return zdlread2(c);
+}
+/* no, i don't like gotos. -- uwe */
+static int
+zdlread2(int c)
+{
+	goto jump_over;
+
+again:
+	/* Quick check for non control characters */
+	if ((c = READLINE_PF(Rxtimeout)) & 0140)
+		return c;
+jump_over:
+	switch (c) {
+	case ZDLE:
+		break;
+	case 023:
+	case 0223:
+	case 021:
+	case 0221:
+		goto again;
+	default:
+		if (Zctlesc && !(c & 0140)) {
+			goto again;
+		}
+		return c;
+	}
+again2:
+	if ((c = READLINE_PF(Rxtimeout)) < 0)
+		return c;
+	if (c == CAN && (c = READLINE_PF(Rxtimeout)) < 0)
+		return c;
+	if (c == CAN && (c = READLINE_PF(Rxtimeout)) < 0)
+		return c;
+	if (c == CAN && (c = READLINE_PF(Rxtimeout)) < 0)
+		return c;
+	switch (c) {
+	case CAN:
+		return GOTCAN;
+	case ZCRCE:
+	case ZCRCG:
+	case ZCRCQ:
+	case ZCRCW:
+		return (c | GOTOR);
+	case ZRUB0:
+		return 0177;
+	case ZRUB1:
+		return 0377;
+	case 023:
+	case 0223:
+	case 021:
+	case 0221:
+		goto again2;
+	default:
+		if (Zctlesc && ! (c & 0140)) {
+			goto again2;
+		}
+		if ((c & 0140) ==  0100)
+			return (c ^ 0100);
+		break;
+	}
+	if (Verbose>1)
+		zperr(_("Bad escape sequence %x"), c);
+	return ERROR;
+}
+
+
+/*
+ * Read a character from the modem line with timeout.
+ *  Eat parity, XON and XOFF characters.
+ */
+static inline int
+noxrd7(void)
+{
+	register int c;
+
+	for (;;) {
+		if ((c = readline(Rxtimeout)) < 0)
+			return c;
+		switch (c &= 0177) {
+		case XON:
+		case XOFF:
+			continue;
+		default:
+			if (Zctlesc && !(c & 0140))
+				continue;
+		case '\r':
+		case '\n':
+		case ZDLE:
+			return c;
+		}
+	}
+}
+
 /*
  * Send character c with ZMODEM escape sequence encoding.
  *  Escape XON, XOFF. Escape CR following @ (Telenet net escape)
  */
-void
-#ifdef __GNUC__
-	/* this saves about one function call per 4 Bytes */
-inline
-#endif
+void inline
 zsendline(int c)
 {
 	static int last_esc=-2;
@@ -109,8 +231,8 @@ zsendline(int c)
 }
 
 /* Send ZMODEM binary header hdr of type type */
-zsbhdr(type, hdr)
-register char *hdr;
+void 
+zsbhdr(int type, char *hdr)
 {
 	register int n;
 	register unsigned short crc;
@@ -122,7 +244,8 @@ register char *hdr;
 
 	xsendline(ZPAD); xsendline(ZDLE);
 
-	if (Crc32t=Txfcs32)
+	Crc32t=Txfcs32;
+	if (Crc32t)
 		zsbh32(hdr, type);
 	else {
 		xsendline(ZBIN); zsendline(type); crc = updcrc(type, 0);
@@ -141,8 +264,8 @@ register char *hdr;
 
 
 /* Send ZMODEM binary header hdr of type type */
-zsbh32(hdr, type)
-register char *hdr;
+void
+zsbh32(char *hdr, int type)
 {
 	register int n;
 	register unsigned long crc;
@@ -162,8 +285,8 @@ register char *hdr;
 }
 
 /* Send ZMODEM HEX header hdr of type type */
-zshhdr(type, hdr)
-register char *hdr;
+void 
+zshhdr(int type, char *hdr)
 {
 	register int n;
 	register unsigned short crc;
@@ -207,13 +330,13 @@ register char *hdr;
 /*
  * Send binary array buf of length length, with ending ZDLE sequence frameend
  */
-static char *Zendnames[] = { "ZCRCE", "ZCRCG", "ZCRCQ", "ZCRCW"};
-zsdata(buf, length, frameend)
-register char *buf;
+static const char *Zendnames[] = { "ZCRCE", "ZCRCG", "ZCRCQ", "ZCRCW"};
+void 
+zsdata(const char *buf, int length, int frameend)
 {
 	register unsigned short crc;
 
-	vfile("zsdata: %d %s", length, Zendnames[frameend-ZCRCE&3]);
+	vfile("zsdata: %d %s", length, Zendnames[(frameend-ZCRCE)&3]);
 	if (Crc32t)
 		zsda32(buf, length, frameend);
 	else {
@@ -232,8 +355,8 @@ register char *buf;
 	}
 }
 
-zsda32(buf, length, frameend)
-register char *buf;
+void
+zsda32(const char *buf, int length, int frameend)
 {
 	register int c;
 	register unsigned long crc;
@@ -266,8 +389,8 @@ register char *buf;
  *  and CRC.  Returns the ending character or error code.
  *  NB: On errors may store length+1 bytes!
  */
-zrdata(buf, length)
-register char *buf;
+int
+zrdata(char *buf, int length)
 {
 	register int c;
 	register unsigned short crc;
@@ -286,41 +409,44 @@ crcfoo:
 			case GOTCRCG:
 			case GOTCRCQ:
 			case GOTCRCW:
-				crc = updcrc((d=c)&0377, crc);
-				if ((c = zdlread()) & ~0377)
-					goto crcfoo;
-				crc = updcrc(c, crc);
-				if ((c = zdlread()) & ~0377)
-					goto crcfoo;
-				crc = updcrc(c, crc);
-				if (crc & 0xFFFF) {
-					zperr(badcrc);
-					return ERROR;
+				{ 
+					d = c;
+					c &= 0377;
+					crc = updcrc(c, crc);
+					if ((c = zdlread()) & ~0377)
+						goto crcfoo;
+					crc = updcrc(c, crc);
+					if ((c = zdlread()) & ~0377)
+						goto crcfoo;
+					crc = updcrc(c, crc);
+					if (crc & 0xFFFF) {
+						zperr(badcrc);
+						return ERROR;
+					}
+					Rxcount = length - (end - buf);
+					vfile("zrdata: %d  %s", Rxcount, Zendnames[(d-GOTCRCE)&3]);
+					return d;
 				}
-				Rxcount = length - (end - buf);
-				vfile("zrdata: %d  %s", Rxcount,
-				 Zendnames[d-GOTCRCE&3]);
-				return d;
 			case GOTCAN:
-				zperr("Sender Canceled");
+				zperr(_("Sender Canceled"));
 				return ZCAN;
 			case TIMEOUT:
-				zperr("TIMEOUT");
+				zperr(_("TIMEOUT"));
 				return c;
 			default:
-				zperr("Bad data subpacket");
+				zperr(_("Bad data subpacket"));
 				return c;
 			}
 		}
 		*buf++ = c;
 		crc = updcrc(c, crc);
 	}
-	zperr("Data subpacket too long");
+	zperr(_("Data subpacket too long"));
 	return ERROR;
 }
 
-zrdat32(buf, length)
-register char *buf;
+int
+zrdat32(char *buf, int length)
 {
 	register int c;
 	register unsigned long crc;
@@ -337,7 +463,8 @@ crcfoo:
 			case GOTCRCG:
 			case GOTCRCQ:
 			case GOTCRCW:
-				d = c;  c &= 0377;
+				d = c;
+				c &= 0377;
 				crc = UPDC32(c, crc);
 				if ((c = zdlread()) & ~0377)
 					goto crcfoo;
@@ -356,25 +483,32 @@ crcfoo:
 					return ERROR;
 				}
 				Rxcount = length - (end - buf);
-				vfile("zrdat32: %d %s", Rxcount,
-				 Zendnames[d-GOTCRCE&3]);
+				vfile("zrdat32: %d %s", Rxcount, Zendnames[(d-GOTCRCE)&3]);
 				return d;
 			case GOTCAN:
-				zperr("Sender Canceled");
+				zperr(_("Sender Canceled"));
 				return ZCAN;
 			case TIMEOUT:
-				zperr("TIMEOUT");
+				zperr(_("TIMEOUT"));
 				return c;
 			default:
-				zperr("Bad data subpacket");
+				zperr(_("Bad data subpacket"));
 				return c;
 			}
 		}
 		*buf++ = c;
 		crc = UPDC32(c, crc);
 	}
-	zperr("Data subpacket too long");
+	zperr(_("Data subpacket too long"));
 	return ERROR;
+}
+
+/* Local screen character display function */
+static void 
+bttyout(int c)
+{
+	if (Verbose)
+		putc(c, stderr);
 }
 
 
@@ -388,8 +522,8 @@ crcfoo:
  *   Otherwise return negative on error.
  *   Return ERROR instantly if ZCRCW sequence, for fast error recovery.
  */
-zgethdr(hdr, eflag)
-char *hdr;
+int
+zgethdr(char *hdr, int eflag)
 {
 	register int c, n, cancount;
 
@@ -429,7 +563,7 @@ gotcan:
 	default:
 agn2:
 		if ( --n == 0) {
-			zperr("Garbage count exceeded");
+			zperr(_("Garbage count exceeded"));
 			return(ERROR);
 		}
 		if (eflag && ((c &= 0177) & 0140))
@@ -494,7 +628,7 @@ fifi:
 	case ERROR:
 	case TIMEOUT:
 	case RCDO:
-		zperr("Got %s", frametypes[c+FTOFFSET]);
+		zperr(_("Got %s"), frametypes[c+FTOFFSET]);
 	/* **** FALL THRU TO **** */
 	default:
 		if (c >= -3 && c <= FRTYPES)
@@ -506,8 +640,8 @@ fifi:
 }
 
 /* Receive a binary style header (type and position) */
-zrbhdr(hdr)
-register char *hdr;
+int 
+zrbhdr(char *hdr)
 {
 	register int c, n;
 	register unsigned short crc;
@@ -533,16 +667,14 @@ register char *hdr;
 		zperr(badcrc); 
 		return ERROR;
 	}
-#ifdef ZMODEM
-	Protocol = ZMODEM;
-#endif
-	Zmodem = 1;
+	protocol = ZM_ZMODEM;
+	zmodem_requested=TRUE;
 	return Rxtype;
 }
 
 /* Receive a binary style header (type and position) with 32 bit FCS */
-zrbhdr32(hdr)
-register char *hdr;
+int
+zrbhdr32(char *hdr)
 {
 	register int c, n;
 	register unsigned long crc;
@@ -576,17 +708,15 @@ register char *hdr;
 		zperr(badcrc);
 		return ERROR;
 	}
-#ifdef ZMODEM
-	Protocol = ZMODEM;
-#endif
-	Zmodem = 1;
+	protocol = ZM_ZMODEM;
+	zmodem_requested=TRUE;
 	return Rxtype;
 }
 
 
 /* Receive a hex style header (type and position) */
-zrhhdr(hdr)
-char *hdr;
+int 
+zrhhdr(char *hdr)
 {
 	register int c;
 	register unsigned short crc;
@@ -623,16 +753,14 @@ char *hdr;
 			Not8bit |= c;
 		}
 	}
-#ifdef ZMODEM
-	Protocol = ZMODEM;
-#endif
-	Zmodem = 1; return Rxtype;
+	protocol = ZM_ZMODEM;
+	zmodem_requested=TRUE;
+	return Rxtype;
 }
 
-/* Send a byte as two hex digits */
-zputhex(c, pos)
-register int c;
-char *pos;
+/* Write a byte as two hex digits */
+void 
+zputhex(int c, char *pos)
 {
 	static char	digits[]	= "0123456789abcdef";
 
@@ -678,17 +806,8 @@ zsendline_init(char *tab)
 	}
 }
 
-/* Decode two lower case hex digits into an 8 bit byte value */
-zgethex()
-{
-	register int c;
-
-	c = zgeth1();
-	if (Verbose>8)
-		vfile("zgethex: %02X", c);
-	return c;
-}
-zgeth1()
+int inline
+zgeth1(void)
 {
 	register int c, n;
 
@@ -710,100 +829,22 @@ zgeth1()
 	return c;
 }
 
-/*
- * Read a byte, checking for ZMODEM escape encoding
- *  including CAN*5 which represents a quick abort
- */
-zdlread()
+/* Decode two lower case hex digits into an 8 bit byte value */
+int
+zgethex(void)
 {
 	register int c;
 
-again:
-	/* Quick check for non control characters */
-	if ((c = READLINE_PF(Rxtimeout)) & 0140)
-		return c;
-	switch (c) {
-	case ZDLE:
-		break;
-	case 023:
-	case 0223:
-	case 021:
-	case 0221:
-		goto again;
-	default:
-		if (Zctlesc && !(c & 0140)) {
-			goto again;
-		}
-		return c;
-	}
-again2:
-	if ((c = READLINE_PF(Rxtimeout)) < 0)
-		return c;
-	if (c == CAN && (c = READLINE_PF(Rxtimeout)) < 0)
-		return c;
-	if (c == CAN && (c = READLINE_PF(Rxtimeout)) < 0)
-		return c;
-	if (c == CAN && (c = READLINE_PF(Rxtimeout)) < 0)
-		return c;
-	switch (c) {
-	case CAN:
-		return GOTCAN;
-	case ZCRCE:
-	case ZCRCG:
-	case ZCRCQ:
-	case ZCRCW:
-		return (c | GOTOR);
-	case ZRUB0:
-		return 0177;
-	case ZRUB1:
-		return 0377;
-	case 023:
-	case 0223:
-	case 021:
-	case 0221:
-		goto again2;
-	default:
-		if (Zctlesc && ! (c & 0140)) {
-			goto again2;
-		}
-		if ((c & 0140) ==  0100)
-			return (c ^ 0100);
-		break;
-	}
-	if (Verbose>1)
-		zperr("Bad escape sequence %x", c);
-	return ERROR;
+	c = zgeth1();
+	if (Verbose>8)
+		vfile("zgethex: %02X", c);
+	return c;
 }
 
-/*
- * Read a character from the modem line with timeout.
- *  Eat parity, XON and XOFF characters.
- */
-noxrd7()
-{
-	register int c;
-
-	for (;;) {
-		if ((c = readline(Rxtimeout)) < 0)
-			return c;
-		switch (c &= 0177) {
-		case XON:
-		case XOFF:
-			continue;
-		default:
-			if (Zctlesc && !(c & 0140))
-				continue;
-		case '\r':
-		case '\n':
-		case ZDLE:
-			return c;
-		}
-	}
-}
 
 /* Store long integer pos in Txhdr */
-stohdr(pos)
-long pos;
+void 
+stohdr(long pos)
 {
 	Txhdr[ZP0] = pos;
 	Txhdr[ZP1] = pos>>8;
@@ -813,8 +854,7 @@ long pos;
 
 /* Recover a long integer from a header */
 long
-rclhdr(hdr)
-register char *hdr;
+rclhdr(char *hdr)
 {
 	register long l;
 

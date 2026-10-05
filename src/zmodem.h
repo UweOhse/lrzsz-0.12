@@ -104,8 +104,6 @@
 /* Parameters for ZCOMMAND frame ZF0 (otherwise 0) */
 #define ZCACK1	1	/* Acknowledge, then do command */
 
-long rclhdr();
-
 /* Globals used by ZMODEM functions */
 extern Rxframeind;	/* ZBIN ZBIN32, or ZHEX type of frame received */
 extern Rxtype;		/* Type of header received */

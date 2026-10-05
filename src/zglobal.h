@@ -1,0 +1,211 @@
+#ifndef ZMODEM_GLOBAL_H
+#define ZMODEM_GLOBAL_H
+
+#include "config.h"
+#include <stdarg.h>
+
+#if STDC_HEADERS
+# include <string.h>
+#else
+# ifdef HAVE_STRINGS_H
+#   include <strings.h>
+# endif
+# ifndef HAVE_STRCHR
+#  define strchr index
+#  define strrchr rindex
+# endif
+char *strchr (), *strrchr ();
+# ifndef HAVE_MEMCPY
+#  define memcpy(d, s, n) bcopy ((s), (d), (n))
+#  define memmove(d, s, n) bcopy ((s), (d), (n))
+# endif
+#endif
+
+/* we need to decide whether readcheck is possible */
+#ifdef HAVE_FCNTL_H
+#  include <fcntl.h>
+#endif
+#ifdef HAVE_SYS_IOCTL_H
+#  include <sys/ioctl.h>
+#endif
+#ifdef HAVE_RDCHK
+#  define READCHECK
+#else
+#  ifdef FIONREAD
+#    define READCHECK_FIONREAD
+#    define READCHECK
+#  else
+#    ifdef F_GETFL
+#      define READCHECK
+#      define READCHECK_READS
+#      define READCHECK_GETFL
+#    endif
+#  endif
+#endif
+
+/* Take care of NLS matters.  */
+#if HAVE_LOCALE_H
+# include <locale.h>
+#endif
+#if !HAVE_SETLOCALE
+# define setlocale(Category, Locale) /* empty */
+#endif
+
+#if ENABLE_NLS
+# include <libintl.h>
+# define _(Text) gettext (Text)
+#else
+# define bindtextdomain(Domain, Directory) /* empty */
+# define textdomain(Domain) /* empty */
+# define _(Text) Text
+#endif
+
+#ifndef ENABLE_SYSLOG
+#  undef HAVE_SYSLOG
+#else
+#  ifdef HAVE_SYSLOG_H
+#    include <syslog.h>
+#  elif defined(HAVE_SYS_SYSLOG_H)
+#    include <sys/syslog.h>
+#  else
+#    undef HAVE_SYSLOG
+#  endif
+#endif
+#ifndef ENABLE_SYSLOG
+#  define openlog(name,pid,facility) /* void it */
+#  define setlogmask(x) /* void it */
+#  define syslog(x,y) /* void it */
+#else
+extern int enable_syslog;
+#endif
+
+#define OK 0
+#define FALSE 0
+#define TRUE 1
+#define ERROR (-1)
+
+/* Ward Christensen / CP/M parameters - Don't change these! */
+#define ENQ 005
+#define CAN ('X'&037)
+#define XOFF ('s'&037)
+#define XON ('q'&037)
+#define SOH 1
+#define STX 2
+#define EOT 4
+#define ACK 6
+#define NAK 025
+#define CPMEOF 032
+#define WANTCRC 0103    /* send C not NAK to get crc not checksum */
+#define WANTG 0107  /* Send G not NAK to get nonstop batch xmsn */
+#define TIMEOUT (-2)
+#define RCDO (-3)
+#define WCEOT (-10)
+
+#define RETRYMAX 10
+
+#define UNIXFILE 0xF000  /* The S_IFMT file mask bit for stat */
+
+enum zm_type_enum {
+	ZM_XMODEM,
+	ZM_YMODEM,
+	ZM_ZMODEM
+};
+
+struct zm_fileinfo {
+	char *fname;
+	time_t modtime;
+	mode_t mode;
+	size_t bytes_total;
+	size_t bytes_sent;
+	size_t bytes_received;
+	size_t bytes_skipped; /* crash recovery */
+	int    eof_seen;
+};
+
+#define R_BYTESLEFT(x) ((x)->bytes_total-(x)->bytes_received)
+
+extern enum zm_type_enum protocol;
+
+extern const char *program_name;        /* the name by which we were called */
+extern int Verbose;
+extern int errors;
+extern int no_timeout;
+extern int Zctlesc;    /* Encode control characters */
+extern int under_rsh;
+
+RETSIGTYPE bibi(int n);
+
+#define sendline(c) putchar((c) & 0377)
+#define xsendline(c) putchar(c)
+
+/* zreadline.c */
+extern char *readline_ptr; /* pointer for removing chars from linbuf */
+extern int readline_left; /* number of buffered chars left to read */
+extern int readline_readnum; /* number of chars to read with one read() */
+#define READLINE_PF(timeout) \
+    (--readline_left >= 0? (*readline_ptr++ & 0377) : readline(timeout))
+
+int readline(int timeout);
+void readline_purge(void);
+void readline_setup(int fd, int readnum, int buffer_size);
+
+
+/* rbsb.c */
+extern int Fromcu;
+extern int Twostop;
+#ifdef READCHECK_READS
+extern char checked;
+#endif
+extern int iofd;
+extern unsigned Baudrate;
+
+void zperr(const char *fmt, ...);
+void zpfatal(const char *fmt, ...);
+void vfile(const char *format, ...);
+
+/* rbsb.c */
+int from_cu(void);
+void cucheck(void);
+int rdchk(int fd);
+int io_mode(int fd, int n);
+void sendbrk(int fd);
+#define flushmo() fflush(stdout)
+void purgeline(int fd);
+
+
+/* crctab.c */
+extern unsigned short crctab[256];
+#define updcrc(cp, crc) ( crctab[((crc >> 8) & 255)] ^ (crc << 8) ^ cp)
+extern long cr3tab[];
+#define UPDC32(b, c) (cr3tab[((int)c ^ b) & 0xff] ^ ((c >> 8) & 0x00FFFFFF))
+
+/* zm.c */
+#include "zmodem.h"
+extern int Rxtimeout;        /* Tenths of seconds to wait for something */
+
+/* Globals used by ZMODEM functions */
+extern int Rxframeind;     /* ZBIN ZBIN32, or ZHEX type of frame received */
+extern int Rxtype;     /* Type of header received */
+extern int Rxcount;        /* Count of data bytes received */
+extern char Rxhdr[4];      /* Received header */
+extern char Txhdr[4];      /* Transmitted header */
+extern long Rxpos;     /* Received file position */
+extern long Txpos;     /* Transmitted file position */
+extern int Txfcs32;        /* TURE means send binary frames with 32 bit FCS */
+extern int Crc32t;     /* Display flag indicating 32 bit CRC being sent */
+extern int Crc32;      /* Display flag indicating 32 bit CRC being received */
+extern int Znulls;     /* Number of nulls to send at beginning of ZDATA hdr */
+extern char Attn[ZATTNLEN+1];  /* Attention string rx sends to tx on err */
+
+extern void zsendline(int c);
+void zsbhdr(int type, char *hdr);
+void zshhdr(int type, char *hdr);
+void zsdata(const char *buf, int length, int frameend);
+int zrdata(char *buf, int length);
+int zgethdr(char *hdr, int eflag);
+void stohdr(long pos);
+long rclhdr(char *hdr);
+
+const char * protname(void);
+
+#endif

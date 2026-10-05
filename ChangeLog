@@ -1,3 +1,88 @@
+Sat Jun 15 08:13:41 1996  Uwe Ohse
+
+		* changed version number to 0.12.4
+
+Thu Jun 13 08:25:22 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+		* oh, i should have written this in english. Sorry.
+
+		* check.lrzsz: neue Tests, ob recovery funktioniert.
+
+		* lsz.c: wenn sender keine Konvertierungsoptionen
+		  (ZCBIN, ZCNL oder ZCRESUME), sondern das Feld
+		  auf 0 l‰ﬂt, wird nun ZCBIN angenommen. Und schon
+		  funktioniert die `-r'-Logik in procheader().
+
+		* zm.c (zdlread): weite Teile werden nun ge-inline-d.
+		  Das spart in etwa drei Funktionsaufrufe pro
+		  4 gelesene Bytes.
+
+		* src/lrz.c (procheader): oops, setvbuf wurde nur bei
+		  der ersten Datei aufgerufen.
+
+		* src/lrz.c (usage): 
+		* src/lsz.c (usage): In der Usage-Zeile wurden nicht alle
+		  Optionen ausgegeben. Es waren ohnehin ohnehin zu viele,
+		  deshalb wird [options] geschrieben.
+
+		* check.lrzsz: Behandlung von /pub/gnu/emacs-*.tar.gz war
+		  falsch (der Fall, daﬂ sie nicht da waren, wurde nicht
+		  abgefangen).
+		  Wenn ZMODEM-Test fehlschlug wurde am Ende ausgegeben, daﬂ
+		  XMODEM nicht funktioniert.
+
+Sun Jun  9 07:43:32 1996 Uwe Ohse <uwe@tirka.gun.de>
+
+		* Prototypendeklaration f¸r gettimeofday aus timing.c entfernt,
+		  kollidiert mit Solaris oder HP/UX. Sollte ohnehin ¸berfl¸ssig
+		  sein.
+
+Sat Jun  8 23:56:42 1996 Uwe Ohse
+
+		* configure.in: Versionsnummer auf 0.12.3 erhˆht.
+		  AC_LINK_FILES($nls_cv_header_libgt, $nls_cv_header_intl)
+		  wird nun aufgerufen.
+
+		* zm.c,lsz.c: Variable Zmodem, irrt¸mlich am Mittwoch
+		  verkannt (sie bedeutete nicht "wir benutzen Zmodem",
+		  sondern "ZModem-Request erhalten") und entfernt, ist
+		  nun wieder eingebaut als zmodem_requested.
+		* lrz.c: Zmodem -> zmodem_requested.
+
+Thu Jun  6 12:03:24 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+		all files:
+		* use automake.
+		* go away from flat directory.
+		* internationalized.
+		* de-localized.
+		* cleaned up.
+		* added syslog support.
+		* added termios support.
+		short: everything changed.
+
+Mon Jun  3 08:06:52 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+
+		* lsz.c (countem): replaced access(,04) with access(,R_OK).
+		  protoized function.
+		  (usage): protoized, added parameter ("describe failure").
+		  (chkinvok), (chartest), (zsendcmd), (bttyout), (saybibi),
+		  (getinsync), (canit), (zsendfdata), (zperr),
+
+		* lrz.c (bttyout): moved to zm.c
+
+		* lsz.c: include unistd.h, define R_OK if undefined.
+
+		* Makefile.in (MOSTLYCLEANFILES): added lint target.
+
+		* timing.c (timing): got rid of a warning.
+
+		* configure.in: added missing AC_ARG_PROGRAM
+
+----------------------------------------------------------------------
+Original lrzsz CHANGES file:
+----------------------------------------------------------------------
 0.10 - 4-15-94
 --------------
 	Made a bunch of changes to the last public domain rzsz release to

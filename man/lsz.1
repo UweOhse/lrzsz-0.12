@@ -136,6 +136,8 @@ If
 is invoked with $SHELL set and iff that variable contains the
 string
 .I "rsh"
+,
+.I "rbash"
 or
 .I "rksh"
 (restricted shell),
@@ -179,35 +181,36 @@ The meanings of the available options are:
 .PP
 .PD 0
 .TP
-.B \\\\
-(backslash). Force the next option letter to upper case.
-.TP
-.B +
+.B "-+, --append"
 Instruct the receiver to append transmitted data to an existing file
 (ZMODEM only).
 .TP 
-.B 2
+.B "-2, --twostop"
 use two stop bits (if possible). Do not use this unless you know
 what you are doing.
 .TP
-.B 8
-Use 8KB blocksize (incompatible with standard zmodem) (ZMODEM only).
+.B "-8, --try-8k"
+Try to go up to 8KB blocksize. This is incompatible with standard zmodem,
+but a common extension in the bbs world. (ZMODEM only).
 .TP
-.B a
+.B "--start-8k"
+Start with 8KB blocksize. Like --try-8k.
+.TP
+.B "-a, --ascii"
 Convert NL characters in the transmitted file to CR/LF.
 This is done by the sender for XMODEM and YMODEM, by the receiver
 for ZMODEM.
 .TP
-.B b
+.B "-b, --binary"
 (ZMODEM) Binary override: transfer file without any translation.
 .TP
-.B "c COMMAND"
+.B "-c COMMAND, --command COMMAND"
 Send COMMAND to the receiver for execution, return with COMMAND\'s exit status.
 .TP
-.B C N
+.B "-C N, --command-tries N"
 Retry to send command N times (default: 11).
 .TP
-.B d
+.B "-d, --dot-to-slash"
 Change all instances of "." to "/" in the transmitted pathname.
 Thus, C.omenB0000 (which is unacceptable to MSDOS or CP/M)
 is transmitted as C/omenB0000.
@@ -215,64 +218,64 @@ If the resultant filename has more than 8 characters in the stem,
 a "." is inserted to allow a total of eleven.
 
 This option enables the 
-.B f
+.B "--full-path"
 option.
 .TP
-.B e
+.B "-e, --escape"
 Escape all control characters;
 normally XON, XOFF, DLE, CR-@-CR, and Ctrl-X are escaped.
 .TP
-.B f
+.B "-f, --full-path"
 Send Full pathname.
 Normally directory prefixes are stripped from the transmitted
 filename.
 
 This is also turned on with to 
-.B d
+.B "--dot-to-slash"
 option.
 .TP
-.B h
+.B "-h, --help"
 give help.
 .TP
-.B "i COMMAND"
-Send COMMAND to the receiver for execution, return Immediately
+.B "-i COMMAND, --immediate-command COMMAND"
+Send COMMAND to the receiver for execution, return immediately
 upon the receiving program's successful recption of the command.
 .TP
-.B k
+.B "-k, --1k"
 (XMODEM/YMODEM) Send files using 1024 byte blocks
 rather than the default 128 byte blocks.
 1024 byte packets speed file transfers at high bit rates.
 (ZMODEM streams the data for the best possible throughput.)
 .TP
-.B "L N"
+.B "-L N, --packetlen N"
 Use ZMODEM sub-packets of length N.
 A larger N (32 <= N <= 1024) gives slightly higher throughput,
 a smaller N speeds error recovery.
 The default is 128 below 300 baud, 256 above 300 baud, or 1024 above 2400 baud.
 .TP
-.B "l N"
+.B "-l N, --framelen N"
 Wait for the receiver to acknowledge correct data every
 .B N
 (32 <= N <= 1024)
 characters.
 This may be used to avoid network overrun when XOFF flow control is lacking.
 .TP
-.B n
+.B "-n, --newer"
 (ZMODEM) Send each file if
 destination file does not exist.
 Overwrite destination file if
 source file is newer than the destination file.
 .TP
-.B N
+.B "-N, --newer-or-longer"
 (ZMODEM) Send each file if
 destination file does not exist.
 Overwrite destination file if
 source file is newer or longer than the destination file.
 .TP
-.B o
+.B "-o, --16-bit-crc"
 (ZMODEM) Disable automatic selection of 32 bit CRC.
 .TP
-.B O
+.B "-O, --disable-timeouts"
 Disable read timeout handling. This makes lsz hang if the other side
 doesn't send anything, but increases performance (not much) and
 decreases system load (reduces number of system calls by about 50
@@ -280,57 +283,70 @@ percent).
 
 Use this option with care.
 .TP
-.B p
+.B "-p, --protect"
 (ZMODEM) Protect existing destination files by skipping transfer if the
 destination file exists.
 .TP
-.B q
+.B "-q, --quiet"
 Quiet suppresses verbosity.
 .TP
-.B R
+.B "-R, --restricted"
 Restricted mode: restricts pathnames to the current directory and
 PUBDIR (usually /usr/spool/uucppublic) and/or subdirectories
 thereof.
 .TP
-.B r
+.B "-r, --resume"
 (ZMODEM) Resume interrupted file transfer.
 If the source file is longer than the destination file,
 the transfer commences at the offset in the source file that equals
 the length of the destination file.
 .TP
-.B S
+.B "-S, --timesync"
 enable timesync protocol support. See timesync.doc for further 
 information.
 
 This option is incompatible with standard zmodem. Use it with care.
 .TP
-.B "t tim"
+.B "--syslog[=off]"
+turn syslogging on or off. the default is set at configure time.
+This option is ignored if no syslog support is compiled in.
+.TP
+.B "-t TIM, --timeout TIM"
 Change timeout to
-.I tim
+.I TIM
 tenths of seconds.
 .TP
 .B u
 Unlink the file after successful transmission.
 .TP
-.B U
+.B "-U, --unrestrict"
 Turn off restricted mode (this is not possible if running under a 
 restricted shell).
 .TP
-.B "w N"
+.B "-w N, --windowsize N"
 Limit the transmit window size to N bytes (ZMODEM).
 .TP
-.B v
+.B "-v, --verbose"
 Verbose output to stderr. More v's generate more output.
 .TP
-.B y
+.B "-X, --xmodem"
+use XMODEM protocol.
+.TP
+.B "-y, --overwrite"
 Instruct a ZMODEM receiving program to overwrite any existing file
 with the same name.
 .TP
-.B Y
+.B "-Y, --overwrite-or-skip"
 Instruct a ZMODEM receiving program to overwrite any existing file
 with the same name,
 and to skip any source files that do have a file with the same
 pathname on the destination system.
+.TP
+.B "--ymodem"
+use ZMODEM protocol.
+.TP
+.B "-Z, --zmodem"
+use ZMODEM protocol.
 .PD
 .SH SECURITY
 Restricted mode restricts pathnames to the current directory

@@ -1,3 +1,33 @@
+Version 0.12.4 - June 1996, Uwe Ohse
+
+* some bug fixes
+
+* `rz -r' should now really work
+
+* `make check' and `make vcheck' now try to check crash recovery
+
+Version 0.12.3 - June 1996, Uwe Ohse
+
+* just a few bugfixes.
+
+Version 0.12.2 - June 1996, by Uwe Ohse
+
+* German translation
+
+* internationalized
+
+* went away from flat directory structure
+
+* added termios support
+
+* added syslog support
+
+* turned to automake
+
+* lrz want give received files execution permission if running under
+  rsh.
+
+
 New in lrzsz-0.12b:
 
 - lrz: remote command execution is disabled per default. This 

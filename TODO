@@ -7,6 +7,6 @@
 - an option to stop transmission if BPS falls under a certain rate
   would be nice (possibly like this: "if BPS < N for M minutes").
 - an option to stop transmission at a certain time.
-- getopt_long ...
-- ANSIfy it.
-- stop #including .c files. That's a lot of work.
+- look into freebsd changes to rzsz3.37 - there are some nonobvious
+  changes, which i don't really understand, but which make sense.
+
