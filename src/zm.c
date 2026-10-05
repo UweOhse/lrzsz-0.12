@@ -37,6 +37,8 @@ char Attn[ZATTNLEN+1];	/* Attention string rx sends to tx on err */
 
 static lastsent;	/* Last char we sent */
 static Not8bit;		/* Seven bits seen on header */
+int turbo_escape;
+int bytes_per_error=0;
 
 static const char *frametypes[] = {
 	"Carrier Lost",		/* -3 */
@@ -116,10 +118,10 @@ jump_over:
 	switch (c) {
 	case ZDLE:
 		break;
-	case 023:
-	case 0223:
-	case 021:
-	case 0221:
+	case XON:
+	case (XON|0200):
+	case XOFF:
+	case (XOFF|0200):
 		goto again;
 	default:
 		if (Zctlesc && !(c & 0140)) {
@@ -148,10 +150,10 @@ again2:
 		return 0177;
 	case ZRUB1:
 		return 0377;
-	case 023:
-	case 0223:
-	case 021:
-	case 0221:
+	case XON:
+	case (XON|0200):
+	case XOFF:
+	case (XOFF|0200):
 		goto again2;
 	default:
 		if (Zctlesc && ! (c & 0140)) {
@@ -839,20 +841,27 @@ zsendline_init(char *tab)
 			switch(i)
 			{
 			case ZDLE:
-			case 020:
-			case 021:
-			case 023:
-			case 0220:
-			case 0221:
-			case 0223:
+			case XOFF: /* ^Q */
+			case XON: /* ^S */
+			case (XOFF | 0200):
+			case (XON | 0200):
 				tab[i]=1;
+				break;
+			case 020: /* ^P */
+			case 0220:
+				if (turbo_escape)
+					tab[i]=0;
+				else
+					tab[i]=1;
 				break;
 			case 015:
 			case 0215:
 				if (Zctlesc)
 					tab[i]=1;
-				else
+				else if (!turbo_escape)
 					tab[i]=2;
+				else 
+					tab[i]=0;
 				break;
 			default:
 				if (Zctlesc)

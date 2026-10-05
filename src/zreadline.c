@@ -56,8 +56,10 @@ readline(int timeout)
 	if (!no_timeout)
 	{
 		n = timeout/10;
-		if (n < 2)
+		if (n < 2 && timeout!=1)
 			n = 3;
+		else if (n==0)
+			n=1;
 		if (Verbose > 5)
 			fprintf(stderr, "Calling read: alarm=%d  Readnum=%d ",
 			  n, readline_readnum);
@@ -71,8 +73,28 @@ readline(int timeout)
 	readline_left=read(readline_fd, readline_ptr, readline_readnum);
 	if (!no_timeout)
 		alarm(0);
+	if (readline_left>0 && bytes_per_error) {
+		int i;
+		for (i=0;i<readline_left;i++) {
+			if ((rand() % bytes_per_error) == 0)
+				readline_ptr[i]^=0x55;
+		}
+	}
 	if (Verbose > 5) {
 		fprintf(stderr, "Read returned %d bytes\n", readline_left);
+		if (readline_left==-1)
+			fprintf(stderr, "errno=%d:%s\n", errno,strerror(errno));
+		if (Verbose > 9 && readline_left>0) {
+			int i,j;
+			j=readline_left > 48 ? 48 : readline_left;
+			fprintf(stderr,"    ");
+			for (i=0;i<j;i++) {
+				if (i==24)
+					fprintf(stderr,"\n    ");
+				fprintf(stderr, "%02x ", readline_ptr[i] & 0377);
+			}
+			fprintf(stderr,"\n");
+		}
 	}
 	if (readline_left < 1)
 		return TIMEOUT;

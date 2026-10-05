@@ -1,3 +1,76 @@
+Tue Aug 27 10:53:43 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+		* src/lsz.c (main): do a select/read-loop after calling purgeline()
+		  to get rid of really anything already in the queue.
+
+		* configure.in (VERSION): changed to 0.12.8
+
+		* src/lrz.c (rzfile): added missing error message.
+		(rzfile): buffer packets we received out-of-sync, and try to
+		  reuse them later.
+
+		* src/lsz.c: (whole file): renamed flags.
+		  (main): new option -E --rename: change name if target exists.
+		  (long_options): new option --rename.
+
+		* src/lrz.c: (whole file) renamed flags.
+		(procheader): implement ZF1_ZMCHNG (change name if target exists).
+		(main): new option -E --rename: change name if target exists.
+		(long_options): new option --rename.
+		(procheader): fix --append-Option (ZF1_ZMAPND). Will now work
+		even on binary files (why not send wtmp?).
+
+		* src/zmodem.h (ZF1_ZMCHNG): new flag. change filename if 
+		  destination exists.
+		  Some flags renamed (prefixed with ZFn etc).
+		  changed some octal numbers to hex.
+
+		* src/lsz.c (main): setup readline to read up to 128 bytes.
+
+		* src/zreadline.c (readline): minimal timeout now 1 second if 
+		  timeout-variable is 1.
+
+		* src/zreadline.c (readline): if Verbose > 9 dump up to 48 
+		  bytes direct after read().
+
+		* src/lsz.c (main): call purgeline to get rid of junk on
+		  the line.
+
+		* check.lrzsz: use source files for resume test.
+
+Sun Aug 25 11:11:17 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+		* src/zm.c (zsendline_init): if turbo_escape is set:
+		  do not escape ^P, 0200|^P,015,0215.
+
+		* src/lsz.c (main): recognize -T aka --turbo, sets variable 
+		  turbo_escape.
+
+		* src/zm.c: new variable turbo_escape.
+
+		* src/lsz.c (calc_blklen): calculated with *full* last block, causing
+		  to choose smaller block sizes if last block not full.
+
+		* src/zreadline.c (readline): print strerror(errno) if read
+		  returned -1 bytes and Verbose > 5.
+
+Sat Aug 24 16:39:41 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+		* src/rbsb.c (from_cu): debug messages deleted.
+
+Fri Aug 23 14:32:51 1996  Uwe Ohse  <uwe@tirka.gun.de>
+
+		* src/lsz.c (usage1): usage1 is static, had static prototype,
+		  but was not made static.
+
+		* src/lrz.c (procheader): case result of strdup because we
+		  might not have a prototype for it.
+
+		* lib/alloca.c: provide xmalloc.
+		
+		* configure.in: use GCC-CFlags only if using gcc (did a test
+		  with lcc ...).
+
 Thu Aug 22 19:48:16 1996  Uwe Ohse  <uwe@tirka.gun.de>
 		
 		* Release 0.12.7

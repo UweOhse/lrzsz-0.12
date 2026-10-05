@@ -159,6 +159,8 @@ static struct option const long_options[] =
 	{"allow-commands", no_argument, NULL, 'C'},
 	{"allow-remote-commands", no_argument, NULL, 'C'},
 	{"escape", no_argument, NULL, 'e'},
+	{"rename", no_argument, NULL, 'E'},
+	{"errors", required_argument, NULL, 3},
 	{"disable-timeouts", no_argument, NULL, 'O'},
 	{"disable-timeout", no_argument, NULL, 'O'}, /* i can't get it right */
 	{"protect", no_argument, NULL, 'p'},
@@ -222,7 +224,7 @@ main(int argc, char *argv[])
 		{
 		case 0:
 			break;
-		case '+': Lzmanag = ZMAPND; break;
+		case '+': Lzmanag = ZF1_ZMAPND; break;
 		case 'a': Rxascii=TRUE;  break;
 		case 'b': Rxbinary=TRUE; break;
 		case 'B': 
@@ -234,10 +236,11 @@ main(int argc, char *argv[])
 		case 'c': Crcflg=TRUE; break;
 		case 'C': allow_remote_commands=TRUE; break;
 		case 'D': Nflag = TRUE; break;
+		case 'E': Lzmanag = ZF1_ZMCHNG;
 		case 'e': Zctlesc = 1; break;
 		case 'h': usage(0,NULL); break;
 		case 'O': no_timeout=TRUE; break;
-		case 'p': Lzmanag = ZMPROT;  break;
+		case 'p': Lzmanag = ZF1_ZMPROT;  break;
 		case 'q': Quiet=TRUE; Verbose=0; break;
 		case 'r': try_resume=TRUE;  break;
 		case 'R': Restricted++;  break;
@@ -299,6 +302,13 @@ main(int argc, char *argv[])
 			error(0,0, _("cannot turnoff syslog"));
 #  endif
 #endif
+		case 3:
+			s_err = xstrtoul (optarg, NULL, 0, &tmp, NULL);
+			bytes_per_error = tmp;
+			if (s_err != LONGINT_OK)
+				STRTOL_FATAL_ERROR (optarg, _("timeout"), s_err);
+			if (bytes_per_error<100)
+				usage(2,_("error-per-byte should be >100"));
 			break;
 		default:
 			usage(2,NULL);
@@ -308,6 +318,10 @@ main(int argc, char *argv[])
 
 	npats = argc - optind;
 	patts=&argv[optind];
+
+	if (bytes_per_error) {
+		srand(77); /* no, not really random */
+	}
 
 	if (npats > 1)
 		usage(2,"garbage on commandline");
@@ -800,6 +814,11 @@ procheader(char *name, struct zm_fileinfo *zi)
 	strcpy(name_static,name);
 	zi->fname=name_static;
 
+	if (Verbose>2) {
+		fprintf(stderr,_("zmanag=%d, Lzmanag=%d\n"),zmanag,Lzmanag);
+		fprintf(stderr,_("zconv=%d\n"),zconv);
+	}
+
 	/* set default parameters and overrides */
 	openmode = "w";
 	Thisbinary = (!Rxascii) || Rxbinary;
@@ -813,10 +832,10 @@ procheader(char *name, struct zm_fileinfo *zi)
 		Thisbinary = 0;
 	if (zconv == ZCBIN)	/* Remote Binary override */
 		Thisbinary = TRUE;
-	else if (zmanag == ZMAPND)
-		openmode = "a";
 	if (Thisbinary && zconv == ZCBIN && try_resume)
 		zconv=ZCRESUM;
+	if (zmanag == ZF1_ZMAPND && zconv!=ZCRESUM)
+		openmode = "a";
 
 #ifdef ENABLE_TIMESYNC
 	in_timesync=0;
@@ -824,11 +843,38 @@ procheader(char *name, struct zm_fileinfo *zi)
 		in_timesync=1;
 #endif
 	/* Check for existing file */
-	if (zconv != ZCRESUM && !Rxclob && (zmanag&ZMMASK) != ZMCLOB && (fout=fopen(name, "r"))) {
+	if (zconv != ZCRESUM && !Rxclob && (zmanag&ZF1_ZMMASK) != ZF1_ZMCLOB 
+		&& (zmanag&ZF1_ZMMASK) != ZF1_ZMAPND
 #ifdef ENABLE_TIMESYNC
-	    if (!in_timesync)
+	    && !in_timesync
 #endif
-		fclose(fout);  return ERROR;
+		&& (fout=fopen(name, "r"))) {
+		struct stat sta;
+		char *tmpname;
+		char *ptr;
+		int i;
+		fclose(fout);
+		if ((zmanag & ZF1_ZMMASK)!=ZF1_ZMCHNG) {
+			if (Verbose>2)
+				fprintf(stderr,_("file exists, skipped\n"));
+			return ERROR;
+		}
+		/* try to rename */
+		tmpname=alloca(strlen(name+5));
+		strcpy(tmpname,name);
+		ptr=tmpname+strlen(tmpname);
+		i=0;
+		do {
+			sprintf(ptr,".%d",i++);
+		} while (i<1000 && stat(tmpname,&sta)==0);
+		if (i==1000)
+			return ERROR;
+		free(name_static);
+		name_static=malloc(strlen(tmpname)+1);
+		if (!name_static)
+			error(1,0,_("out of memory"));
+		strcpy(name_static,tmpname);
+		zi->fname=name_static;
 	}
 
 	zi->bytes_total = DEFBYTL;
@@ -848,7 +894,7 @@ procheader(char *name, struct zm_fileinfo *zi)
 		if (zi->mode & UNIXFILE)
 			++Thisbinary;
 	} else {		/* File coming from CP/M system */
-		for (p=name; *p; ++p)		/* change / to _ */
+		for (p=name_static; *p; ++p)		/* change / to _ */
 			if ( *p == '/')
 				*p = '_';
 
@@ -883,16 +929,16 @@ procheader(char *name, struct zm_fileinfo *zi)
 	}
 #endif /* ENABLE_TIMESYNC */
 
-	if (!zmodem_requested && MakeLCPathname && !IsAnyLower(name)
+	if (!zmodem_requested && MakeLCPathname && !IsAnyLower(name_static)
 	  && !(zi->mode&UNIXFILE))
-		uncaps(name);
+		uncaps(name_static);
 	if (Topipe > 0) {
 		if (Pathname)
 			free(Pathname);
 		Pathname=malloc((PATH_MAX)*2);
 		if (!Pathname)
 			error(1,0,_("out of memory"));
-		sprintf(Pathname, "%s %s", program_name+2, name);
+		sprintf(Pathname, "%s %s", program_name+2, name_static);
 		if (Verbose) {
 			fprintf(stderr,  "%s: %s %s\n",
 				_("Topipe"),
@@ -909,24 +955,26 @@ procheader(char *name, struct zm_fileinfo *zi)
 		Pathname=malloc((PATH_MAX)*2);
 		if (!Pathname)
 			error(1,0,_("out of memory"));
-		strcpy(Pathname, name);
+		strcpy(Pathname, name_static);
 		if (Verbose) {
 			putc('\r',stderr);
-			fprintf(stderr, _("Receiving: %s\n"), name);
+			fprintf(stderr, _("Receiving: %s\n"), name_static);
 		}
-		checkpath(name);
+		checkpath(name_static);
 		if (Nflag)
 		{
-			name=strdup("/dev/null");
-			if (!name)
+			/* cast because we might not have a prototyp for strdup :-/ */
+			free(name_static);
+			name_static=(char *) strdup("/dev/null");
+			if (!name_static)
 			{
 				fprintf(stderr,"%s: %s\n", program_name, _("out of memory"));
 				exit(1);
 			}
 		}
 #ifdef OMEN
-		if (name[0] == '!' || name[0] == '|') {
-			if ( !(fout = popen(name+1, "w"))) {
+		if (name_static[0] == '!' || name_static[0] == '|') {
+			if ( !(fout = popen(name_static+1, "w"))) {
 				return ERROR;
 			}
 			Topipe = -1;  return(OK);
@@ -934,7 +982,7 @@ procheader(char *name, struct zm_fileinfo *zi)
 #endif
 		if (Thisbinary && zconv==ZCRESUM) {
 			struct stat st;
-			fout = fopen(name, "r+");
+			fout = fopen(name_static, "r+");
 			if (fout && 0==fstat(fileno(fout),&st))
 			{
 				/* retransfer whole blocks */
@@ -953,17 +1001,16 @@ procheader(char *name, struct zm_fileinfo *zi)
 			if (fout)
 				fclose(fout);
 		}
+		fout = fopen(name_static, openmode);
 #ifdef ENABLE_MKDIR
-		fout = fopen(name, openmode);
-		if ( !fout && Restricted < 2)
-			if (make_dirs(name))
-				fout = fopen(name, openmode);
-#else
-		fout = fopen(name, openmode);
+		if ( !fout && Restricted < 2) {
+			if (make_dirs(name_static))
+				fout = fopen(name_static, openmode);
+		}
 #endif
 		if ( !fout)
 		{
-			zpfatal(_("cannot open %s"), name);
+			zpfatal(_("cannot open %s"), name_static);
 			return ERROR;
 		}
 	}
@@ -1416,6 +1463,21 @@ rzfiles(struct zm_fileinfo *zi)
 	}
 }
 
+/* "OOSB" means Out Of Sync Block. I once thought that if sz sents
+ * blocks a,b,c,d, of which a is ok, b fails, we might want to save 
+ * c and d. But, alas, i never saw c and d.
+ */
+#define SAVE_OOSB
+#ifdef SAVE_OOSB
+typedef struct oosb_t {
+	size_t pos;
+	long len;
+	char *data;
+	struct oosb_t *next;
+} oosb_t;
+struct oosb_t *anker=NULL;
+#endif
+
 /*
  * Receive a file with ZMODEM protocol
  *  Assumes file name frame is in secbuf
@@ -1442,8 +1504,37 @@ rzfile(struct zm_fileinfo *zi)
 #endif
 		stohdr(zi->bytes_received);
 		zshhdr(ZRPOS, Txhdr);
+		goto skip_oosb;
 nxthdr:
-		switch (c = zgethdr(Rxhdr, 0)) {
+#ifdef SAVE_OOSB
+		if (anker) {
+			oosb_t *akt,*last,*next;
+			for (akt=anker,last=NULL;akt;last= akt ? akt : last ,akt=next) {
+				if (akt->pos==zi->bytes_received) {
+					putsec(zi, akt->data, akt->len);
+					zi->bytes_received += akt->len;
+					vfile("using saved out-of-sync-paket %lx, len %ld",
+						  akt->pos,akt->len);
+					goto nxthdr;
+				}
+				next=akt->next;
+				if (akt->pos<zi->bytes_received) {
+					vfile("removing unneeded saved out-of-sync-paket %lx, len %ld",
+						  akt->pos,akt->len);
+					if (last)
+						last->next=akt->next;
+					else
+						anker=akt->next;
+					free(akt->data);
+					free(akt);
+					akt=NULL;
+				}
+			}
+		}
+#endif
+	skip_oosb:
+		c = zgethdr(Rxhdr, 0);
+		switch (c) {
 		default:
 			vfile("rzfile: zgethdr returned %d", c);
 			return ERROR;
@@ -1501,9 +1592,45 @@ nxthdr:
 			return c;
 		case ZDATA:
 			if (rclhdr(Rxhdr) != zi->bytes_received) {
+#if defined(SAVE_OOSB)
+				oosb_t *neu;
+				long pos=rclhdr(Rxhdr);
+#endif
 				if ( --n < 0) {
+					vfile("rzfile: out of sync");
 					return ERROR;
 				}
+#if defined(SAVE_OOSB)
+				switch (c = zrdata(secbuf, MAX_BLOCK))
+				{
+				case GOTCRCW:
+				case GOTCRCG:
+				case GOTCRCE:
+				case GOTCRCQ:
+					if (pos>zi->bytes_received) {
+						neu=malloc(sizeof(oosb_t));
+						if (neu)
+							neu->data=malloc(Rxcount);
+						if (neu && neu->data) {
+#ifdef ENABLE_SYSLOG
+/* call syslog to tell me if this happens */
+							syslog(LOG_ERR, 
+								   "saving out-of-sync-block %lx, len %ld",
+								   pos, (long) Rxcount);
+#endif
+							vfile("saving out-of-sync-block %lx, len %ld",pos,
+								  (long) Rxcount);
+							memcpy(neu->data,secbuf,Rxcount);
+							neu->pos=pos;
+							neu->len=Rxcount;
+							neu->next=anker;
+							anker=neu;
+						}
+						else if (neu)
+							free(neu);
+					}
+				}
+#endif
 #ifdef SEGMENTS
 				putsec(secbuf, chinseg);
 				chinseg = 0;

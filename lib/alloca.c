@@ -104,7 +104,18 @@ typedef char *pointer;
 #define malloc xmalloc
 extern pointer xmalloc ();
 #else
-#define malloc XMALLOC
+static void *
+xmalloc(unsigned long s)
+{
+   void *p=(void *)malloc(s);
+   if (!p) {
+       const char *meld="out of memory in alloca\n";
+       write(2,meld,strlen(meld));
+       exit(1);
+   }
+   return p;
+}
+#define malloc xmalloc
 #endif
 #endif
 

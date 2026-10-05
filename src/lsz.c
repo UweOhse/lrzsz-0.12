@@ -52,6 +52,7 @@ long Lrxpos;		/* Receiver's last reported offset */
 int errors;
 enum zm_type_enum protocol;
 int under_rsh=FALSE;
+extern int turbo_escape;
 
 int Canseek=1; /* 1: can; 0: only rewind, -1: neither */
 
@@ -208,6 +209,7 @@ static struct option const long_options[] =
   {"dot-to-slash", no_argument, NULL, 'd'},
   {"full-path", no_argument, NULL, 'f'},
   {"escape", no_argument, NULL, 'e'},
+  {"rename", no_argument, NULL, 'E'},
   {"1024", no_argument, NULL, 'k'},
   {"1k", no_argument, NULL, 'k'},
   {"packetlen", required_argument, NULL, 'L'},
@@ -224,6 +226,7 @@ static struct option const long_options[] =
   {"syslog", optional_argument, NULL , 2},
   {"timesync", no_argument, NULL, 'S'},
   {"timeout", required_argument, NULL, 't'},
+  {"turbo", no_argument, NULL, 'T'},
   {"unlink", no_argument, NULL, 'u'},
   {"unrestrict", no_argument, NULL, 'U'},
   {"verbose", no_argument, NULL, 'v'},
@@ -272,7 +275,7 @@ main(int argc, char **argv)
 	Rxtimeout = 600;
 
 	while ((c = getopt_long (argc, argv, 
-		"2+8abB:C:c:dfehi:kL:l:NnOopRrqSt:Uuvw:XYy",
+		"2+8abB:C:c:dfehi:kL:l:NnOopRrqSt:TUuvw:XYy",
 		long_options, (int *) 0))!=EOF)
 	{
 		unsigned long int tmp;
@@ -282,7 +285,7 @@ main(int argc, char **argv)
 		{
 		case 0:
 			break;
-		case '+': Lzmanag = ZMAPND; break;
+		case '+': Lzmanag = ZF1_ZMAPND; break;
 		case '2': Twostop = TRUE; break;
 		case '8':
 			if (max_blklen==8192)
@@ -323,6 +326,7 @@ main(int argc, char **argv)
 			/* **** FALL THROUGH TO **** */
 		case 'f': Fullname=TRUE; break;
 		case 'e': Zctlesc = 1; break;
+		case 'E': Lzmanag = ZF1_ZMCHNG; break;
 		case 'h': usage(0,NULL); break;
 		case 'k': start_blklen=1024; break;
 		case 'L':
@@ -353,15 +357,16 @@ main(int argc, char **argv)
 				usage(2,meld);
 			}
 			break;
-		case 'N': Lzmanag = ZMNEWL;  break;
-		case 'n': Lzmanag = ZMNEW;  break;
+		case 'N': Lzmanag = ZF1_ZMNEWL;  break;
+		case 'n': Lzmanag = ZF1_ZMNEW;  break;
 		case 'o': Wantfcs32 = FALSE; break;
 		case 'O': no_timeout = TRUE; break;
-		case 'p': Lzmanag = ZMPROT;  break;
+		case 'p': Lzmanag = ZF1_ZMPROT;  break;
 		case 'r': Lzconv = ZCRESUM; break;
 		case 'R': Restricted = TRUE; break;
 		case 'q': Quiet=TRUE; Verbose=0; break;
 		case 'S': enable_timesync=1; break;
+		case 'T': turbo_escape=1; break;
 		case 't':
 			s_err = xstrtoul (optarg, NULL, 0, &tmp, NULL);
 			Rxtimeout = tmp;
@@ -399,7 +404,7 @@ main(int argc, char **argv)
 			Lskipnocor = TRUE;
 			/* **** FALLL THROUGH TO **** */
 		case 'y':
-			Lzmanag = ZMCLOB; break;
+			Lzmanag = ZF1_ZMCLOB; break;
 		case 2:
 #ifdef ENABLE_SYSLOG
 #  ifndef ENABLE_SYSLOG_FORCE
@@ -462,7 +467,7 @@ main(int argc, char **argv)
 	blklen=start_blklen;
 
 	io_mode(0,1);
-	readline_setup(0, 32, 64);
+	readline_setup(0, 128, 256);
 
 #ifndef linux
 	if (signal(SIGINT, bibi) == SIG_IGN) {
@@ -482,6 +487,29 @@ main(int argc, char **argv)
 		}
 		countem(npats, patts);
 		if (protocol == ZM_ZMODEM) {
+			/* throw away any input already received. This doesn't harm
+			 * as we invite the receiver to send it's data again, und
+			 * might be useful if the receiver has already died or
+			 * if there is dirt left if the line 
+			 */
+			purgeline(0);
+			{
+				struct timeval t;
+				fd_set f;
+				unsigned char c;
+				
+				t.tv_sec = 0;
+				t.tv_usec = 0;
+				
+				FD_ZERO(&f);
+				FD_SET(0,&f);
+				
+				while (select(1,&f,NULL,NULL,&t)) {
+					if (0==read(0,&c,1)) /* EOF ... */
+						break;
+				}
+			}
+			purgeline(0);
 			stohdr(0L);
 			if (command_mode)
 				Txhdr[ZF0] = ZCOMMAND;
@@ -1102,7 +1130,7 @@ canit (void)
 	purgeline(0);
 }
 
-void
+static void
 usage1 (int exitcode)
 {
 	usage (exitcode, NULL);
@@ -1310,7 +1338,7 @@ zsendfile(struct zm_fileinfo *zi, const char *buf, int blen)
 		Txhdr[ZF0] = Lzconv;	/* file conversion request */
 		Txhdr[ZF1] = Lzmanag;	/* file management request */
 		if (Lskipnocor)
-			Txhdr[ZF1] |= ZMSKNOLOC;
+			Txhdr[ZF1] |= ZF1_ZMSKNOLOC;
 		Txhdr[ZF2] = Lztrans;	/* file transport request */
 		Txhdr[ZF3] = 0;
 		zsbhdr(ZFILE, Txhdr);
@@ -1617,7 +1645,7 @@ calc_blklen(long total_sent)
 	static long last_bytes_per_error=0;
 	long best_bytes=0;
 	long best_size=0;
-	long bytes_per_error;
+	long this_bytes_per_error;
 	long d;
 	int i;
 	if (total_bytes==0)
@@ -1640,7 +1668,7 @@ calc_blklen(long total_sent)
 		/* that's fine */
 		if (start_blklen==max_blklen)
 			return start_blklen;
-		bytes_per_error=LONG_MAX;
+		this_bytes_per_error=LONG_MAX;
 		goto calcit;
 	}
 
@@ -1658,27 +1686,33 @@ calc_blklen(long total_sent)
 			if (Verbose > 3)
 				fprintf(stderr,"calc_blklen: reduced to %d due to error\n",
 					last_blklen);
-			last_error_count=error_count;
-			last_bytes_per_error=0; /* force recalc */
 		}
+		last_error_count=error_count;
+		last_bytes_per_error=0; /* force recalc */
 		return last_blklen;
 	}
 
-	bytes_per_error=total_sent / error_count;
-		/* we do not get told about every error! 
-		 * from my experience the value is ok */
-	bytes_per_error/=2;
+	this_bytes_per_error=total_sent / error_count;
+		/* we do not get told about every error, because
+		 * there may be more than one error per failed block.
+		 * but one the other hand some errors are reported more
+		 * than once: If a modem buffers more than one block we
+		 * get at least two ZRPOS for the same position in case
+		 * *one* block has to be resent.
+		 * so don't do this:
+		 * this_bytes_per_error/=2;
+		 */
 	/* there has to be a margin */
-	if (bytes_per_error<100)
-		bytes_per_error=100;
+	if (this_bytes_per_error<100)
+		this_bytes_per_error=100;
 
 	/* be nice to the poor machine and do the complicated things not
 	 * too often
 	 */
-	if (last_bytes_per_error>bytes_per_error)
-		d=last_bytes_per_error-bytes_per_error;
+	if (last_bytes_per_error>this_bytes_per_error)
+		d=last_bytes_per_error-this_bytes_per_error;
 	else
-		d=bytes_per_error-last_bytes_per_error;
+		d=this_bytes_per_error-last_bytes_per_error;
 	if (d<4)
 	{
 		if (Verbose > 3)
@@ -1686,23 +1720,23 @@ calc_blklen(long total_sent)
 			fprintf(stderr,"calc_blklen: returned old value %d due to low bpe diff\n",
 				last_blklen);
 			fprintf(stderr,"calc_blklen: old %ld, new %ld, d %ld\n",
-				last_bytes_per_error,bytes_per_error,d );
+				last_bytes_per_error,this_bytes_per_error,d );
 		}
 		return last_blklen;
 	}
-	last_bytes_per_error=bytes_per_error;
+	last_bytes_per_error=this_bytes_per_error;
 
 calcit:
 	if (Verbose > 3)
-		fprintf(stderr,"calc_blklen: calc total_bytes=%ld, bpe=%ld\n",
-			total_bytes,bytes_per_error);
+		fprintf(stderr,"calc_blklen: calc total_bytes=%ld, bpe=%ld, ec=%ld\n",
+			total_bytes,this_bytes_per_error,(long) error_count);
 	for (i=32;i<=max_blklen;i*=2) {
 		long ok; /* some many ok blocks do we need */
 		long failed; /* and that's the number of blocks not transmitted ok */
 		long transmitted;
 		ok=total_bytes / i + 1;
-		failed=((long) i + OVERHEAD) * ok / bytes_per_error;
-		transmitted=ok * ((long) i+OVERHEAD)  
+		failed=((long) i + OVERHEAD) * ok / this_bytes_per_error;
+		transmitted=total_bytes + ok * OVERHEAD  
 			+ failed * ((long) i+OVERHEAD+OVER_ERR);
 		if (Verbose > 4)
 			fprintf(stderr,"calc_blklen: blklen %d, ok %ld, failed %ld -> %ld\n",
@@ -1769,7 +1803,7 @@ getinsync(struct zm_fileinfo *zi, int flag)
 				error_count++;
 #endif
 			}
-			Lastsync = Rxpos-1;
+			Lastsync = Rxpos;
 			return c;
 		case ZACK:
 			Lrxpos = Rxpos;

@@ -17,6 +17,8 @@
 #include <fcntl.h>
 #endif
 #include <stdio.h>
+#include <errno.h>
+extern int errno;
 
 #ifdef USE_SGTTY
 #  ifdef LLITOUT
@@ -50,10 +52,6 @@ from_cu(void)
 	a.st_dev=b.st_dev=0; /* in case fstat fails */
 
 	fstat(1, &a); fstat(2, &b);
-	fprintf(stderr,"1.st_rdev=%ld\n",(long) a.st_rdev);
-	fprintf(stderr,"1.st_dev=%ld\n",(long) a.st_dev);
-	fprintf(stderr,"2.st_rdev=%ld\n",(long) b.st_rdev);
-	fprintf(stderr,"2.st_dev=%ld\n",(long) b.st_dev);
 
 	Fromcu = (a.st_rdev != b.st_rdev) || (a.st_dev != b.st_dev);
 #else

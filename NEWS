@@ -1,3 +1,19 @@
+Version 0.12.8 - August 1996, Uwe Ohse
+
+* bug fixes.
+
+* sz and rz now know about a new option:
+  -E, --rename: change name if target exists.
+
+* new option -T, --turbo for sz: sz doesn't escape 4 special characters
+  if this option is given (this should not make problems with any 
+  rz, but could be problematic on certain links where this characters
+  have to be escaped).
+
+* debugged blocksize calculation.
+
+* -+, --append option fixed.
+
 Version 0.12.7 - August 1996, Uwe Ohse
 
 * portability enhancements. compiles and runs under hurd.

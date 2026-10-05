@@ -267,6 +267,22 @@ vcheck-sz-r:
 	$(srcdir)/check.lrzsz $(srcdir) `pwd` sz-r
 vcheck-rz-r:
 	$(srcdir)/check.lrzsz $(srcdir) `pwd` rz-r
+vcheck-turbo:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` turbo
+vcheck-error:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` error
+vcheck-manag vcheck-manage:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` manage
+vcheck-zm-rz:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` zm-rz
+vcheck-zm-sz:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` zm-sz
+vcheck-orig-rz:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` orig-rz
+vcheck-orig-sz:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` orig-sz
+vcheck-orig-kombi:
+	$(srcdir)/check.lrzsz $(srcdir) `pwd` orig-kombi
 vcheck-abuse:
 	$(srcdir)/check.lrzsz $(srcdir) `pwd` abuse
 
