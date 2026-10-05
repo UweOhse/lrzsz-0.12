@@ -1,5 +1,17 @@
+Note: this is a historic archive, created by importing the still existing
+tarballs of the releases in the lrzsz-0.12 series. The original commit history
+has been lost.
+
+Note: All 0.12 versions have serious security issues and should not be used.
+
+Find the current versions here:
+        https://ohse.de/uwe/software/lrzsz.html
+        https://github.com/UweOhse/lrzsz
+
+******************************************************************************
+
 lrzsz is a X/Y/ZModem package built from the public-domain version of
-Chuck Forsberg´s rzsz package. This package contains NO code from later
+Chuck ForsbergÂ´s rzsz package. This package contains NO code from later
 releases of rzsz which would preclude it from being released under the
 GPL.
 It has been heavily modified by me and others.
